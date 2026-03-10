@@ -1,0 +1,88 @@
+/* 全局样式 — 科技蓝 + 简约白色背景 */
+
+/* 主题色变量 */
+:root {
+  --primary-color: #1677ff;
+  --primary-hover: #4096ff;
+  --primary-active: #0958d9;
+  --bg-color: #ffffff;
+  --bg-layout: #f5f5f5;
+  --text-color: #333333;
+  --text-secondary: #666666;
+  --border-color: #e8e8e8;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+input, textarea {
+  autocomplete: off;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans SC', sans-serif;
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 覆盖 Ant Design 默认紫色主题，统一使用科技蓝 */
+.ant-btn-primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.ant-btn-primary:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+.ant-btn-primary:active {
+  background-color: var(--primary-active) !important;
+  border-color: var(--primary-active) !important;
+}
+
+/* 输入框聚焦时的蓝色边框 */
+.ant-input:focus,
+.ant-input-focused,
+.ant-input:hover {
+  border-color: var(--primary-color) !important;
+}
+
+.ant-input:focus,
+.ant-input-focused {
+  box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.1) !important;
+}
+
+/* 菜单白色背景 */
+.ant-menu {
+  background: var(--bg-color) !important;
+}
+
+.ant-menu-item-selected {
+  color: var(--primary-color) !important;
+  background-color: #e6f4ff !important;
+}
+
+/* 布局白色背景 */
+.ant-layout-sider {
+  background: var(--bg-color) !important;
+}
+
+.ant-layout-header {
+  background: var(--bg-color) !important;
+}
