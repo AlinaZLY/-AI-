@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
+import { SystemModule } from './modules/system/system.module';
 import { RedisModule } from './common/redis/redis.module';
 import { databaseConfig } from './config/database.config';
 import { redisConfig } from './config/redis.config';
@@ -37,9 +38,10 @@ import { redisConfig } from './config/redis.config';
     }),
 
     // 业务模块
-    RedisModule,  // Redis 缓存（全局模块）
-    AuthModule,   // 认证模块（注册/登录）
-    UserModule,   // 用户模块（个人资料管理）
+    RedisModule,     // Redis 缓存（全局模块）
+    AuthModule,      // 认证模块（注册/登录/验证码）
+    UserModule,      // 用户模块（个人资料/密码/头像）
+    SystemModule,    // 系统设置模块
   ],
 })
 export class AppModule {}

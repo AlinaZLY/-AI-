@@ -1,6 +1,6 @@
 /**
  * 用户登录 DTO
- * 校验登录时提交的用户名和密码
+ * 校验登录时提交的用户名、密码和验证码
  */
 import { IsString, Length } from 'class-validator';
 
@@ -14,4 +14,12 @@ export class LoginDto {
   @IsString()
   @Length(6, 100)
   password: string;
+
+  /** 验证码 */
+  @IsString()
+  captcha: string;
+
+  /** 验证码唯一标识 */
+  @IsString()
+  captchaKey: string;
 }

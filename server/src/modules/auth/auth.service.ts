@@ -1,19 +1,22 @@
 /**
  * 认证服务
- * 处理用户注册和登录逻辑，包含密码加密和 JWT 签发
+ * 处理用户注册、登录和验证码逻辑，包含密码加密和 JWT 签发
  */
 import {
   Injectable,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as svgCaptcha from 'svg-captcha';
 import { User } from '../user/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { RedisService } from '@common/redis/redis.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +24,7 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private redisService: RedisService,
   ) {}
 
   /**
@@ -57,10 +61,21 @@ export class AuthService {
 
   /**
    * 用户登录
-   * 验证用户名和密码，成功后签发 JWT Token
+   * 先校验验证码，再验证用户名和密码，成功后签发 JWT Token
    */
   async login(loginDto: LoginDto) {
-    const { username, password } = loginDto;
+    const { username, password, captcha, captchaKey } = loginDto;
+
+    // 校验验证码
+    const cachedCaptcha = await this.redisService.get(`captcha:${captchaKey}`);
+    if (!cachedCaptcha) {
+      throw new BadRequestException('验证码已过期，请刷新');
+    }
+    if (cachedCaptcha.toLowerCase() !== captcha.toLowerCase()) {
+      throw new BadRequestException('验证码错误');
+    }
+    // 验证码使用后立即删除，防止重复使用
+    await this.redisService.del(`captcha:${captchaKey}`);
 
     // 查找用户（包含密码字段）
     const user = await this.userRepository.findOne({
@@ -95,6 +110,32 @@ export class AuthService {
         avatar: user.avatar,
         role: user.role,
       },
+    };
+  }
+
+  /**
+   * 生成图形验证码
+   * 使用 svg-captcha 生成 SVG 格式验证码，存入 Redis（有效期 5 分钟）
+   */
+  async generateCaptcha() {
+    const captcha = svgCaptcha.create({
+      size: 4,         // 验证码长度
+      noise: 3,        // 干扰线数量
+      color: true,     // 彩色
+      width: 120,
+      height: 40,
+      fontSize: 40,
+    });
+
+    // 生成唯一 key
+    const key = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+    // 存入 Redis，有效期 5 分钟
+    await this.redisService.set(`captcha:${key}`, captcha.text, 300);
+
+    return {
+      captchaKey: key,
+      captchaSvg: captcha.data,
     };
   }
 }

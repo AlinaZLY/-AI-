@@ -1,0 +1,5 @@
+node_modules/
+server/uploads/
+ai_conversations/
+*.xlsx
+dist/

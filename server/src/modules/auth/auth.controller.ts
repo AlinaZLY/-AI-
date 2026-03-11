@@ -1,8 +1,8 @@
 /**
  * 认证控制器
- * 提供注册和登录接口，无需 JWT 认证即可访问
+ * 提供注册、登录和验证码接口，无需 JWT 认证即可访问
  */
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -21,5 +21,11 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  /** GET /api/auth/captcha - 获取图形验证码 */
+  @Get('captcha')
+  async getCaptcha() {
+    return this.authService.generateCaptcha();
   }
 }
