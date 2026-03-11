@@ -39,6 +39,79 @@ export class CommunityService implements OnModuleInit {
       await this.categoryRepo.save(this.categoryRepo.create(seeds));
       console.log('分类种子数据已初始化');
     }
+
+    // 帖子种子数据
+    const postCount = await this.postRepo.count();
+    if (postCount === 0) {
+      const categories = await this.categoryRepo.find();
+      const catMap: Record<string, number> = {};
+      for (const c of categories) catMap[c.name] = c.id;
+
+      const postSeeds = [
+        {
+          title: '字节跳动后端开发一面经验分享',
+          content: '<h3>面试概况</h3><p>上周参加了字节跳动后端开发的一面，总时长约 <strong>50分钟</strong>，主要考察 <em>基础知识</em> 和 <em>算法能力</em>。</p><h3>面试题目</h3><ol><li>自我介绍（3分钟）</li><li>项目经历深挖，重点问了<strong>高并发场景</strong>的处理方案</li><li>MySQL 索引原理：B+ 树 vs B 树的区别</li><li>Redis 缓存穿透、击穿、雪崩的解决方案</li><li>算法题：<strong>二叉树的层序遍历</strong>（LeetCode 102）</li></ol><h3>面试建议</h3><blockquote>准备充分真的很重要！建议大家提前刷完 <strong>Hot 100</strong>，把简历上的项目吃透。</blockquote><p>祝大家都能拿到心仪的 offer！💪</p>',
+          categoryId: catMap['面试经验'],
+          userId: 1,
+          status: PostStatus.APPROVED,
+          viewCount: 128,
+          likeCount: 32,
+          commentCount: 5,
+        },
+        {
+          title: '腾讯2025春招笔试真题及解析',
+          content: '<h3>笔试信息</h3><p>腾讯2025春招笔试共 <strong>5道编程题</strong>，时间120分钟。难度整体偏中等，以下是部分真题和思路。</p><h3>题目一：字符串处理</h3><p>给定一个字符串 s，找出其中<strong>不含重复字符</strong>的最长子串长度。</p><p><strong>思路：</strong>使用滑动窗口 + 哈希表，时间复杂度 O(n)。</p><h3>题目二：动态规划</h3><p>给定一个数组，求<strong>最大子数组和</strong>。经典 Kadane 算法。</p><blockquote>建议大家多刷 LeetCode 和牛客网的真题，笔试重在手速和准确率。</blockquote>',
+          categoryId: catMap['笔试真题'],
+          userId: 1,
+          status: PostStatus.APPROVED,
+          viewCount: 256,
+          likeCount: 45,
+          commentCount: 12,
+        },
+        {
+          title: '应届生如何写一份出色的简历？',
+          content: '<h3>简历的核心原则</h3><p>作为校招应届生，简历是你的<strong>第一张名片</strong>。以下是我总结的几点经验：</p><ul><li><strong>简洁明了</strong>：一页纸为佳，不要超过两页</li><li><strong>量化成果</strong>：用数据说话，如 "性能提升30%"、"用户增长2000+"</li><li><strong>项目亮点</strong>：突出你在项目中的角色和贡献</li><li><strong>技术栈匹配</strong>：根据目标岗位调整技术关键词</li></ul><h3>常见错误</h3><p>❌ 大段文字描述<br>❌ 写与岗位无关的经历<br>❌ 拼写和格式错误</p><p>希望对大家有帮助！有问题可以在评论区交流～</p>',
+          categoryId: catMap['求职交流'],
+          userId: 1,
+          status: PostStatus.APPROVED,
+          viewCount: 189,
+          likeCount: 56,
+          commentCount: 8,
+        },
+        {
+          title: '在阿里实习三个月的真实感受',
+          content: '<h3>公司环境</h3><p>阿里的办公环境确实不错，免费的<strong>三餐 + 下午茶</strong>，健身房也可以免费用。工位宽敞，配备 MacBook Pro。</p><h3>工作内容</h3><p>我所在的团队负责一个内部系统的前端开发，技术栈是 <strong>React + TypeScript + Ant Design</strong>。</p><h3>团队氛围</h3><p>mentor 很 nice，每周有一对一的沟通。团队会定期做 <em>Code Review</em>，对新人成长很有帮助。</p><h3>薪资待遇</h3><p>实习薪资在行业中算中上水平，具体数字不方便透露。转正后薪资还是比较有竞争力的。</p><blockquote>总结：阿里实习整体体验很好，推荐大家尝试投递！</blockquote>',
+          categoryId: catMap['公司点评'],
+          userId: 1,
+          status: PostStatus.APPROVED,
+          viewCount: 342,
+          likeCount: 78,
+          commentCount: 15,
+        },
+        {
+          title: '前端开发者必须掌握的 TypeScript 技巧',
+          content: '<h3>为什么要学 TypeScript？</h3><p>现在主流前端项目几乎都在用 TypeScript，它能帮助你<strong>减少 Bug</strong>、提高<strong>代码可维护性</strong>。</p><h3>实用技巧</h3><h4>1. 泛型的使用</h4><p>泛型让你的函数和组件更加通用和类型安全。</p><h4>2. 类型守卫</h4><p>使用 <code>is</code> 关键字缩小类型范围，避免不必要的类型断言。</p><h4>3. 工具类型</h4><p><code>Partial</code>、<code>Pick</code>、<code>Omit</code>、<code>Record</code> 这些内置工具类型非常实用。</p><h4>4. 模板字面量类型</h4><p>TypeScript 4.1+ 支持模板字面量类型，可以实现强大的字符串类型约束。</p><p>掌握这些技巧，能让你在面试和工作中更具竞争力！</p>',
+          categoryId: catMap['技术分享'],
+          userId: 1,
+          status: PostStatus.APPROVED,
+          viewCount: 215,
+          likeCount: 63,
+          commentCount: 9,
+        },
+        {
+          title: '秋招结束，分享一下我的 offer 对比思路',
+          content: '<h3>Offer 选择的纠结</h3><p>秋招拿到了几个 offer，在选择上纠结了很久，分享一下我的对比维度：</p><ul><li><strong>薪资待遇</strong>：base + 年终 + 股票/期权</li><li><strong>技术成长</strong>：团队技术氛围、是否有 mentor</li><li><strong>业务前景</strong>：所在业务线是否是公司核心</li><li><strong>工作强度</strong>：加班情况、是否弹性工作</li><li><strong>城市因素</strong>：生活成本、离家远近</li></ul><p>最终我选择了一家技术氛围好、业务有潜力的公司，虽然薪资不是最高的，但综合考虑最满意。</p><p>大家有什么问题可以留言讨论～</p>',
+          categoryId: catMap['求职交流'],
+          userId: 1,
+          status: PostStatus.APPROVED,
+          viewCount: 167,
+          likeCount: 41,
+          commentCount: 7,
+        },
+      ];
+      await this.postRepo.save(this.postRepo.create(postSeeds));
+      console.log('帖子种子数据已初始化');
+    }
   }
 
   // ==================== 分类管理 ====================

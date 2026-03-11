@@ -126,6 +126,8 @@
       cancel-text="取消"
       :confirm-loading="formLoading"
       @ok="handleFormSubmit"
+      width="800px"
+      :destroy-on-close="true"
     >
       <a-form layout="vertical">
         <a-form-item label="标题" required>
@@ -139,7 +141,15 @@
           </a-select>
         </a-form-item>
         <a-form-item label="内容" required>
-          <a-textarea v-model:value="formData.content" placeholder="请输入帖子内容" :rows="6" />
+          <div style="border: 1px solid #d9d9d9; border-radius: 6px; overflow: hidden; z-index: 100">
+            <Toolbar :editor="editorRef" :default-config="toolbarConfig" style="border-bottom: 1px solid #d9d9d9" />
+            <Editor
+              v-model="formData.content"
+              :default-config="editorConfig"
+              style="height: 300px; overflow-y: auto"
+              @onCreated="handleEditorCreated"
+            />
+          </div>
         </a-form-item>
       </a-form>
     </a-modal>
@@ -179,7 +189,7 @@
           </div>
         </div>
         <a-divider />
-        <div class="detail-content">{{ currentPost.content }}</div>
+        <div class="detail-content" v-html="currentPost.content"></div>
 
         <!-- 评论区域 -->
         <a-divider>评论 ({{ comments.length }})</a-divider>
@@ -229,8 +239,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+// @ts-ignore - wangeditor types issue
+import { ref, reactive, onMounted, onBeforeUnmount, shallowRef } from 'vue'
 import { message } from 'ant-design-vue'
+// @ts-ignore
+import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
+import type { IDomEditor, IToolbarConfig, IEditorConfig } from '@wangeditor/editor'
+import '@wangeditor/editor/dist/css/style.css'
 import {
   PlusOutlined,
   EyeOutlined,
@@ -250,6 +265,19 @@ import {
 
 // ========== 分类列表 ==========
 const categoryList = ref<any[]>([])
+
+// ========== 富文本编辑器 ==========
+const editorRef = shallowRef<IDomEditor>()
+const toolbarConfig: Partial<IToolbarConfig> = {}
+const editorConfig: Partial<IEditorConfig> = { placeholder: '请输入帖子内容...' }
+
+function handleEditorCreated(editor: IDomEditor) {
+  editorRef.value = editor
+}
+
+onBeforeUnmount(() => {
+  editorRef.value?.destroy()
+})
 
 async function fetchCategories() {
   try {
@@ -507,8 +535,18 @@ onMounted(() => {
   .detail-content {
     line-height: 1.8;
     color: #333;
-    white-space: pre-wrap;
     word-break: break-word;
+
+    :deep(img) {
+      max-width: 100%;
+      border-radius: 4px;
+    }
+    :deep(blockquote) {
+      border-left: 4px solid #d9d9d9;
+      padding-left: 12px;
+      color: #666;
+      margin: 8px 0;
+    }
   }
 }
 
