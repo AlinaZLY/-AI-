@@ -206,6 +206,34 @@ export class CommunityService {
 
   // ==================== 评论 ====================
 
+  async getAllComments(page = 1, pageSize = 10, keyword?: string) {
+    const qb = this.commentRepo
+      .createQueryBuilder('comment')
+      .leftJoinAndSelect('comment.user', 'user')
+      .leftJoin('comment.post', 'post')
+      .addSelect(['post.id', 'post.title']);
+
+    if (keyword) {
+      qb.andWhere('comment.content LIKE :kw', { kw: `%${keyword}%` });
+    }
+
+    qb.orderBy('comment.createdAt', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+
+    const [list, total] = await qb.getManyAndCount();
+
+    return {
+      list: list.map((c) => {
+        if (c.user) delete (c.user as any).password;
+        return c;
+      }),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
   async createComment(postId: number, userId: number, dto: CreateCommentDto) {
     const post = await this.postRepo.findOne({ where: { id: postId } });
     if (!post) throw new NotFoundException('帖子不存在');

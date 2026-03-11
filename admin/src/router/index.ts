@@ -32,7 +32,19 @@ const routes: RouteRecordRaw[] = [
         path: 'community/posts',
         name: 'PostManage',
         component: () => import('@/views/community/PostManage.vue'),
-        meta: { title: '帖子管理', icon: 'MessageOutlined', roles: ['admin'] },
+        meta: { title: '帖子管理', icon: 'MessageOutlined', roles: ['admin'], parent: 'community' },
+      },
+      {
+        path: 'community/comments',
+        name: 'CommentManage',
+        component: () => import('@/views/community/CommentManage.vue'),
+        meta: { title: '评论管理', icon: 'CommentOutlined', roles: ['admin'], parent: 'community' },
+      },
+      {
+        path: 'community/categories',
+        name: 'CategoryManage',
+        component: () => import('@/views/community/CategoryManage.vue'),
+        meta: { title: '分类管理', icon: 'AppstoreOutlined', roles: ['admin'], parent: 'community' },
       },
       {
         path: 'system/settings',

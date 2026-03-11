@@ -91,6 +91,17 @@ export class CommunityController {
 
   // ==================== 评论 ====================
 
+  /** 管理员获取所有评论列表（分页） */
+  @UseGuards(JwtAuthGuard)
+  @Get('comments')
+  getAllComments(
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('keyword') keyword?: string,
+  ) {
+    return this.communityService.getAllComments(page, pageSize, keyword);
+  }
+
   /** 获取帖子评论列表 */
   @Get('posts/:id/comments')
   getComments(@Param('id', ParseIntPipe) id: number, @Request() req) {

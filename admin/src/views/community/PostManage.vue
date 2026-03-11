@@ -1,38 +1,43 @@
 <template>
   <div class="post-manage">
-    <!-- 搜索栏 -->
-    <div class="search-bar">
-      <a-input-search
-        v-model:value="keyword"
-        placeholder="搜索帖子标题或内容"
-        style="width: 280px"
-        allow-clear
-        @search="handleSearch"
-      />
-      <a-select
-        v-model:value="category"
-        placeholder="分类筛选"
-        style="width: 160px; margin-left: 12px"
-        allow-clear
-        @change="handleSearch"
-      >
-        <a-select-option value="interview">面试经验</a-select-option>
-        <a-select-option value="written_test">笔试真题</a-select-option>
-        <a-select-option value="job_hunting">求职交流</a-select-option>
-        <a-select-option value="company">公司点评</a-select-option>
-        <a-select-option value="other">其他</a-select-option>
-      </a-select>
-      <a-select
-        v-model:value="statusFilter"
-        placeholder="审核状态"
-        style="width: 140px; margin-left: 12px"
-        allow-clear
-        @change="handleSearch"
-      >
-        <a-select-option value="pending">待审核</a-select-option>
-        <a-select-option value="approved">已通过</a-select-option>
-        <a-select-option value="rejected">已拒绝</a-select-option>
-      </a-select>
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <a-input-search
+          v-model:value="keyword"
+          placeholder="搜索帖子标题或内容"
+          style="width: 260px"
+          allow-clear
+          @search="handleSearch"
+        />
+        <a-select
+          v-model:value="category"
+          placeholder="分类筛选"
+          style="width: 140px"
+          allow-clear
+          @change="handleSearch"
+        >
+          <a-select-option value="interview">面试经验</a-select-option>
+          <a-select-option value="written_test">笔试真题</a-select-option>
+          <a-select-option value="job_hunting">求职交流</a-select-option>
+          <a-select-option value="company">公司点评</a-select-option>
+          <a-select-option value="other">其他</a-select-option>
+        </a-select>
+        <a-select
+          v-model:value="statusFilter"
+          placeholder="审核状态"
+          style="width: 130px"
+          allow-clear
+          @change="handleSearch"
+        >
+          <a-select-option value="pending">待审核</a-select-option>
+          <a-select-option value="approved">已通过</a-select-option>
+          <a-select-option value="rejected">已拒绝</a-select-option>
+        </a-select>
+      </div>
+      <a-button type="primary" @click="openCreateModal">
+        <PlusOutlined /> 新建帖子
+      </a-button>
     </div>
 
     <!-- 帖子列表表格 -->
@@ -42,9 +47,13 @@
       :loading="loading"
       :pagination="pagination"
       row-key="id"
+      size="middle"
       @change="handleTableChange"
     >
       <template #bodyCell="{ column, record }">
+        <template v-if="column.key === 'title'">
+          <a @click="showDetail(record)" style="color: #1677ff">{{ record.title }}</a>
+        </template>
         <template v-if="column.key === 'category'">
           <a-tag :color="categoryColor(record.category)">
             {{ categoryLabel(record.category) }}
@@ -60,63 +69,84 @@
             <a-avatar v-else :size="24" style="background-color: #1677ff; font-size: 12px">
               {{ (record.user?.username || '?').charAt(0) }}
             </a-avatar>
-            <span class="user-name">{{ record.user?.nickname || record.user?.username || '-' }}</span>
+            <span>{{ record.user?.nickname || record.user?.username || '-' }}</span>
           </div>
         </template>
         <template v-if="column.key === 'stats'">
-          <span>
-            <EyeOutlined /> {{ record.viewCount }}
-            <span style="margin: 0 6px; color: #d9d9d9">|</span>
-            <LikeOutlined /> {{ record.likeCount }}
-            <span style="margin: 0 6px; color: #d9d9d9">|</span>
-            <MessageOutlined /> {{ record.commentCount }}
-          </span>
+          <a-space :size="4">
+            <a-tooltip title="浏览"><EyeOutlined /> {{ record.viewCount }}</a-tooltip>
+            <a-tooltip title="点赞"><LikeOutlined /> {{ record.likeCount }}</a-tooltip>
+            <a-tooltip title="评论"><MessageOutlined /> {{ record.commentCount }}</a-tooltip>
+          </a-space>
         </template>
         <template v-if="column.key === 'status'">
           <a-tag :color="statusColor(record.status)">
             {{ statusLabel(record.status) }}
           </a-tag>
+          <a-tooltip v-if="record.status === 'rejected' && record.rejectReason" :title="record.rejectReason">
+            <InfoCircleOutlined style="color: #ff4d4f; cursor: pointer; margin-left: 4px" />
+          </a-tooltip>
         </template>
         <template v-if="column.key === 'createdAt'">
           {{ formatTime(record.createdAt) }}
         </template>
         <template v-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" size="small" @click="showDetail(record)">
-              <EyeOutlined /> 查看
-            </a-button>
-            <a-button
-              v-if="record.status === 'pending'"
-              type="link"
-              size="small"
-              style="color: #52c41a"
-              @click="handleReview(record.id, 'approved')"
-            >
-              <CheckOutlined /> 通过
-            </a-button>
-            <a-button
-              v-if="record.status === 'pending'"
-              type="link"
-              size="small"
-              style="color: #faad14"
-              @click="showRejectModal(record.id)"
-            >
-              <CloseOutlined /> 拒绝
-            </a-button>
+          <a-space :size="0">
+            <a-button type="link" size="small" @click="showDetail(record)">查看</a-button>
+            <a-button type="link" size="small" @click="openEditModal(record)">编辑</a-button>
+            <a-dropdown v-if="record.status === 'pending'">
+              <a-button type="link" size="small">审核</a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item @click="handleReview(record.id, 'approved')">
+                    <CheckOutlined style="color: #52c41a" /> 通过
+                  </a-menu-item>
+                  <a-menu-item @click="showRejectModal(record.id)">
+                    <CloseOutlined style="color: #faad14" /> 拒绝
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
             <a-popconfirm
-              title="确定要删除此帖子吗？"
+              title="确定要删除此帖子吗？删除后不可恢复。"
               ok-text="确定"
               cancel-text="取消"
               @confirm="handleDelete(record.id)"
             >
-              <a-button type="link" size="small" danger>
-                <DeleteOutlined /> 删除
-              </a-button>
+              <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
         </template>
       </template>
     </a-table>
+
+    <!-- 新建/编辑帖子弹窗 -->
+    <a-modal
+      v-model:open="formVisible"
+      :title="editingId ? '编辑帖子' : '新建帖子'"
+      ok-text="确定"
+      cancel-text="取消"
+      :confirm-loading="formLoading"
+      @ok="handleFormSubmit"
+    >
+      <a-form layout="vertical">
+        <a-form-item label="标题" required>
+          <a-input v-model:value="formData.title" placeholder="请输入帖子标题" :maxlength="200" show-count />
+        </a-form-item>
+        <a-form-item label="分类" required>
+          <a-select v-model:value="formData.category" placeholder="请选择分类">
+            <a-select-option value="interview">面试经验</a-select-option>
+            <a-select-option value="written_test">笔试真题</a-select-option>
+            <a-select-option value="job_hunting">求职交流</a-select-option>
+            <a-select-option value="company">公司点评</a-select-option>
+            <a-select-option value="other">其他</a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="内容" required>
+          <a-textarea v-model:value="formData.content" placeholder="请输入帖子内容" :rows="6" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
 
     <!-- 帖子详情弹窗 -->
     <a-modal
@@ -140,6 +170,9 @@
             <a-tag :color="categoryColor(currentPost.category)">
               {{ categoryLabel(currentPost.category) }}
             </a-tag>
+            <a-tag :color="statusColor(currentPost.status)">
+              {{ statusLabel(currentPost.status) }}
+            </a-tag>
             <span class="detail-time">{{ formatTime(currentPost.createdAt) }}</span>
           </a-space>
           <div class="detail-stats">
@@ -155,7 +188,7 @@
         <!-- 评论区域 -->
         <a-divider>评论 ({{ comments.length }})</a-divider>
         <a-spin :spinning="commentsLoading">
-          <div v-if="comments.length === 0" class="no-comments">暂无评论</div>
+          <a-empty v-if="comments.length === 0" description="暂无评论" />
           <div v-for="comment in comments" :key="comment.id" class="comment-item">
             <div class="comment-header">
               <a-space>
@@ -168,9 +201,7 @@
                   {{ (comment.user?.username || '?').charAt(0) }}
                 </a-avatar>
                 <span class="comment-username">{{ comment.user?.nickname || comment.user?.username }}</span>
-                <span v-if="comment.parentId" class="comment-reply">
-                  回复 #{{ comment.parentId }}
-                </span>
+                <span v-if="comment.parentId" class="comment-reply">回复 #{{ comment.parentId }}</span>
                 <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
               </a-space>
               <a-popconfirm
@@ -179,9 +210,7 @@
                 cancel-text="取消"
                 @confirm="handleDeleteComment(comment.id)"
               >
-                <a-button type="link" size="small" danger>
-                  <DeleteOutlined />
-                </a-button>
+                <a-button type="link" size="small" danger><DeleteOutlined /></a-button>
               </a-popconfirm>
             </div>
             <div class="comment-content">{{ comment.content }}</div>
@@ -198,11 +227,7 @@
       cancel-text="取消"
       @ok="handleReject"
     >
-      <a-textarea
-        v-model:value="rejectReason"
-        placeholder="请输入拒绝原因（可选）"
-        :rows="3"
-      />
+      <a-textarea v-model:value="rejectReason" placeholder="请输入拒绝原因（可选）" :rows="3" />
     </a-modal>
   </div>
 </template>
@@ -211,6 +236,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
+  PlusOutlined,
   EyeOutlined,
   LikeOutlined,
   MessageOutlined,
@@ -218,9 +244,14 @@ import {
   DeleteOutlined,
   CheckOutlined,
   CloseOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons-vue'
-import { getPostsApi, getPostDetailApi, deletePostApi, getCommentsApi, deleteCommentApi, reviewPostApi } from '@/api/community'
+import {
+  getPostsApi, getPostDetailApi, createPostApi, updatePostApi,
+  deletePostApi, getCommentsApi, deleteCommentApi, reviewPostApi,
+} from '@/api/community'
 
+// ========== 列表相关 ==========
 const keyword = ref('')
 const category = ref<string | undefined>(undefined)
 const statusFilter = ref<string | undefined>(undefined)
@@ -234,25 +265,35 @@ const pagination = reactive({
   showTotal: (total: number) => `共 ${total} 条`,
 })
 
-const detailVisible = ref(false)
-const currentPost = ref<any>(null)
-const comments = ref<any[]>([])
-const commentsLoading = ref(false)
-const rejectVisible = ref(false)
-const rejectReason = ref('')
-const rejectPostId = ref<number>(0)
-
 const columns = [
   { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
   { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
   { title: '分类', key: 'category', width: 100 },
-  { title: '作者', key: 'user', width: 140 },
-  { title: '状态', key: 'status', width: 90 },
-  { title: '数据', key: 'stats', width: 180 },
-  { title: '发布时间', key: 'createdAt', width: 170 },
-  { title: '操作', key: 'action', width: 220, fixed: 'right' as const },
+  { title: '作者', key: 'user', width: 130 },
+  { title: '状态', key: 'status', width: 100 },
+  { title: '数据', key: 'stats', width: 160 },
+  { title: '发布时间', key: 'createdAt', width: 160 },
+  { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
 ]
 
+// ========== 表单相关 ==========
+const formVisible = ref(false)
+const formLoading = ref(false)
+const editingId = ref<number | null>(null)
+const formData = reactive({ title: '', content: '', category: 'other' })
+
+// ========== 详情相关 ==========
+const detailVisible = ref(false)
+const currentPost = ref<any>(null)
+const comments = ref<any[]>([])
+const commentsLoading = ref(false)
+
+// ========== 审核相关 ==========
+const rejectVisible = ref(false)
+const rejectReason = ref('')
+const rejectPostId = ref<number>(0)
+
+// ========== 工具函数 ==========
 const categoryMap: Record<string, { label: string; color: string }> = {
   interview: { label: '面试经验', color: 'blue' },
   written_test: { label: '笔试真题', color: 'purple' },
@@ -260,39 +301,23 @@ const categoryMap: Record<string, { label: string; color: string }> = {
   company: { label: '公司点评', color: 'orange' },
   other: { label: '其他', color: 'default' },
 }
-
-function categoryLabel(cat: string) {
-  return categoryMap[cat]?.label || cat
-}
-
-function categoryColor(cat: string) {
-  return categoryMap[cat]?.color || 'default'
-}
-
 const statusMap: Record<string, { label: string; color: string }> = {
   pending: { label: '待审核', color: 'gold' },
   approved: { label: '已通过', color: 'green' },
   rejected: { label: '已拒绝', color: 'red' },
 }
-
-function statusLabel(s: string) {
-  return statusMap[s]?.label || s
-}
-
-function statusColor(s: string) {
-  return statusMap[s]?.color || 'default'
-}
+function categoryLabel(cat: string) { return categoryMap[cat]?.label || cat }
+function categoryColor(cat: string) { return categoryMap[cat]?.color || 'default' }
+function statusLabel(s: string) { return statusMap[s]?.label || s }
+function statusColor(s: string) { return statusMap[s]?.color || 'default' }
 
 function formatTime(time: string) {
   return new Date(time).toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
   })
 }
 
+// ========== 列表操作 ==========
 async function fetchPosts() {
   loading.value = true
   try {
@@ -323,22 +348,42 @@ function handleTableChange(pag: any) {
   fetchPosts()
 }
 
-async function showDetail(record: any) {
-  detailVisible.value = true
-  commentsLoading.value = true
+// ========== CRUD 操作 ==========
+function openCreateModal() {
+  editingId.value = null
+  formData.title = ''
+  formData.content = ''
+  formData.category = 'other'
+  formVisible.value = true
+}
+
+function openEditModal(record: any) {
+  editingId.value = record.id
+  formData.title = record.title
+  formData.content = record.content || ''
+  formData.category = record.category
+  formVisible.value = true
+}
+
+async function handleFormSubmit() {
+  if (!formData.title.trim()) return message.warning('请输入标题')
+  if (!formData.content.trim()) return message.warning('请输入内容')
+
+  formLoading.value = true
   try {
-    const res = await getPostDetailApi(record.id)
-    currentPost.value = res
+    if (editingId.value) {
+      await updatePostApi(editingId.value, formData)
+      message.success('帖子已更新')
+    } else {
+      await createPostApi(formData)
+      message.success('帖子已创建')
+    }
+    formVisible.value = false
+    fetchPosts()
   } catch {
-    currentPost.value = record
-  }
-  try {
-    const res = await getCommentsApi(record.id)
-    comments.value = res
-  } catch {
-    comments.value = []
+    message.error('操作失败')
   } finally {
-    commentsLoading.value = false
+    formLoading.value = false
   }
 }
 
@@ -352,13 +397,30 @@ async function handleDelete(id: number) {
   }
 }
 
+// ========== 详情 + 评论 ==========
+async function showDetail(record: any) {
+  detailVisible.value = true
+  commentsLoading.value = true
+  try {
+    currentPost.value = await getPostDetailApi(record.id)
+  } catch {
+    currentPost.value = record
+  }
+  try {
+    comments.value = await getCommentsApi(record.id)
+  } catch {
+    comments.value = []
+  } finally {
+    commentsLoading.value = false
+  }
+}
+
 async function handleDeleteComment(id: number) {
   try {
     await deleteCommentApi(id)
     message.success('评论已删除')
     if (currentPost.value) {
-      const res = await getCommentsApi(currentPost.value.id)
-      comments.value = res
+      comments.value = await getCommentsApi(currentPost.value.id)
       currentPost.value.commentCount = comments.value.length
     }
   } catch {
@@ -366,6 +428,7 @@ async function handleDeleteComment(id: number) {
   }
 }
 
+// ========== 审核操作 ==========
 async function handleReview(id: number, status: string) {
   try {
     await reviewPostApi(id, { status })
@@ -393,17 +456,22 @@ async function handleReject() {
   }
 }
 
-onMounted(() => {
-  fetchPosts()
-})
+onMounted(() => fetchPosts())
 </script>
 
 <style scoped lang="less">
 .post-manage {
-  .search-bar {
-    margin-bottom: 16px;
+  .toolbar {
     display: flex;
+    justify-content: space-between;
     align-items: center;
+    margin-bottom: 16px;
+
+    .toolbar-left {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
   }
 }
 
@@ -411,10 +479,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 6px;
-
-  .user-name {
-    font-size: 13px;
-  }
+  font-size: 13px;
 }
 
 .post-detail {
@@ -425,17 +490,14 @@ onMounted(() => {
     flex-wrap: wrap;
     gap: 8px;
   }
-
   .detail-time {
     color: #999;
     font-size: 13px;
   }
-
   .detail-stats {
     color: #666;
     font-size: 13px;
   }
-
   .detail-content {
     line-height: 1.8;
     color: #333;
@@ -444,41 +506,19 @@ onMounted(() => {
   }
 }
 
-.no-comments {
-  text-align: center;
-  color: #999;
-  padding: 24px 0;
-}
-
 .comment-item {
   padding: 12px 0;
   border-bottom: 1px solid #f0f0f0;
-
-  &:last-child {
-    border-bottom: none;
-  }
+  &:last-child { border-bottom: none; }
 
   .comment-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-
-  .comment-username {
-    font-weight: 500;
-    font-size: 13px;
-  }
-
-  .comment-reply {
-    color: #1677ff;
-    font-size: 12px;
-  }
-
-  .comment-time {
-    color: #999;
-    font-size: 12px;
-  }
-
+  .comment-username { font-weight: 500; font-size: 13px; }
+  .comment-reply { color: #1677ff; font-size: 12px; }
+  .comment-time { color: #999; font-size: 12px; }
   .comment-content {
     margin: 6px 0 0 30px;
     color: #333;

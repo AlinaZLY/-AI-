@@ -14,6 +14,7 @@
       </div>
       <a-menu
         v-model:selectedKeys="selectedKeys"
+        v-model:openKeys="openKeys"
         mode="inline"
         @click="handleMenuClick"
       >
@@ -21,10 +22,24 @@
           <DashboardOutlined />
           <span>仪表盘</span>
         </a-menu-item>
-        <a-menu-item v-if="userStore.userInfo?.role === 'admin'" key="community/posts">
-          <MessageOutlined />
-          <span>帖子管理</span>
-        </a-menu-item>
+        <a-sub-menu v-if="userStore.userInfo?.role === 'admin'" key="community">
+          <template #title>
+            <TeamOutlined />
+            <span>社区管理</span>
+          </template>
+          <a-menu-item key="community/posts">
+            <MessageOutlined />
+            <span>帖子管理</span>
+          </a-menu-item>
+          <a-menu-item key="community/comments">
+            <CommentOutlined />
+            <span>评论管理</span>
+          </a-menu-item>
+          <a-menu-item key="community/categories">
+            <AppstoreOutlined />
+            <span>分类管理</span>
+          </a-menu-item>
+        </a-sub-menu>
         <a-menu-item v-if="userStore.userInfo?.role === 'admin'" key="system/settings">
           <SettingOutlined />
           <span>系统设置</span>
@@ -94,8 +109,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import {
   DashboardOutlined,
   MenuFoldOutlined,
@@ -105,20 +120,36 @@ import {
   LogoutOutlined,
   SettingOutlined,
   MessageOutlined,
+  CommentOutlined,
+  AppstoreOutlined,
+  TeamOutlined,
 } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
 
 const collapsed = ref(false)
 const selectedKeys = ref(['dashboard'])
+const openKeys = ref<string[]>([])
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const systemStore = useSystemStore()
+
+function updateMenuState() {
+  const path = route.path.replace(/^\//, '')
+  selectedKeys.value = [path]
+  if (path.startsWith('community/')) {
+    openKeys.value = ['community']
+  }
+}
 
 onMounted(() => {
   systemStore.fetchSettings()
   userStore.fetchUserInfo()
+  updateMenuState()
 })
+
+watch(() => route.path, updateMenuState)
 
 function handleMenuClick({ key }: { key: string }) {
   router.push(`/${key}`)
