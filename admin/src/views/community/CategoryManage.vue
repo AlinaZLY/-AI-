@@ -24,6 +24,10 @@
             :is="iconMap[record.icon]"
             style="font-size: 24px"
           />
+          <!-- Emoji图标 -->
+          <span v-else-if="record.icon && isEmoji(record.icon)" class="icon-emoji-display">
+            {{ record.icon }}
+          </span>
           <!-- URL图标 -->
           <a-avatar
             v-else-if="record.icon && isUrl(record.icon)"
@@ -77,10 +81,23 @@
         </a-form-item>
         <a-form-item label="分类图标">
           <a-radio-group v-model:value="iconMode" style="margin-bottom: 12px">
+            <a-radio-button value="emoji">Emoji图标</a-radio-button>
             <a-radio-button value="component">组件图标</a-radio-button>
             <a-radio-button value="upload">上传图标</a-radio-button>
             <a-radio-button value="url">图标URL</a-radio-button>
           </a-radio-group>
+          <!-- Emoji图标选择 -->
+          <div v-if="iconMode === 'emoji'" class="icon-grid emoji-grid">
+            <div
+              v-for="item in emojiOptions"
+              :key="item.emoji"
+              :class="['icon-grid-item', { active: formData.icon === item.emoji }]"
+              @click="formData.icon = item.emoji"
+            >
+              <span style="font-size: 24px">{{ item.emoji }}</span>
+              <div class="icon-grid-label">{{ item.label }}</div>
+            </div>
+          </div>
           <!-- 组件图标选择 -->
           <div v-if="iconMode === 'component'" class="icon-grid">
             <div
@@ -194,7 +211,23 @@ const iconOptions = [
 
 const loading = ref(false)
 const categories = ref<any[]>([])
-const iconMode = ref<'component' | 'upload' | 'url'>('component')
+const emojiOptions = [
+  { emoji: '🏆', label: '奖杯' }, { emoji: '📝', label: '笔记' }, { emoji: '🧭', label: '指南' },
+  { emoji: '🏢', label: '公司' }, { emoji: '💻', label: '电脑' }, { emoji: '💬', label: '聊天' },
+  { emoji: '🎯', label: '目标' }, { emoji: '🎓', label: '毕业' }, { emoji: '📚', label: '书本' },
+  { emoji: '🚀', label: '火箭' }, { emoji: '💡', label: '灯泡' }, { emoji: '🔥', label: '火焰' },
+  { emoji: '⭐', label: '星星' }, { emoji: '❤️', label: '心形' }, { emoji: '👥', label: '团队' },
+  { emoji: '🎉', label: '庆祝' }, { emoji: '📊', label: '图表' }, { emoji: '🛠️', label: '工具' },
+  { emoji: '🌐', label: '全球' }, { emoji: '☕', label: '咖啡' },
+]
+
+function isEmoji(str: string) {
+  if (!str) return false
+  const emojiRegex = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F|[\u200d\uFE0F])+$/u
+  return emojiRegex.test(str) && !isUrl(str) && !iconMap[str]
+}
+
+const iconMode = ref<'emoji' | 'component' | 'upload' | 'url'>('emoji')
 
 const columns = [
   { title: '图标', key: 'icon', width: 70 },
@@ -269,7 +302,7 @@ function openCreateModal() {
   formData.color = 'blue'
   formData.description = ''
   formData.sort = 0
-  iconMode.value = 'component'
+  iconMode.value = 'emoji'
   formVisible.value = true
 }
 
@@ -281,14 +314,16 @@ function openEditModal(record: any) {
   formData.description = record.description || ''
   formData.sort = record.sort || 0
   // 自动识别图标模式
-  if (record.icon && iconMap[record.icon]) {
+  if (record.icon && isEmoji(record.icon)) {
+    iconMode.value = 'emoji'
+  } else if (record.icon && iconMap[record.icon]) {
     iconMode.value = 'component'
   } else if (record.icon && record.icon.startsWith('http')) {
     iconMode.value = 'url'
   } else if (record.icon && record.icon.startsWith('/')) {
     iconMode.value = 'upload'
   } else {
-    iconMode.value = 'component'
+    iconMode.value = 'emoji'
   }
   formVisible.value = true
 }
@@ -380,6 +415,11 @@ onMounted(() => fetchCategories())
   font-size: 11px;
   margin-top: 4px;
   color: inherit;
+}
+
+.icon-emoji-display {
+  font-size: 28px;
+  line-height: 32px;
 }
 
 .icon-upload-area {
