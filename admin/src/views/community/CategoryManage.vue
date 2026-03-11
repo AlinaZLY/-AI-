@@ -18,24 +18,12 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'icon'">
-          <!-- 组件图标 -->
-          <component
-            v-if="record.icon && iconMap[record.icon]"
-            :is="iconMap[record.icon]"
-            style="font-size: 24px"
-          />
-          <!-- Emoji图标 -->
-          <span v-else-if="record.icon && isEmoji(record.icon)" class="icon-emoji-display">
-            {{ record.icon }}
-          </span>
-          <!-- URL图标 -->
           <a-avatar
-            v-else-if="record.icon && isUrl(record.icon)"
+            v-if="record.icon && isUrl(record.icon)"
             :size="32"
             :src="getIconUrl(record.icon)"
             shape="square"
           />
-          <!-- 无图标 -->
           <a-avatar v-else :size="32" shape="square" style="background-color: #f0f0f0; color: #999">
             <AppstoreOutlined />
           </a-avatar>
@@ -81,37 +69,11 @@
         </a-form-item>
         <a-form-item label="分类图标">
           <a-radio-group v-model:value="iconMode" style="margin-bottom: 12px">
-            <a-radio-button value="emoji">Emoji图标</a-radio-button>
-            <a-radio-button value="component">组件图标</a-radio-button>
             <a-radio-button value="upload">上传图标</a-radio-button>
             <a-radio-button value="url">图标URL</a-radio-button>
           </a-radio-group>
-          <!-- Emoji图标选择 -->
-          <div v-if="iconMode === 'emoji'" class="icon-grid emoji-grid">
-            <div
-              v-for="item in emojiOptions"
-              :key="item.emoji"
-              :class="['icon-grid-item', { active: formData.icon === item.emoji }]"
-              @click="formData.icon = item.emoji"
-            >
-              <span style="font-size: 24px">{{ item.emoji }}</span>
-              <div class="icon-grid-label">{{ item.label }}</div>
-            </div>
-          </div>
-          <!-- 组件图标选择 -->
-          <div v-if="iconMode === 'component'" class="icon-grid">
-            <div
-              v-for="item in iconOptions"
-              :key="item.name"
-              :class="['icon-grid-item', { active: formData.icon === item.name }]"
-              @click="formData.icon = item.name"
-            >
-              <component :is="item.comp" style="font-size: 20px" />
-              <div class="icon-grid-label">{{ item.label }}</div>
-            </div>
-          </div>
           <!-- 上传图标 -->
-          <div v-else-if="iconMode === 'upload'" class="icon-upload-area">
+          <div v-if="iconMode === 'upload'" class="icon-upload-area">
             <a-upload
               :show-upload-list="false"
               :before-upload="handleIconUpload"
@@ -134,7 +96,10 @@
           </div>
           <!-- URL输入 -->
           <div v-else>
-            <a-input v-model:value="formData.icon" placeholder="输入图标URL，如 https://example.com/icon.png" />
+            <a-input v-model:value="formData.icon" placeholder="输入图标URL，如 https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/light/openai.png" />
+            <div style="margin-top: 4px; color: #999; font-size: 12px">
+              推荐使用 <a href="https://lobehub.com/zh/icons" target="_blank">Lobe Icons</a> 图标库
+            </div>
             <div v-if="formData.icon && formData.icon.startsWith('http')" style="margin-top: 8px">
               <span style="margin-right: 8px; color: #999">预览:</span>
               <a-avatar :size="32" :src="formData.icon" shape="square" />
@@ -162,72 +127,15 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import {
-  PlusOutlined, EditOutlined, AppstoreOutlined,
-  TrophyOutlined, FormOutlined, CompassOutlined, BankOutlined,
-  CodeOutlined, MoreOutlined, BookOutlined, RocketOutlined,
-  TeamOutlined, HeartOutlined, StarOutlined, BulbOutlined,
-  FireOutlined, ThunderboltOutlined, CrownOutlined, FlagOutlined,
-  SmileOutlined, CoffeeOutlined, ToolOutlined, GlobalOutlined,
-} from '@ant-design/icons-vue'
+import { PlusOutlined, EditOutlined, AppstoreOutlined } from '@ant-design/icons-vue'
 import {
   getCategoriesApi, createCategoryApi, updateCategoryApi,
   deleteCategoryApi, uploadCategoryIconApi, getPostsApi,
 } from '@/api/community'
 
-// 图标名 → 组件映射
-const iconMap: Record<string, any> = {
-  TrophyOutlined, FormOutlined, CompassOutlined, BankOutlined,
-  CodeOutlined, MoreOutlined, BookOutlined, RocketOutlined,
-  TeamOutlined, HeartOutlined, StarOutlined, BulbOutlined,
-  FireOutlined, ThunderboltOutlined, CrownOutlined, FlagOutlined,
-  SmileOutlined, CoffeeOutlined, ToolOutlined, GlobalOutlined,
-  AppstoreOutlined,
-}
-
-// 可选图标列表
-const iconOptions = [
-  { name: 'TrophyOutlined', comp: TrophyOutlined, label: '奖杯' },
-  { name: 'FormOutlined', comp: FormOutlined, label: '表单' },
-  { name: 'CompassOutlined', comp: CompassOutlined, label: '指南' },
-  { name: 'BankOutlined', comp: BankOutlined, label: '银行' },
-  { name: 'CodeOutlined', comp: CodeOutlined, label: '代码' },
-  { name: 'BookOutlined', comp: BookOutlined, label: '书本' },
-  { name: 'RocketOutlined', comp: RocketOutlined, label: '火箭' },
-  { name: 'TeamOutlined', comp: TeamOutlined, label: '团队' },
-  { name: 'HeartOutlined', comp: HeartOutlined, label: '心形' },
-  { name: 'StarOutlined', comp: StarOutlined, label: '星星' },
-  { name: 'BulbOutlined', comp: BulbOutlined, label: '灯泡' },
-  { name: 'FireOutlined', comp: FireOutlined, label: '火焰' },
-  { name: 'ThunderboltOutlined', comp: ThunderboltOutlined, label: '闪电' },
-  { name: 'CrownOutlined', comp: CrownOutlined, label: '皇冠' },
-  { name: 'FlagOutlined', comp: FlagOutlined, label: '旗帜' },
-  { name: 'SmileOutlined', comp: SmileOutlined, label: '笑脸' },
-  { name: 'CoffeeOutlined', comp: CoffeeOutlined, label: '咖啡' },
-  { name: 'ToolOutlined', comp: ToolOutlined, label: '工具' },
-  { name: 'GlobalOutlined', comp: GlobalOutlined, label: '全球' },
-  { name: 'MoreOutlined', comp: MoreOutlined, label: '更多' },
-]
-
 const loading = ref(false)
 const categories = ref<any[]>([])
-const emojiOptions = [
-  { emoji: '🏆', label: '奖杯' }, { emoji: '📝', label: '笔记' }, { emoji: '🧭', label: '指南' },
-  { emoji: '🏢', label: '公司' }, { emoji: '💻', label: '电脑' }, { emoji: '💬', label: '聊天' },
-  { emoji: '🎯', label: '目标' }, { emoji: '🎓', label: '毕业' }, { emoji: '📚', label: '书本' },
-  { emoji: '🚀', label: '火箭' }, { emoji: '💡', label: '灯泡' }, { emoji: '🔥', label: '火焰' },
-  { emoji: '⭐', label: '星星' }, { emoji: '❤️', label: '心形' }, { emoji: '👥', label: '团队' },
-  { emoji: '🎉', label: '庆祝' }, { emoji: '📊', label: '图表' }, { emoji: '🛠️', label: '工具' },
-  { emoji: '🌐', label: '全球' }, { emoji: '☕', label: '咖啡' },
-]
-
-function isEmoji(str: string) {
-  if (!str) return false
-  const emojiRegex = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F|[\u200d\uFE0F])+$/u
-  return emojiRegex.test(str) && !isUrl(str) && !iconMap[str]
-}
-
-const iconMode = ref<'emoji' | 'component' | 'upload' | 'url'>('emoji')
+const iconMode = ref<'upload' | 'url'>('url')
 
 const columns = [
   { title: '图标', key: 'icon', width: 70 },
@@ -302,7 +210,7 @@ function openCreateModal() {
   formData.color = 'blue'
   formData.description = ''
   formData.sort = 0
-  iconMode.value = 'emoji'
+  iconMode.value = 'url'
   formVisible.value = true
 }
 
@@ -313,17 +221,10 @@ function openEditModal(record: any) {
   formData.color = record.color || 'blue'
   formData.description = record.description || ''
   formData.sort = record.sort || 0
-  // 自动识别图标模式
-  if (record.icon && isEmoji(record.icon)) {
-    iconMode.value = 'emoji'
-  } else if (record.icon && iconMap[record.icon]) {
-    iconMode.value = 'component'
-  } else if (record.icon && record.icon.startsWith('http')) {
-    iconMode.value = 'url'
-  } else if (record.icon && record.icon.startsWith('/')) {
+  if (record.icon && record.icon.startsWith('/')) {
     iconMode.value = 'upload'
   } else {
-    iconMode.value = 'emoji'
+    iconMode.value = 'url'
   }
   formVisible.value = true
 }
@@ -380,46 +281,6 @@ onMounted(() => fetchCategories())
     justify-content: flex-end;
     margin-bottom: 16px;
   }
-}
-
-.icon-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-}
-
-.icon-grid-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 4px;
-  border: 1px solid #d9d9d9;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: #1677ff;
-    color: #1677ff;
-  }
-
-  &.active {
-    border-color: #1677ff;
-    background-color: #e6f4ff;
-    color: #1677ff;
-  }
-}
-
-.icon-grid-label {
-  font-size: 11px;
-  margin-top: 4px;
-  color: inherit;
-}
-
-.icon-emoji-display {
-  font-size: 28px;
-  line-height: 32px;
 }
 
 .icon-upload-area {
