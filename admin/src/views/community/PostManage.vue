@@ -253,7 +253,8 @@ const categoryList = ref<any[]>([])
 
 async function fetchCategories() {
   try {
-    categoryList.value = await getCategoriesApi()
+    const res = await getCategoriesApi()
+    categoryList.value = res.data || []
   } catch {
     categoryList.value = []
   }
@@ -327,8 +328,8 @@ async function fetchPosts() {
       categoryId: categoryId.value || undefined,
       status: statusFilter.value || undefined,
     })
-    posts.value = res.list
-    pagination.total = res.total
+    posts.value = res.data?.list || []
+    pagination.total = res.data?.total || 0
   } catch {
     message.error('获取帖子列表失败')
   } finally {
@@ -401,12 +402,14 @@ async function showDetail(record: any) {
   detailVisible.value = true
   commentsLoading.value = true
   try {
-    currentPost.value = await getPostDetailApi(record.id)
+    const detailRes = await getPostDetailApi(record.id)
+    currentPost.value = detailRes.data
   } catch {
     currentPost.value = record
   }
   try {
-    comments.value = await getCommentsApi(record.id)
+    const commentsRes = await getCommentsApi(record.id)
+    comments.value = commentsRes.data || []
   } catch {
     comments.value = []
   } finally {
@@ -419,7 +422,8 @@ async function handleDeleteComment(id: number) {
     await deleteCommentApi(id)
     message.success('评论已删除')
     if (currentPost.value) {
-      comments.value = await getCommentsApi(currentPost.value.id)
+      const cRes = await getCommentsApi(currentPost.value.id)
+      comments.value = cRes.data || []
       currentPost.value.commentCount = comments.value.length
     }
   } catch {

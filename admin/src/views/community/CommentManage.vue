@@ -104,8 +104,8 @@ async function fetchComments() {
       pageSize: pagination.pageSize,
       keyword: keyword.value || undefined,
     })
-    commentsList.value = res.list
-    pagination.total = res.total
+    commentsList.value = res.data?.list || []
+    pagination.total = res.data?.total || 0
   } catch {
     message.error('获取评论列表失败')
   } finally {

@@ -162,12 +162,13 @@ function formatTime(time: string) {
 async function fetchCategories() {
   loading.value = true
   try {
-    const list = await getCategoriesApi()
+    const res = await getCategoriesApi()
+    const list = res.data || []
     // 获取每个分类的帖子数
     for (const cat of list) {
       try {
-        const res = await getPostsApi({ categoryId: cat.id, pageSize: 1 })
-        cat._postCount = res.total
+        const postRes = await getPostsApi({ categoryId: cat.id, pageSize: 1 })
+        cat._postCount = postRes.data?.total ?? 0
       } catch {
         cat._postCount = 0
       }
@@ -203,7 +204,7 @@ function openEditModal(record: any) {
 async function handleIconUpload(file: File) {
   try {
     const res = await uploadCategoryIconApi(file)
-    formData.icon = res.url
+    formData.icon = res.data?.url || ''
     message.success('图标上传成功')
   } catch {
     message.error('图标上传失败')
