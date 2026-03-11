@@ -55,9 +55,6 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['面试经验'],
           userId: 1,
           status: PostStatus.APPROVED,
-          viewCount: 128,
-          likeCount: 32,
-          commentCount: 5,
         },
         {
           title: '腾讯2025春招笔试真题及解析',
@@ -65,9 +62,6 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['笔试真题'],
           userId: 1,
           status: PostStatus.APPROVED,
-          viewCount: 256,
-          likeCount: 45,
-          commentCount: 12,
         },
         {
           title: '应届生如何写一份出色的简历？',
@@ -75,9 +69,6 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['求职交流'],
           userId: 1,
           status: PostStatus.APPROVED,
-          viewCount: 189,
-          likeCount: 56,
-          commentCount: 8,
         },
         {
           title: '在阿里实习三个月的真实感受',
@@ -85,9 +76,6 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['公司点评'],
           userId: 1,
           status: PostStatus.APPROVED,
-          viewCount: 342,
-          likeCount: 78,
-          commentCount: 15,
         },
         {
           title: '前端开发者必须掌握的 TypeScript 技巧',
@@ -95,9 +83,6 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['技术分享'],
           userId: 1,
           status: PostStatus.APPROVED,
-          viewCount: 215,
-          likeCount: 63,
-          commentCount: 9,
         },
         {
           title: '秋招结束，分享一下我的 offer 对比思路',
@@ -105,13 +90,45 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['求职交流'],
           userId: 1,
           status: PostStatus.APPROVED,
-          viewCount: 167,
-          likeCount: 41,
-          commentCount: 7,
         },
       ];
-      await this.postRepo.save(this.postRepo.create(postSeeds));
+      const savedPosts = await this.postRepo.save(this.postRepo.create(postSeeds));
       console.log('帖子种子数据已初始化');
+
+      // 评论种子数据（真实评论记录）
+      const postIdMap: Record<string, number> = {};
+      for (const p of savedPosts) postIdMap[p.title] = p.id;
+
+      const commentSeeds = [
+        // 字节跳动面试帖评论
+        { postId: postIdMap['字节跳动后端开发一面经验分享'], userId: 1, content: '感谢分享！请问算法题有限制时间吗？' },
+        { postId: postIdMap['字节跳动后端开发一面经验分享'], userId: 1, content: 'Redis 那道题具体问了哪些场景？' },
+        { postId: postIdMap['字节跳动后端开发一面经验分享'], userId: 1, content: '我下周也要面字节了，收藏了！' },
+        // 腾讯笔试帖评论
+        { postId: postIdMap['腾讯2025春招笔试真题及解析'], userId: 1, content: '第二题是不是就是 LeetCode 53？' },
+        { postId: postIdMap['腾讯2025春招笔试真题及解析'], userId: 1, content: '滑动窗口那道题我也遇到了，双指针解法更好理解' },
+        // 简历帖评论
+        { postId: postIdMap['应届生如何写一份出色的简历？'], userId: 1, content: '量化成果这点太重要了，之前简历一直没写数据' },
+        { postId: postIdMap['应届生如何写一份出色的简历？'], userId: 1, content: '请问没有实习经历的话项目经历怎么写比较好？' },
+        // 阿里实习帖评论
+        { postId: postIdMap['在阿里实习三个月的真实感受'], userId: 1, content: '请问转正率高吗？' },
+        { postId: postIdMap['在阿里实习三个月的真实感受'], userId: 1, content: '阿里的 Code Review 流程是怎样的？' },
+        { postId: postIdMap['在阿里实习三个月的真实感受'], userId: 1, content: '羡慕了！我也想去阿里实习' },
+        // TypeScript帖评论
+        { postId: postIdMap['前端开发者必须掌握的 TypeScript 技巧'], userId: 1, content: '工具类型那部分讲得很清楚，收藏了' },
+        { postId: postIdMap['前端开发者必须掌握的 TypeScript 技巧'], userId: 1, content: '能再讲讲 infer 关键字吗？一直搞不太懂' },
+        // offer对比帖评论
+        { postId: postIdMap['秋招结束，分享一下我的 offer 对比思路'], userId: 1, content: '城市因素确实很重要，生活成本差距太大了' },
+        { postId: postIdMap['秋招结束，分享一下我的 offer 对比思路'], userId: 1, content: '恭喜拿到offer！能分享下最终选了哪家吗？' },
+      ];
+      await this.commentRepo.save(this.commentRepo.create(commentSeeds));
+
+      // 更新帖子的 commentCount 为真实评论数
+      for (const post of savedPosts) {
+        const count = await this.commentRepo.count({ where: { postId: post.id } });
+        await this.postRepo.update(post.id, { commentCount: count });
+      }
+      console.log('评论种子数据已初始化');
     }
   }
 

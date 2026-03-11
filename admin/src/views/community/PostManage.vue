@@ -385,11 +385,17 @@ function openCreateModal() {
   formVisible.value = true
 }
 
-function openEditModal(record: any) {
+async function openEditModal(record: any) {
   editingId.value = record.id
   formData.title = record.title
-  formData.content = record.content || ''
   formData.categoryId = record.categoryId || undefined
+  // 列表接口不返回content，需要调详情接口获取
+  try {
+    const res = await getPostDetailApi(record.id)
+    formData.content = res.data?.content || ''
+  } catch {
+    formData.content = record.content || ''
+  }
   formVisible.value = true
 }
 
