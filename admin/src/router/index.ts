@@ -29,6 +29,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '个人资料', icon: 'UserOutlined' },
       },
       {
+        path: 'community/posts',
+        name: 'PostManage',
+        component: () => import('@/views/community/PostManage.vue'),
+        meta: { title: '帖子管理', icon: 'MessageOutlined', roles: ['admin'] },
+      },
+      {
         path: 'system/settings',
         name: 'SystemSettings',
         component: () => import('@/views/system/SettingsView.vue'),

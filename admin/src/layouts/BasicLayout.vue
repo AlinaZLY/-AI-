@@ -21,6 +21,10 @@
           <DashboardOutlined />
           <span>仪表盘</span>
         </a-menu-item>
+        <a-menu-item v-if="userStore.userInfo?.role === 'admin'" key="community/posts">
+          <MessageOutlined />
+          <span>帖子管理</span>
+        </a-menu-item>
         <a-menu-item v-if="userStore.userInfo?.role === 'admin'" key="system/settings">
           <SettingOutlined />
           <span>系统设置</span>
@@ -100,6 +104,7 @@ import {
   LockOutlined,
   LogoutOutlined,
   SettingOutlined,
+  MessageOutlined,
 } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
