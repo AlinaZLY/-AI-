@@ -13,7 +13,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as svgCaptcha from 'svg-captcha';
-import { User } from '../user/entities/user.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RedisService } from '@common/redis/redis.service';
@@ -64,7 +64,7 @@ export class AuthService {
    * 先校验验证码，再验证用户名和密码，成功后签发 JWT Token
    */
   async login(loginDto: LoginDto) {
-    const { username, password, captcha, captchaKey } = loginDto;
+    const { username, password, captcha, captchaKey, platform } = loginDto;
 
     // 校验验证码
     const cachedCaptcha = await this.redisService.get(`captcha:${captchaKey}`);
@@ -95,6 +95,11 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    // 管理后台只允许 admin 角色登录
+    if (platform === 'admin' && user.role !== UserRole.ADMIN) {
+      throw new UnauthorizedException('无权访问管理后台');
     }
 
     // 生成 JWT

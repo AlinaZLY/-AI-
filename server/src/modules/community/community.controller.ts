@@ -96,7 +96,7 @@ export class CommunityController {
   @UseGuards(JwtAuthGuard)
   @HttpPost('posts')
   createPost(@Request() req, @Body() dto: CreatePostDto) {
-    return this.communityService.createPost(req.user.id, dto);
+    return this.communityService.createPost(req.user.id, dto, req.user.role);
   }
 
   /** 帖子列表（支持分页、分类筛选、关键词搜索） */

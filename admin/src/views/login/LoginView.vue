@@ -124,13 +124,6 @@
                   <span class="account-detail">admin / admin123</span>
                 </div>
               </div>
-              <div class="account-item" @click="fillAccount('enterprise', 'enter123')">
-                <BankOutlined class="account-icon" />
-                <div class="account-info">
-                  <span class="account-label">企业账号</span>
-                  <span class="account-detail">enterprise / enter123</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -147,7 +140,6 @@ import {
   SafetyCertificateOutlined,
   CheckCircleOutlined,
   TeamOutlined,
-  BankOutlined,
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { useUserStore } from '@/stores/user'

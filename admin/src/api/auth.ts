@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 /* 管理员登录 */
 export function loginApi(data: { username: string; password: string; captcha: string; captchaKey: string }) {
-  return request.post('/auth/login', data)
+  return request.post('/auth/login', { ...data, platform: 'admin' })
 }
 
 /* 获取图形验证码 */

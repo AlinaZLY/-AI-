@@ -189,8 +189,10 @@ export class CommunityService implements OnModuleInit {
 
   // ==================== 帖子 ====================
 
-  async createPost(userId: number, dto: CreatePostDto): Promise<Post> {
-    const post = this.postRepo.create({ ...dto, userId });
+  async createPost(userId: number, dto: CreatePostDto, userRole?: string): Promise<Post> {
+    // 管理员创建的帖子强制标记为平台帖子
+    const source = userRole === UserRole.ADMIN ? PostSource.PLATFORM : (dto.source || PostSource.USER);
+    const post = this.postRepo.create({ ...dto, userId, source });
     return this.postRepo.save(post);
   }
 

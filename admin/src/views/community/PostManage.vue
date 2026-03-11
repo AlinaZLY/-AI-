@@ -164,9 +164,8 @@
           </a-select>
         </a-form-item>
         <a-form-item label="帖子来源">
-          <a-radio-group v-model:value="formData.source">
+          <a-radio-group v-model:value="formData.source" disabled>
             <a-radio value="platform">平台帖子</a-radio>
-            <a-radio value="user">用户帖子</a-radio>
           </a-radio-group>
         </a-form-item>
         <a-form-item label="内容" required>
