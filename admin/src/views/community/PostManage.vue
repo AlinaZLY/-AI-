@@ -22,6 +22,17 @@
         <a-select-option value="company">公司点评</a-select-option>
         <a-select-option value="other">其他</a-select-option>
       </a-select>
+      <a-select
+        v-model:value="statusFilter"
+        placeholder="审核状态"
+        style="width: 140px; margin-left: 12px"
+        allow-clear
+        @change="handleSearch"
+      >
+        <a-select-option value="pending">待审核</a-select-option>
+        <a-select-option value="approved">已通过</a-select-option>
+        <a-select-option value="rejected">已拒绝</a-select-option>
+      </a-select>
     </div>
 
     <!-- 帖子列表表格 -->
@@ -61,6 +72,11 @@
             <MessageOutlined /> {{ record.commentCount }}
           </span>
         </template>
+        <template v-if="column.key === 'status'">
+          <a-tag :color="statusColor(record.status)">
+            {{ statusLabel(record.status) }}
+          </a-tag>
+        </template>
         <template v-if="column.key === 'createdAt'">
           {{ formatTime(record.createdAt) }}
         </template>
@@ -68,6 +84,24 @@
           <a-space>
             <a-button type="link" size="small" @click="showDetail(record)">
               <EyeOutlined /> 查看
+            </a-button>
+            <a-button
+              v-if="record.status === 'pending'"
+              type="link"
+              size="small"
+              style="color: #52c41a"
+              @click="handleReview(record.id, 'approved')"
+            >
+              <CheckOutlined /> 通过
+            </a-button>
+            <a-button
+              v-if="record.status === 'pending'"
+              type="link"
+              size="small"
+              style="color: #faad14"
+              @click="showRejectModal(record.id)"
+            >
+              <CloseOutlined /> 拒绝
             </a-button>
             <a-popconfirm
               title="确定要删除此帖子吗？"
@@ -155,6 +189,21 @@
         </a-spin>
       </div>
     </a-modal>
+
+    <!-- 拒绝原因弹窗 -->
+    <a-modal
+      v-model:open="rejectVisible"
+      title="拒绝帖子"
+      ok-text="确认拒绝"
+      cancel-text="取消"
+      @ok="handleReject"
+    >
+      <a-textarea
+        v-model:value="rejectReason"
+        placeholder="请输入拒绝原因（可选）"
+        :rows="3"
+      />
+    </a-modal>
   </div>
 </template>
 
@@ -167,11 +216,14 @@ import {
   MessageOutlined,
   StarOutlined,
   DeleteOutlined,
+  CheckOutlined,
+  CloseOutlined,
 } from '@ant-design/icons-vue'
-import { getPostsApi, getPostDetailApi, deletePostApi, getCommentsApi, deleteCommentApi } from '@/api/community'
+import { getPostsApi, getPostDetailApi, deletePostApi, getCommentsApi, deleteCommentApi, reviewPostApi } from '@/api/community'
 
 const keyword = ref('')
 const category = ref<string | undefined>(undefined)
+const statusFilter = ref<string | undefined>(undefined)
 const loading = ref(false)
 const posts = ref<any[]>([])
 const pagination = reactive({
@@ -186,15 +238,19 @@ const detailVisible = ref(false)
 const currentPost = ref<any>(null)
 const comments = ref<any[]>([])
 const commentsLoading = ref(false)
+const rejectVisible = ref(false)
+const rejectReason = ref('')
+const rejectPostId = ref<number>(0)
 
 const columns = [
   { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
   { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
   { title: '分类', key: 'category', width: 100 },
   { title: '作者', key: 'user', width: 140 },
+  { title: '状态', key: 'status', width: 90 },
   { title: '数据', key: 'stats', width: 180 },
   { title: '发布时间', key: 'createdAt', width: 170 },
-  { title: '操作', key: 'action', width: 140, fixed: 'right' as const },
+  { title: '操作', key: 'action', width: 220, fixed: 'right' as const },
 ]
 
 const categoryMap: Record<string, { label: string; color: string }> = {
@@ -211,6 +267,20 @@ function categoryLabel(cat: string) {
 
 function categoryColor(cat: string) {
   return categoryMap[cat]?.color || 'default'
+}
+
+const statusMap: Record<string, { label: string; color: string }> = {
+  pending: { label: '待审核', color: 'gold' },
+  approved: { label: '已通过', color: 'green' },
+  rejected: { label: '已拒绝', color: 'red' },
+}
+
+function statusLabel(s: string) {
+  return statusMap[s]?.label || s
+}
+
+function statusColor(s: string) {
+  return statusMap[s]?.color || 'default'
 }
 
 function formatTime(time: string) {
@@ -231,6 +301,7 @@ async function fetchPosts() {
       pageSize: pagination.pageSize,
       keyword: keyword.value || undefined,
       category: category.value || undefined,
+      status: statusFilter.value || undefined,
     })
     posts.value = res.list
     pagination.total = res.total
@@ -292,6 +363,33 @@ async function handleDeleteComment(id: number) {
     }
   } catch {
     message.error('删除评论失败')
+  }
+}
+
+async function handleReview(id: number, status: string) {
+  try {
+    await reviewPostApi(id, { status })
+    message.success('审核通过')
+    fetchPosts()
+  } catch {
+    message.error('审核操作失败')
+  }
+}
+
+function showRejectModal(id: number) {
+  rejectPostId.value = id
+  rejectReason.value = ''
+  rejectVisible.value = true
+}
+
+async function handleReject() {
+  try {
+    await reviewPostApi(rejectPostId.value, { status: 'rejected', rejectReason: rejectReason.value })
+    message.success('已拒绝该帖子')
+    rejectVisible.value = false
+    fetchPosts()
+  } catch {
+    message.error('操作失败')
   }
 }
 

@@ -7,6 +7,7 @@ export function getPostsApi(params: {
   category?: string
   keyword?: string
   sort?: string
+  status?: string
 }) {
   return request.get('/community/posts', { params })
 }
@@ -19,6 +20,11 @@ export function getPostDetailApi(id: number) {
 /** 删除帖子 */
 export function deletePostApi(id: number) {
   return request.delete(`/community/posts/${id}`)
+}
+
+/** 审核帖子 */
+export function reviewPostApi(id: number, data: { status: string; rejectReason?: string }) {
+  return request.put(`/community/posts/${id}/review`, data)
 }
 
 /** 获取帖子评论列表 */

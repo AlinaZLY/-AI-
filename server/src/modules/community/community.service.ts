@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { Post } from './entities/post.entity';
+import { Post, PostStatus } from './entities/post.entity';
 import { Comment } from './entities/comment.entity';
 import { PostLike } from './entities/post-like.entity';
 import { PostFavorite } from './entities/post-favorite.entity';
@@ -29,17 +29,27 @@ export class CommunityService {
     return this.postRepo.save(post);
   }
 
-  async getPosts(query: QueryPostDto, userId?: number) {
-    const { page = 1, pageSize = 10, category, keyword, sort } = query;
+  async getPosts(query: QueryPostDto, userId?: number, userRole?: string) {
+    const { page = 1, pageSize = 10, category, keyword, sort, status } = query;
     const qb = this.postRepo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
       .select([
         'post.id', 'post.title', 'post.category', 'post.userId',
         'post.viewCount', 'post.likeCount', 'post.commentCount',
-        'post.favoriteCount', 'post.isTop', 'post.createdAt', 'post.updatedAt',
+        'post.favoriteCount', 'post.isTop', 'post.status', 'post.rejectReason',
+        'post.createdAt', 'post.updatedAt',
         'user.id', 'user.username', 'user.nickname', 'user.avatar',
       ]);
+
+    // 管理员可按状态筛选，非管理员只能看已通过的帖子
+    if (userRole === UserRole.ADMIN) {
+      if (status) {
+        qb.andWhere('post.status = :status', { status });
+      }
+    } else {
+      qb.andWhere('post.status = :status', { status: PostStatus.APPROVED });
+    }
 
     if (category) {
       qb.andWhere('post.category = :category', { category });
@@ -137,6 +147,25 @@ export class CommunityService {
     }
 
     await this.postRepo.remove(post);
+  }
+
+  async reviewPost(postId: number, userRole: UserRole, status: string, rejectReason?: string) {
+    if (userRole !== UserRole.ADMIN) {
+      throw new ForbiddenException('仅管理员可审核帖子');
+    }
+    const post = await this.postRepo.findOne({ where: { id: postId } });
+    if (!post) throw new NotFoundException('帖子不存在');
+
+    if (status === PostStatus.APPROVED) {
+      post.status = PostStatus.APPROVED;
+      post.rejectReason = null;
+    } else if (status === PostStatus.REJECTED) {
+      post.status = PostStatus.REJECTED;
+      post.rejectReason = rejectReason || null;
+    } else {
+      throw new ForbiddenException('无效的审核状态');
+    }
+    return this.postRepo.save(post);
   }
 
   // ==================== 点赞 ====================

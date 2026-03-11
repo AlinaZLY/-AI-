@@ -19,6 +19,13 @@ export enum PostCategory {
   OTHER = 'other',               // 其他
 }
 
+/** 帖子审核状态枚举 */
+export enum PostStatus {
+  PENDING = 'pending',     // 待审核
+  APPROVED = 'approved',   // 已通过
+  REJECTED = 'rejected',   // 已拒绝
+}
+
 @Entity('posts')
 export class Post {
   @PrimaryGeneratedColumn()
@@ -44,6 +51,17 @@ export class Post {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @Column({
+    type: 'enum',
+    enum: PostStatus,
+    default: PostStatus.PENDING,
+    comment: '审核状态',
+  })
+  status: PostStatus;
+
+  @Column({ length: 200, nullable: true, comment: '拒绝原因' })
+  rejectReason: string;
 
   @Column({ default: 0, comment: '浏览量' })
   viewCount: number;

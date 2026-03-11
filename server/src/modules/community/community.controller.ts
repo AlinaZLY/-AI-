@@ -35,7 +35,8 @@ export class CommunityController {
   @Get('posts')
   getPosts(@Query() query: QueryPostDto, @Request() req) {
     const userId = req.user?.id;
-    return this.communityService.getPosts(query, userId);
+    const userRole = req.user?.role;
+    return this.communityService.getPosts(query, userId, userRole);
   }
 
   /** 帖子详情 */
@@ -61,6 +62,17 @@ export class CommunityController {
   @Delete('posts/:id')
   deletePost(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.communityService.deletePost(id, req.user.id, req.user.role);
+  }
+
+  /** 审核帖子（仅管理员） */
+  @UseGuards(JwtAuthGuard)
+  @Put('posts/:id/review')
+  reviewPost(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+    @Body() body: { status: string; rejectReason?: string },
+  ) {
+    return this.communityService.reviewPost(id, req.user.role, body.status, body.rejectReason);
   }
 
   /** 点赞/取消点赞帖子 */
