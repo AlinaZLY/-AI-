@@ -41,6 +41,7 @@ export function getPostsApi(params: {
   keyword?: string
   sort?: string
   status?: string
+  source?: string
 }) {
   return request.get('/community/posts', { params })
 }
@@ -51,12 +52,12 @@ export function getPostDetailApi(id: number) {
 }
 
 /** 创建帖子 */
-export function createPostApi(data: { title: string; content: string; categoryId?: number }) {
+export function createPostApi(data: { title: string; content: string; categoryId?: number; source?: string }) {
   return request.post('/community/posts', data)
 }
 
 /** 更新帖子 */
-export function updatePostApi(id: number, data: { title?: string; content?: string; categoryId?: number }) {
+export function updatePostApi(id: number, data: { title?: string; content?: string; categoryId?: number; enabled?: boolean; source?: string }) {
   return request.put(`/community/posts/${id}`, data)
 }
 
@@ -68,6 +69,11 @@ export function deletePostApi(id: number) {
 /** 审核帖子 */
 export function reviewPostApi(id: number, data: { status: string; rejectReason?: string }) {
   return request.put(`/community/posts/${id}/review`, data)
+}
+
+/** 切换帖子启用/关闭状态 */
+export function togglePostEnabledApi(id: number) {
+  return request.put(`/community/posts/${id}/toggle-enabled`)
 }
 
 /** 获取帖子评论列表 */

@@ -1,7 +1,7 @@
 import { IsOptional, IsString, IsEnum, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
-import { PostStatus } from '../entities/post.entity';
+import { PostStatus, PostSource } from '../entities/post.entity';
 
 export class QueryPostDto extends PaginationDto {
   @IsOptional()
@@ -20,4 +20,8 @@ export class QueryPostDto extends PaginationDto {
   @IsOptional()
   @IsEnum(PostStatus)
   status?: PostStatus;
+
+  @IsOptional()
+  @IsEnum(PostSource)
+  source?: PostSource;
 }

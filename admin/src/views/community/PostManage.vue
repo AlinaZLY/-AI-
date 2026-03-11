@@ -32,6 +32,16 @@
           <a-select-option value="approved">已通过</a-select-option>
           <a-select-option value="rejected">已拒绝</a-select-option>
         </a-select>
+        <a-select
+          v-model:value="sourceFilter"
+          placeholder="帖子来源"
+          style="width: 130px"
+          allow-clear
+          @change="handleSearch"
+        >
+          <a-select-option value="platform">平台帖子</a-select-option>
+          <a-select-option value="user">用户帖子</a-select-option>
+        </a-select>
       </div>
       <a-button type="primary" @click="openCreateModal">
         <PlusOutlined /> 新建帖子
@@ -84,6 +94,19 @@
           <a-tooltip v-if="record.status === 'rejected' && record.rejectReason" :title="record.rejectReason">
             <InfoCircleOutlined style="color: #ff4d4f; cursor: pointer; margin-left: 4px" />
           </a-tooltip>
+        </template>
+        <template v-if="column.key === 'source'">
+          <a-tag :color="record.source === 'platform' ? 'blue' : 'default'">
+            {{ record.source === 'platform' ? '平台' : '用户' }}
+          </a-tag>
+        </template>
+        <template v-if="column.key === 'enabled'">
+          <a-switch
+            :checked="record.enabled"
+            checked-children="启用"
+            un-checked-children="关闭"
+            @change="handleToggleEnabled(record.id)"
+          />
         </template>
         <template v-if="column.key === 'createdAt'">
           {{ formatTime(record.createdAt) }}
@@ -139,6 +162,12 @@
               {{ cat.name }}
             </a-select-option>
           </a-select>
+        </a-form-item>
+        <a-form-item label="帖子来源">
+          <a-radio-group v-model:value="formData.source">
+            <a-radio value="platform">平台帖子</a-radio>
+            <a-radio value="user">用户帖子</a-radio>
+          </a-radio-group>
         </a-form-item>
         <a-form-item label="内容" required>
           <div style="border: 1px solid #d9d9d9; border-radius: 6px; overflow: hidden; z-index: 100">
@@ -260,7 +289,7 @@ import {
 import {
   getPostsApi, getPostDetailApi, createPostApi, updatePostApi,
   deletePostApi, getCommentsApi, deleteCommentApi, reviewPostApi,
-  getCategoriesApi,
+  getCategoriesApi, togglePostEnabledApi,
 } from '@/api/community'
 
 // ========== 分类列表 ==========
@@ -292,6 +321,7 @@ async function fetchCategories() {
 const keyword = ref('')
 const categoryId = ref<number | undefined>(undefined)
 const statusFilter = ref<string | undefined>(undefined)
+const sourceFilter = ref<string | undefined>(undefined)
 const loading = ref(false)
 const posts = ref<any[]>([])
 const pagination = reactive({
@@ -306,8 +336,10 @@ const columns = [
   { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
   { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
   { title: '分类', key: 'category', width: 100 },
+  { title: '来源', key: 'source', width: 80 },
   { title: '作者', key: 'user', width: 130 },
   { title: '状态', key: 'status', width: 100 },
+  { title: '启用', key: 'enabled', width: 90 },
   { title: '数据', key: 'stats', width: 160 },
   { title: '发布时间', key: 'createdAt', width: 160 },
   { title: '操作', key: 'action', width: 200, fixed: 'right' as const },
@@ -317,7 +349,7 @@ const columns = [
 const formVisible = ref(false)
 const formLoading = ref(false)
 const editingId = ref<number | null>(null)
-const formData = reactive({ title: '', content: '', categoryId: undefined as number | undefined })
+const formData = reactive({ title: '', content: '', categoryId: undefined as number | undefined, source: 'platform' })
 
 // ========== 详情相关 ==========
 const detailVisible = ref(false)
@@ -355,6 +387,7 @@ async function fetchPosts() {
       keyword: keyword.value || undefined,
       categoryId: categoryId.value || undefined,
       status: statusFilter.value || undefined,
+      source: sourceFilter.value || undefined,
     })
     posts.value = res.data?.list || []
     pagination.total = res.data?.total || 0
@@ -382,6 +415,7 @@ function openCreateModal() {
   formData.title = ''
   formData.content = ''
   formData.categoryId = undefined
+  formData.source = 'platform'
   formVisible.value = true
 }
 
@@ -389,6 +423,7 @@ async function openEditModal(record: any) {
   editingId.value = record.id
   formData.title = record.title
   formData.categoryId = record.categoryId || undefined
+  formData.source = record.source || 'user'
   // 列表接口不返回content，需要调详情接口获取
   try {
     const res = await getPostDetailApi(record.id)
@@ -428,6 +463,16 @@ async function handleDelete(id: number) {
     fetchPosts()
   } catch {
     message.error('删除失败')
+  }
+}
+
+async function handleToggleEnabled(id: number) {
+  try {
+    await togglePostEnabledApi(id)
+    message.success('操作成功')
+    fetchPosts()
+  } catch {
+    message.error('操作失败')
   }
 }
 

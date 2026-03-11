@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { Post, PostStatus } from './entities/post.entity';
+import { Post, PostStatus, PostSource } from './entities/post.entity';
 import { Category } from './entities/category.entity';
 import { Comment } from './entities/comment.entity';
 import { PostLike } from './entities/post-like.entity';
@@ -55,6 +55,7 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['面试经验'],
           userId: 1,
           status: PostStatus.APPROVED,
+          source: PostSource.PLATFORM,
         },
         {
           title: '腾讯2025春招笔试真题及解析',
@@ -62,6 +63,7 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['笔试真题'],
           userId: 1,
           status: PostStatus.APPROVED,
+          source: PostSource.PLATFORM,
         },
         {
           title: '应届生如何写一份出色的简历？',
@@ -69,6 +71,7 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['求职交流'],
           userId: 1,
           status: PostStatus.APPROVED,
+          source: PostSource.PLATFORM,
         },
         {
           title: '在阿里实习三个月的真实感受',
@@ -76,6 +79,7 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['公司点评'],
           userId: 1,
           status: PostStatus.APPROVED,
+          source: PostSource.PLATFORM,
         },
         {
           title: '前端开发者必须掌握的 TypeScript 技巧',
@@ -83,6 +87,7 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['技术分享'],
           userId: 1,
           status: PostStatus.APPROVED,
+          source: PostSource.PLATFORM,
         },
         {
           title: '秋招结束，分享一下我的 offer 对比思路',
@@ -90,6 +95,7 @@ export class CommunityService implements OnModuleInit {
           categoryId: catMap['求职交流'],
           userId: 1,
           status: PostStatus.APPROVED,
+          source: PostSource.PLATFORM,
         },
       ];
       const savedPosts = await this.postRepo.save(this.postRepo.create(postSeeds));
@@ -179,7 +185,7 @@ export class CommunityService implements OnModuleInit {
   }
 
   async getPosts(query: QueryPostDto, userId?: number, userRole?: string) {
-    const { page = 1, pageSize = 10, categoryId, keyword, sort, status } = query;
+    const { page = 1, pageSize = 10, categoryId, keyword, sort, status, source } = query;
     const qb = this.postRepo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
@@ -188,18 +194,24 @@ export class CommunityService implements OnModuleInit {
         'post.id', 'post.title', 'post.categoryId', 'post.userId',
         'post.viewCount', 'post.likeCount', 'post.commentCount',
         'post.favoriteCount', 'post.isTop', 'post.status', 'post.rejectReason',
+        'post.enabled', 'post.source',
         'post.createdAt', 'post.updatedAt',
         'user.id', 'user.username', 'user.nickname', 'user.avatar',
         'category.id', 'category.name', 'category.icon', 'category.color',
       ]);
 
-    // 管理员可按状态筛选，非管理员只能看已通过的帖子
+    // 管理员可按状态筛选，非管理员只能看已通过且启用的帖子
     if (userRole === UserRole.ADMIN) {
       if (status) {
         qb.andWhere('post.status = :status', { status });
       }
     } else {
       qb.andWhere('post.status = :status', { status: PostStatus.APPROVED });
+      qb.andWhere('post.enabled = :enabled', { enabled: true });
+    }
+
+    if (source) {
+      qb.andWhere('post.source = :source', { source });
     }
 
     if (categoryId) {
@@ -316,6 +328,16 @@ export class CommunityService implements OnModuleInit {
     } else {
       throw new ForbiddenException('无效的审核状态');
     }
+    return this.postRepo.save(post);
+  }
+
+  async togglePostEnabled(postId: number, userRole: UserRole) {
+    if (userRole !== UserRole.ADMIN) {
+      throw new ForbiddenException('仅管理员可操作');
+    }
+    const post = await this.postRepo.findOne({ where: { id: postId } });
+    if (!post) throw new NotFoundException('帖子不存在');
+    post.enabled = !post.enabled;
     return this.postRepo.save(post);
   }
 

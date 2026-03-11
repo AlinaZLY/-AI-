@@ -143,6 +143,13 @@ export class CommunityController {
     return this.communityService.reviewPost(id, req.user.role, body.status, body.rejectReason);
   }
 
+  /** 切换帖子启用/关闭状态（仅管理员） */
+  @UseGuards(JwtAuthGuard)
+  @Put('posts/:id/toggle-enabled')
+  togglePostEnabled(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.communityService.togglePostEnabled(id, req.user.role);
+  }
+
   /** 点赞/取消点赞帖子 */
   @UseGuards(JwtAuthGuard)
   @HttpPost('posts/:id/like')

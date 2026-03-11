@@ -17,6 +17,12 @@ export enum PostStatus {
   REJECTED = 'rejected',   // 已拒绝
 }
 
+/** 帖子来源枚举 */
+export enum PostSource {
+  PLATFORM = 'platform',   // 平台帖子（管理员发布）
+  USER = 'user',           // 用户帖子（含企业用户）
+}
+
 @Entity('posts')
 export class Post {
   @PrimaryGeneratedColumn()
@@ -67,6 +73,17 @@ export class Post {
 
   @Column({ default: false, comment: '是否置顶' })
   isTop: boolean;
+
+  @Column({ default: true, comment: '是否启用' })
+  enabled: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: PostSource,
+    default: PostSource.USER,
+    comment: '帖子来源：platform-平台帖子, user-用户帖子',
+  })
+  source: PostSource;
 
   @CreateDateColumn({ comment: '创建时间' })
   createdAt: Date;

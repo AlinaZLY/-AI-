@@ -1,5 +1,6 @@
-import { IsOptional, IsString, MaxLength, IsInt } from 'class-validator';
+import { IsOptional, IsString, MaxLength, IsInt, IsBoolean, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { PostSource } from '../entities/post.entity';
 
 export class UpdatePostDto {
   @IsOptional()
@@ -15,4 +16,12 @@ export class UpdatePostDto {
   @Type(() => Number)
   @IsInt({ message: '分类ID必须为整数' })
   categoryId?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  enabled?: boolean;
+
+  @IsOptional()
+  @IsEnum(PostSource)
+  source?: PostSource;
 }
