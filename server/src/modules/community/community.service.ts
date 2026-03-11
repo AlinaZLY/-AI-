@@ -41,8 +41,9 @@ export class CommunityService implements OnModuleInit {
     }
 
     // 帖子种子数据
-    const postCount = await this.postRepo.count();
-    if (postCount === 0) {
+    const seedTitle = '字节跳动后端开发一面经验分享';
+    const hasSeed = await this.postRepo.findOne({ where: { title: seedTitle } });
+    if (!hasSeed) {
       const categories = await this.categoryRepo.find();
       const catMap: Record<string, number> = {};
       for (const c of categories) catMap[c.name] = c.id;
