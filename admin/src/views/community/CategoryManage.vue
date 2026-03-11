@@ -18,12 +18,20 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'icon'">
+          <!-- 组件图标 -->
+          <component
+            v-if="record.icon && iconMap[record.icon]"
+            :is="iconMap[record.icon]"
+            style="font-size: 24px"
+          />
+          <!-- URL图标 -->
           <a-avatar
-            v-if="record.icon"
+            v-else-if="record.icon && isUrl(record.icon)"
             :size="32"
             :src="getIconUrl(record.icon)"
             shape="square"
           />
+          <!-- 无图标 -->
           <a-avatar v-else :size="32" shape="square" style="background-color: #f0f0f0; color: #999">
             <AppstoreOutlined />
           </a-avatar>
@@ -61,19 +69,38 @@
       cancel-text="取消"
       :confirm-loading="formLoading"
       @ok="handleFormSubmit"
+      width="560px"
     >
       <a-form layout="vertical">
         <a-form-item label="分类名称" required>
           <a-input v-model:value="formData.name" placeholder="请输入分类名称" :maxlength="50" />
         </a-form-item>
         <a-form-item label="分类图标">
-          <div class="icon-upload-area">
+          <a-radio-group v-model:value="iconMode" style="margin-bottom: 12px">
+            <a-radio-button value="component">组件图标</a-radio-button>
+            <a-radio-button value="upload">上传图标</a-radio-button>
+            <a-radio-button value="url">图标URL</a-radio-button>
+          </a-radio-group>
+          <!-- 组件图标选择 -->
+          <div v-if="iconMode === 'component'" class="icon-grid">
+            <div
+              v-for="item in iconOptions"
+              :key="item.name"
+              :class="['icon-grid-item', { active: formData.icon === item.name }]"
+              @click="formData.icon = item.name"
+            >
+              <component :is="item.comp" style="font-size: 20px" />
+              <div class="icon-grid-label">{{ item.label }}</div>
+            </div>
+          </div>
+          <!-- 上传图标 -->
+          <div v-else-if="iconMode === 'upload'" class="icon-upload-area">
             <a-upload
               :show-upload-list="false"
               :before-upload="handleIconUpload"
               accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico"
             >
-              <div class="icon-preview" v-if="formData.icon">
+              <div class="icon-preview" v-if="formData.icon && isUrl(formData.icon)">
                 <img :src="getIconUrl(formData.icon)" alt="icon" class="icon-img" />
                 <div class="icon-overlay">
                   <EditOutlined />
@@ -84,9 +111,17 @@
                 <div>上传图标</div>
               </div>
             </a-upload>
-            <a-button v-if="formData.icon" type="link" size="small" danger @click="formData.icon = ''">
-              移除图标
+            <a-button v-if="formData.icon && isUrl(formData.icon)" type="link" size="small" danger @click="formData.icon = ''">
+              移除
             </a-button>
+          </div>
+          <!-- URL输入 -->
+          <div v-else>
+            <a-input v-model:value="formData.icon" placeholder="输入图标URL，如 https://example.com/icon.png" />
+            <div v-if="formData.icon && formData.icon.startsWith('http')" style="margin-top: 8px">
+              <span style="margin-right: 8px; color: #999">预览:</span>
+              <a-avatar :size="32" :src="formData.icon" shape="square" />
+            </div>
           </div>
         </a-form-item>
         <a-form-item label="标签颜色">
@@ -110,14 +145,56 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { PlusOutlined, AppstoreOutlined, EditOutlined } from '@ant-design/icons-vue'
+import {
+  PlusOutlined, EditOutlined, AppstoreOutlined,
+  TrophyOutlined, FormOutlined, CompassOutlined, BankOutlined,
+  CodeOutlined, MoreOutlined, BookOutlined, RocketOutlined,
+  TeamOutlined, HeartOutlined, StarOutlined, BulbOutlined,
+  FireOutlined, ThunderboltOutlined, CrownOutlined, FlagOutlined,
+  SmileOutlined, CoffeeOutlined, ToolOutlined, GlobalOutlined,
+} from '@ant-design/icons-vue'
 import {
   getCategoriesApi, createCategoryApi, updateCategoryApi,
   deleteCategoryApi, uploadCategoryIconApi, getPostsApi,
 } from '@/api/community'
 
+// 图标名 → 组件映射
+const iconMap: Record<string, any> = {
+  TrophyOutlined, FormOutlined, CompassOutlined, BankOutlined,
+  CodeOutlined, MoreOutlined, BookOutlined, RocketOutlined,
+  TeamOutlined, HeartOutlined, StarOutlined, BulbOutlined,
+  FireOutlined, ThunderboltOutlined, CrownOutlined, FlagOutlined,
+  SmileOutlined, CoffeeOutlined, ToolOutlined, GlobalOutlined,
+  AppstoreOutlined,
+}
+
+// 可选图标列表
+const iconOptions = [
+  { name: 'TrophyOutlined', comp: TrophyOutlined, label: '奖杯' },
+  { name: 'FormOutlined', comp: FormOutlined, label: '表单' },
+  { name: 'CompassOutlined', comp: CompassOutlined, label: '指南' },
+  { name: 'BankOutlined', comp: BankOutlined, label: '银行' },
+  { name: 'CodeOutlined', comp: CodeOutlined, label: '代码' },
+  { name: 'BookOutlined', comp: BookOutlined, label: '书本' },
+  { name: 'RocketOutlined', comp: RocketOutlined, label: '火箭' },
+  { name: 'TeamOutlined', comp: TeamOutlined, label: '团队' },
+  { name: 'HeartOutlined', comp: HeartOutlined, label: '心形' },
+  { name: 'StarOutlined', comp: StarOutlined, label: '星星' },
+  { name: 'BulbOutlined', comp: BulbOutlined, label: '灯泡' },
+  { name: 'FireOutlined', comp: FireOutlined, label: '火焰' },
+  { name: 'ThunderboltOutlined', comp: ThunderboltOutlined, label: '闪电' },
+  { name: 'CrownOutlined', comp: CrownOutlined, label: '皇冠' },
+  { name: 'FlagOutlined', comp: FlagOutlined, label: '旗帜' },
+  { name: 'SmileOutlined', comp: SmileOutlined, label: '笑脸' },
+  { name: 'CoffeeOutlined', comp: CoffeeOutlined, label: '咖啡' },
+  { name: 'ToolOutlined', comp: ToolOutlined, label: '工具' },
+  { name: 'GlobalOutlined', comp: GlobalOutlined, label: '全球' },
+  { name: 'MoreOutlined', comp: MoreOutlined, label: '更多' },
+]
+
 const loading = ref(false)
 const categories = ref<any[]>([])
+const iconMode = ref<'component' | 'upload' | 'url'>('component')
 
 const columns = [
   { title: '图标', key: 'icon', width: 70 },
@@ -147,10 +224,15 @@ const formLoading = ref(false)
 const editingId = ref<number | null>(null)
 const formData = reactive({ name: '', icon: '', color: 'blue', description: '', sort: 0 })
 
+function isUrl(str: string) {
+  return str.startsWith('/') || str.startsWith('http')
+}
+
 function getIconUrl(icon: string) {
   if (!icon) return ''
   if (icon.startsWith('http')) return icon
-  return `http://localhost:3000${icon}`
+  if (icon.startsWith('/')) return `http://localhost:3000${icon}`
+  return ''
 }
 
 function formatTime(time: string) {
@@ -164,7 +246,6 @@ async function fetchCategories() {
   try {
     const res = await getCategoriesApi()
     const list = res.data || []
-    // 获取每个分类的帖子数
     for (const cat of list) {
       try {
         const postRes = await getPostsApi({ categoryId: cat.id, pageSize: 1 })
@@ -188,6 +269,7 @@ function openCreateModal() {
   formData.color = 'blue'
   formData.description = ''
   formData.sort = 0
+  iconMode.value = 'component'
   formVisible.value = true
 }
 
@@ -198,6 +280,16 @@ function openEditModal(record: any) {
   formData.color = record.color || 'blue'
   formData.description = record.description || ''
   formData.sort = record.sort || 0
+  // 自动识别图标模式
+  if (record.icon && iconMap[record.icon]) {
+    iconMode.value = 'component'
+  } else if (record.icon && record.icon.startsWith('http')) {
+    iconMode.value = 'url'
+  } else if (record.icon && record.icon.startsWith('/')) {
+    iconMode.value = 'upload'
+  } else {
+    iconMode.value = 'component'
+  }
   formVisible.value = true
 }
 
@@ -253,6 +345,41 @@ onMounted(() => fetchCategories())
     justify-content: flex-end;
     margin-bottom: 16px;
   }
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.icon-grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    border-color: #1677ff;
+    color: #1677ff;
+  }
+
+  &.active {
+    border-color: #1677ff;
+    background-color: #e6f4ff;
+    color: #1677ff;
+  }
+}
+
+.icon-grid-label {
+  font-size: 11px;
+  margin-top: 4px;
+  color: inherit;
 }
 
 .icon-upload-area {

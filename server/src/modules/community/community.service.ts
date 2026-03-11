@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Post, PostStatus } from './entities/post.entity';
@@ -14,7 +14,7 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { UserRole } from '../user/entities/user.entity';
 
 @Injectable()
-export class CommunityService {
+export class CommunityService implements OnModuleInit {
   constructor(
     @InjectRepository(Post) private postRepo: Repository<Post>,
     @InjectRepository(Category) private categoryRepo: Repository<Category>,
@@ -23,6 +23,23 @@ export class CommunityService {
     @InjectRepository(PostFavorite) private postFavoriteRepo: Repository<PostFavorite>,
     @InjectRepository(CommentLike) private commentLikeRepo: Repository<CommentLike>,
   ) {}
+
+  /** 模块初始化时插入种子分类数据 */
+  async onModuleInit() {
+    const count = await this.categoryRepo.count();
+    if (count === 0) {
+      const seeds = [
+        { name: '面试经验', icon: 'TrophyOutlined', color: 'blue', description: '分享面试过程、面试题目、面试技巧等', sort: 1 },
+        { name: '笔试真题', icon: 'FormOutlined', color: 'purple', description: '笔试真题分享、解题思路、备考经验', sort: 2 },
+        { name: '求职交流', icon: 'CompassOutlined', color: 'green', description: '求职心得、职业规划、简历指导等', sort: 3 },
+        { name: '公司点评', icon: 'BankOutlined', color: 'orange', description: '公司文化、工作环境、薪资待遇等评价', sort: 4 },
+        { name: '技术分享', icon: 'CodeOutlined', color: 'cyan', description: '编程技术、开发经验、学习资料分享', sort: 5 },
+        { name: '其他', icon: 'MoreOutlined', color: 'default', description: '其他与校园招聘相关的讨论', sort: 99 },
+      ];
+      await this.categoryRepo.save(this.categoryRepo.create(seeds));
+      console.log('分类种子数据已初始化');
+    }
+  }
 
   // ==================== 分类管理 ====================
 
