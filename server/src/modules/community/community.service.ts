@@ -136,6 +136,16 @@ export class CommunityService implements OnModuleInit {
       }
       console.log('评论种子数据已初始化');
     }
+
+    // 每次启动同步所有帖子的真实计数（likeCount、commentCount、favoriteCount）
+    const allPosts = await this.postRepo.find({ select: ['id'] });
+    for (const post of allPosts) {
+      const likeCount = await this.postLikeRepo.count({ where: { postId: post.id } });
+      const commentCount = await this.commentRepo.count({ where: { postId: post.id } });
+      const favoriteCount = await this.postFavoriteRepo.count({ where: { postId: post.id } });
+      await this.postRepo.update(post.id, { likeCount, commentCount, favoriteCount });
+    }
+    console.log('帖子计数已同步为真实数据');
   }
 
   // ==================== 分类管理 ====================
