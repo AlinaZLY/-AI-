@@ -8,6 +8,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { SystemModule } from './modules/system/system.module';
+import { CommunityModule } from './modules/community/community.module';
 import { RedisModule } from './common/redis/redis.module';
 import { databaseConfig } from './config/database.config';
 import { redisConfig } from './config/redis.config';
@@ -42,6 +43,7 @@ import { redisConfig } from './config/redis.config';
     AuthModule,      // 认证模块（注册/登录/验证码）
     UserModule,      // 用户模块（个人资料/密码/头像）
     SystemModule,    // 系统设置模块
+    CommunityModule, // 社区论坛模块（帖子/评论/点赞/收藏）
   ],
 })
 export class AppModule {}
