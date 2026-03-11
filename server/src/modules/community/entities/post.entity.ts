@@ -60,7 +60,7 @@ export class Post {
   })
   status: PostStatus;
 
-  @Column({ length: 200, nullable: true, comment: '拒绝原因' })
+  @Column({ type: 'varchar', length: 200, nullable: true, default: null, comment: '拒绝原因' })
   rejectReason: string;
 
   @Column({ default: 0, comment: '浏览量' })

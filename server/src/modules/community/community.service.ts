@@ -158,10 +158,10 @@ export class CommunityService {
 
     if (status === PostStatus.APPROVED) {
       post.status = PostStatus.APPROVED;
-      post.rejectReason = null;
+      post.rejectReason = '' as any;
     } else if (status === PostStatus.REJECTED) {
       post.status = PostStatus.REJECTED;
-      post.rejectReason = rejectReason || null;
+      post.rejectReason = rejectReason || '';
     } else {
       throw new ForbiddenException('无效的审核状态');
     }
