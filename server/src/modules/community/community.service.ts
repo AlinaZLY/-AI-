@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Post, PostStatus } from './entities/post.entity';
+import { Category } from './entities/category.entity';
 import { Comment } from './entities/comment.entity';
 import { PostLike } from './entities/post-like.entity';
 import { PostFavorite } from './entities/post-favorite.entity';
@@ -16,11 +17,51 @@ import { UserRole } from '../user/entities/user.entity';
 export class CommunityService {
   constructor(
     @InjectRepository(Post) private postRepo: Repository<Post>,
+    @InjectRepository(Category) private categoryRepo: Repository<Category>,
     @InjectRepository(Comment) private commentRepo: Repository<Comment>,
     @InjectRepository(PostLike) private postLikeRepo: Repository<PostLike>,
     @InjectRepository(PostFavorite) private postFavoriteRepo: Repository<PostFavorite>,
     @InjectRepository(CommentLike) private commentLikeRepo: Repository<CommentLike>,
   ) {}
+
+  // ==================== 分类管理 ====================
+
+  async getCategories() {
+    return this.categoryRepo.find({ order: { sort: 'ASC', id: 'ASC' } });
+  }
+
+  async getCategoryById(id: number) {
+    const cat = await this.categoryRepo.findOne({ where: { id } });
+    if (!cat) throw new NotFoundException('分类不存在');
+    return cat;
+  }
+
+  async createCategory(data: { name: string; icon?: string; color?: string; description?: string; sort?: number }) {
+    const exists = await this.categoryRepo.findOne({ where: { name: data.name } });
+    if (exists) throw new BadRequestException('分类名称已存在');
+    const cat = this.categoryRepo.create(data);
+    return this.categoryRepo.save(cat);
+  }
+
+  async updateCategory(id: number, data: { name?: string; icon?: string; color?: string; description?: string; sort?: number }) {
+    const cat = await this.categoryRepo.findOne({ where: { id } });
+    if (!cat) throw new NotFoundException('分类不存在');
+    if (data.name && data.name !== cat.name) {
+      const exists = await this.categoryRepo.findOne({ where: { name: data.name } });
+      if (exists) throw new BadRequestException('分类名称已存在');
+    }
+    Object.assign(cat, data);
+    return this.categoryRepo.save(cat);
+  }
+
+  async deleteCategory(id: number) {
+    const cat = await this.categoryRepo.findOne({ where: { id } });
+    if (!cat) throw new NotFoundException('分类不存在');
+    // 检查是否有帖子使用此分类
+    const count = await this.postRepo.count({ where: { categoryId: id } });
+    if (count > 0) throw new BadRequestException(`该分类下有 ${count} 篇帖子，无法删除`);
+    await this.categoryRepo.remove(cat);
+  }
 
   // ==================== 帖子 ====================
 
@@ -30,16 +71,18 @@ export class CommunityService {
   }
 
   async getPosts(query: QueryPostDto, userId?: number, userRole?: string) {
-    const { page = 1, pageSize = 10, category, keyword, sort, status } = query;
+    const { page = 1, pageSize = 10, categoryId, keyword, sort, status } = query;
     const qb = this.postRepo
       .createQueryBuilder('post')
       .leftJoinAndSelect('post.user', 'user')
+      .leftJoinAndSelect('post.category', 'category')
       .select([
-        'post.id', 'post.title', 'post.category', 'post.userId',
+        'post.id', 'post.title', 'post.categoryId', 'post.userId',
         'post.viewCount', 'post.likeCount', 'post.commentCount',
         'post.favoriteCount', 'post.isTop', 'post.status', 'post.rejectReason',
         'post.createdAt', 'post.updatedAt',
         'user.id', 'user.username', 'user.nickname', 'user.avatar',
+        'category.id', 'category.name', 'category.icon', 'category.color',
       ]);
 
     // 管理员可按状态筛选，非管理员只能看已通过的帖子
@@ -51,8 +94,8 @@ export class CommunityService {
       qb.andWhere('post.status = :status', { status: PostStatus.APPROVED });
     }
 
-    if (category) {
-      qb.andWhere('post.category = :category', { category });
+    if (categoryId) {
+      qb.andWhere('post.categoryId = :categoryId', { categoryId });
     }
 
     if (keyword) {
@@ -107,7 +150,7 @@ export class CommunityService {
   async getPostDetail(postId: number, userId?: number) {
     const post = await this.postRepo.findOne({
       where: { id: postId },
-      relations: ['user'],
+      relations: ['user', 'category'],
     });
     if (!post) throw new NotFoundException('帖子不存在');
 

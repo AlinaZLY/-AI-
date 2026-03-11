@@ -11,17 +11,15 @@
           @search="handleSearch"
         />
         <a-select
-          v-model:value="category"
+          v-model:value="categoryId"
           placeholder="分类筛选"
           style="width: 140px"
           allow-clear
           @change="handleSearch"
         >
-          <a-select-option value="interview">面试经验</a-select-option>
-          <a-select-option value="written_test">笔试真题</a-select-option>
-          <a-select-option value="job_hunting">求职交流</a-select-option>
-          <a-select-option value="company">公司点评</a-select-option>
-          <a-select-option value="other">其他</a-select-option>
+          <a-select-option v-for="cat in categoryList" :key="cat.id" :value="cat.id">
+            {{ cat.name }}
+          </a-select-option>
         </a-select>
         <a-select
           v-model:value="statusFilter"
@@ -55,8 +53,8 @@
           <a @click="showDetail(record)" style="color: #1677ff">{{ record.title }}</a>
         </template>
         <template v-if="column.key === 'category'">
-          <a-tag :color="categoryColor(record.category)">
-            {{ categoryLabel(record.category) }}
+          <a-tag :color="record.category?.color || 'default'">
+            {{ record.category?.name || '未分类' }}
           </a-tag>
         </template>
         <template v-if="column.key === 'user'">
@@ -133,13 +131,11 @@
         <a-form-item label="标题" required>
           <a-input v-model:value="formData.title" placeholder="请输入帖子标题" :maxlength="200" show-count />
         </a-form-item>
-        <a-form-item label="分类" required>
-          <a-select v-model:value="formData.category" placeholder="请选择分类">
-            <a-select-option value="interview">面试经验</a-select-option>
-            <a-select-option value="written_test">笔试真题</a-select-option>
-            <a-select-option value="job_hunting">求职交流</a-select-option>
-            <a-select-option value="company">公司点评</a-select-option>
-            <a-select-option value="other">其他</a-select-option>
+        <a-form-item label="分类">
+          <a-select v-model:value="formData.categoryId" placeholder="请选择分类" allow-clear>
+            <a-select-option v-for="cat in categoryList" :key="cat.id" :value="cat.id">
+              {{ cat.name }}
+            </a-select-option>
           </a-select>
         </a-form-item>
         <a-form-item label="内容" required>
@@ -167,8 +163,8 @@
               {{ (currentPost.user?.username || '?').charAt(0) }}
             </a-avatar>
             <span>{{ currentPost.user?.nickname || currentPost.user?.username }}</span>
-            <a-tag :color="categoryColor(currentPost.category)">
-              {{ categoryLabel(currentPost.category) }}
+            <a-tag :color="currentPost.category?.color || 'default'">
+              {{ currentPost.category?.name || '未分类' }}
             </a-tag>
             <a-tag :color="statusColor(currentPost.status)">
               {{ statusLabel(currentPost.status) }}
@@ -249,11 +245,23 @@ import {
 import {
   getPostsApi, getPostDetailApi, createPostApi, updatePostApi,
   deletePostApi, getCommentsApi, deleteCommentApi, reviewPostApi,
+  getCategoriesApi,
 } from '@/api/community'
+
+// ========== 分类列表 ==========
+const categoryList = ref<any[]>([])
+
+async function fetchCategories() {
+  try {
+    categoryList.value = await getCategoriesApi()
+  } catch {
+    categoryList.value = []
+  }
+}
 
 // ========== 列表相关 ==========
 const keyword = ref('')
-const category = ref<string | undefined>(undefined)
+const categoryId = ref<number | undefined>(undefined)
 const statusFilter = ref<string | undefined>(undefined)
 const loading = ref(false)
 const posts = ref<any[]>([])
@@ -280,7 +288,7 @@ const columns = [
 const formVisible = ref(false)
 const formLoading = ref(false)
 const editingId = ref<number | null>(null)
-const formData = reactive({ title: '', content: '', category: 'other' })
+const formData = reactive({ title: '', content: '', categoryId: undefined as number | undefined })
 
 // ========== 详情相关 ==========
 const detailVisible = ref(false)
@@ -294,20 +302,11 @@ const rejectReason = ref('')
 const rejectPostId = ref<number>(0)
 
 // ========== 工具函数 ==========
-const categoryMap: Record<string, { label: string; color: string }> = {
-  interview: { label: '面试经验', color: 'blue' },
-  written_test: { label: '笔试真题', color: 'purple' },
-  job_hunting: { label: '求职交流', color: 'green' },
-  company: { label: '公司点评', color: 'orange' },
-  other: { label: '其他', color: 'default' },
-}
 const statusMap: Record<string, { label: string; color: string }> = {
   pending: { label: '待审核', color: 'gold' },
   approved: { label: '已通过', color: 'green' },
   rejected: { label: '已拒绝', color: 'red' },
 }
-function categoryLabel(cat: string) { return categoryMap[cat]?.label || cat }
-function categoryColor(cat: string) { return categoryMap[cat]?.color || 'default' }
 function statusLabel(s: string) { return statusMap[s]?.label || s }
 function statusColor(s: string) { return statusMap[s]?.color || 'default' }
 
@@ -325,7 +324,7 @@ async function fetchPosts() {
       page: pagination.current,
       pageSize: pagination.pageSize,
       keyword: keyword.value || undefined,
-      category: category.value || undefined,
+      categoryId: categoryId.value || undefined,
       status: statusFilter.value || undefined,
     })
     posts.value = res.list
@@ -353,7 +352,7 @@ function openCreateModal() {
   editingId.value = null
   formData.title = ''
   formData.content = ''
-  formData.category = 'other'
+  formData.categoryId = undefined
   formVisible.value = true
 }
 
@@ -361,7 +360,7 @@ function openEditModal(record: any) {
   editingId.value = record.id
   formData.title = record.title
   formData.content = record.content || ''
-  formData.category = record.category
+  formData.categoryId = record.categoryId || undefined
   formVisible.value = true
 }
 
@@ -456,7 +455,10 @@ async function handleReject() {
   }
 }
 
-onMounted(() => fetchPosts())
+onMounted(() => {
+  fetchCategories()
+  fetchPosts()
+})
 </script>
 
 <style scoped lang="less">

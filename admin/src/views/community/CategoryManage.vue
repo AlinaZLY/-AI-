@@ -1,91 +1,316 @@
 <template>
   <div class="category-manage">
-    <a-alert
-      message="帖子分类目前为系统内置分类，如需新增分类请联系开发人员。"
-      type="info"
-      show-icon
-      style="margin-bottom: 16px"
-    />
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <a-button type="primary" @click="openCreateModal">
+        <PlusOutlined /> 新建分类
+      </a-button>
+    </div>
 
+    <!-- 分类列表表格 -->
     <a-table
       :columns="columns"
       :data-source="categories"
+      :loading="loading"
       :pagination="false"
-      row-key="value"
+      row-key="id"
       size="middle"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'tag'">
-          <a-tag :color="record.color">{{ record.label }}</a-tag>
+        <template v-if="column.key === 'icon'">
+          <a-avatar
+            v-if="record.icon"
+            :size="32"
+            :src="getIconUrl(record.icon)"
+            shape="square"
+          />
+          <a-avatar v-else :size="32" shape="square" style="background-color: #f0f0f0; color: #999">
+            <AppstoreOutlined />
+          </a-avatar>
         </template>
-        <template v-if="column.key === 'count'">
-          <span>{{ record.count }}</span>
+        <template v-if="column.key === 'name'">
+          <a-tag :color="record.color || 'blue'">{{ record.name }}</a-tag>
+        </template>
+        <template v-if="column.key === 'postCount'">
+          {{ record._postCount ?? '-' }}
+        </template>
+        <template v-if="column.key === 'createdAt'">
+          {{ formatTime(record.createdAt) }}
+        </template>
+        <template v-if="column.key === 'action'">
+          <a-space :size="0">
+            <a-button type="link" size="small" @click="openEditModal(record)">编辑</a-button>
+            <a-popconfirm
+              :title="`确定要删除分类「${record.name}」吗？`"
+              ok-text="确定"
+              cancel-text="取消"
+              @confirm="handleDelete(record.id)"
+            >
+              <a-button type="link" size="small" danger>删除</a-button>
+            </a-popconfirm>
+          </a-space>
         </template>
       </template>
     </a-table>
 
-    <a-card title="分类统计" style="margin-top: 16px" :loading="statsLoading">
-      <a-row :gutter="16">
-        <a-col :span="8" v-for="item in categories" :key="item.value">
-          <a-statistic :title="item.label" :value="item.count" style="margin-bottom: 16px">
-            <template #prefix>
-              <component :is="item.icon" />
-            </template>
-          </a-statistic>
-        </a-col>
-      </a-row>
-    </a-card>
+    <!-- 新建/编辑分类弹窗 -->
+    <a-modal
+      v-model:open="formVisible"
+      :title="editingId ? '编辑分类' : '新建分类'"
+      ok-text="确定"
+      cancel-text="取消"
+      :confirm-loading="formLoading"
+      @ok="handleFormSubmit"
+    >
+      <a-form layout="vertical">
+        <a-form-item label="分类名称" required>
+          <a-input v-model:value="formData.name" placeholder="请输入分类名称" :maxlength="50" />
+        </a-form-item>
+        <a-form-item label="分类图标">
+          <div class="icon-upload-area">
+            <a-upload
+              :show-upload-list="false"
+              :before-upload="handleIconUpload"
+              accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico"
+            >
+              <div class="icon-preview" v-if="formData.icon">
+                <img :src="getIconUrl(formData.icon)" alt="icon" class="icon-img" />
+                <div class="icon-overlay">
+                  <EditOutlined />
+                </div>
+              </div>
+              <div v-else class="icon-placeholder">
+                <PlusOutlined />
+                <div>上传图标</div>
+              </div>
+            </a-upload>
+            <a-button v-if="formData.icon" type="link" size="small" danger @click="formData.icon = ''">
+              移除图标
+            </a-button>
+          </div>
+        </a-form-item>
+        <a-form-item label="标签颜色">
+          <a-select v-model:value="formData.color" placeholder="选择颜色">
+            <a-select-option v-for="c in colorOptions" :key="c.value" :value="c.value">
+              <a-tag :color="c.value">{{ c.label }}</a-tag>
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item label="分类描述">
+          <a-textarea v-model:value="formData.description" placeholder="请输入分类描述" :rows="2" :maxlength="200" />
+        </a-form-item>
+        <a-form-item label="排序值">
+          <a-input-number v-model:value="formData.sort" :min="0" :max="9999" placeholder="越小越靠前" style="width: 100%" />
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import { PlusOutlined, AppstoreOutlined, EditOutlined } from '@ant-design/icons-vue'
 import {
-  TrophyOutlined,
-  FormOutlined,
-  SearchOutlined,
-  BankOutlined,
-  MoreOutlined,
-} from '@ant-design/icons-vue'
-import { getPostsApi } from '@/api/community'
+  getCategoriesApi, createCategoryApi, updateCategoryApi,
+  deleteCategoryApi, uploadCategoryIconApi, getPostsApi,
+} from '@/api/community'
 
-const statsLoading = ref(false)
+const loading = ref(false)
+const categories = ref<any[]>([])
 
 const columns = [
-  { title: '分类值', dataIndex: 'value', key: 'value', width: 140 },
-  { title: '显示名称', key: 'tag', width: 120 },
-  { title: '说明', dataIndex: 'description', key: 'description' },
-  { title: '帖子数', key: 'count', width: 100 },
+  { title: '图标', key: 'icon', width: 70 },
+  { title: '分类名称', key: 'name', width: 140 },
+  { title: '描述', dataIndex: 'description', key: 'description', ellipsis: true },
+  { title: '排序', dataIndex: 'sort', key: 'sort', width: 80 },
+  { title: '帖子数', key: 'postCount', width: 80 },
+  { title: '创建时间', key: 'createdAt', width: 160 },
+  { title: '操作', key: 'action', width: 140 },
 ]
 
-const categories = ref([
-  { value: 'interview', label: '面试经验', color: 'blue', description: '分享面试过程、面试题目、面试技巧等', icon: TrophyOutlined, count: 0 },
-  { value: 'written_test', label: '笔试真题', color: 'purple', description: '笔试真题分享、解题思路、备考经验', icon: FormOutlined, count: 0 },
-  { value: 'job_hunting', label: '求职交流', color: 'green', description: '求职心得、职业规划、简历指导等', icon: SearchOutlined, count: 0 },
-  { value: 'company', label: '公司点评', color: 'orange', description: '公司文化、工作环境、薪资待遇等评价', icon: BankOutlined, count: 0 },
-  { value: 'other', label: '其他', color: 'default', description: '其他与校园招聘相关的讨论', icon: MoreOutlined, count: 0 },
-])
+const colorOptions = [
+  { value: 'blue', label: '蓝色' },
+  { value: 'green', label: '绿色' },
+  { value: 'orange', label: '橙色' },
+  { value: 'red', label: '红色' },
+  { value: 'purple', label: '紫色' },
+  { value: 'cyan', label: '青色' },
+  { value: 'magenta', label: '品红' },
+  { value: 'gold', label: '金色' },
+  { value: 'default', label: '默认' },
+]
 
-async function fetchCategoryCounts() {
-  statsLoading.value = true
+// ========== 表单相关 ==========
+const formVisible = ref(false)
+const formLoading = ref(false)
+const editingId = ref<number | null>(null)
+const formData = reactive({ name: '', icon: '', color: 'blue', description: '', sort: 0 })
+
+function getIconUrl(icon: string) {
+  if (!icon) return ''
+  if (icon.startsWith('http')) return icon
+  return `http://localhost:3000${icon}`
+}
+
+function formatTime(time: string) {
+  return new Date(time).toLocaleString('zh-CN', {
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+  })
+}
+
+async function fetchCategories() {
+  loading.value = true
   try {
-    for (const cat of categories.value) {
-      const res = await getPostsApi({ category: cat.value, pageSize: 1 })
-      cat.count = res.total
+    const list = await getCategoriesApi()
+    // 获取每个分类的帖子数
+    for (const cat of list) {
+      try {
+        const res = await getPostsApi({ categoryId: cat.id, pageSize: 1 })
+        cat._postCount = res.total
+      } catch {
+        cat._postCount = 0
+      }
     }
+    categories.value = list
   } catch {
-    message.error('获取分类统计失败')
+    message.error('获取分类列表失败')
   } finally {
-    statsLoading.value = false
+    loading.value = false
   }
 }
 
-onMounted(() => fetchCategoryCounts())
+function openCreateModal() {
+  editingId.value = null
+  formData.name = ''
+  formData.icon = ''
+  formData.color = 'blue'
+  formData.description = ''
+  formData.sort = 0
+  formVisible.value = true
+}
+
+function openEditModal(record: any) {
+  editingId.value = record.id
+  formData.name = record.name
+  formData.icon = record.icon || ''
+  formData.color = record.color || 'blue'
+  formData.description = record.description || ''
+  formData.sort = record.sort || 0
+  formVisible.value = true
+}
+
+async function handleIconUpload(file: File) {
+  try {
+    const res = await uploadCategoryIconApi(file)
+    formData.icon = res.url
+    message.success('图标上传成功')
+  } catch {
+    message.error('图标上传失败')
+  }
+  return false
+}
+
+async function handleFormSubmit() {
+  if (!formData.name.trim()) return message.warning('请输入分类名称')
+
+  formLoading.value = true
+  try {
+    if (editingId.value) {
+      await updateCategoryApi(editingId.value, { ...formData })
+      message.success('分类已更新')
+    } else {
+      await createCategoryApi({ ...formData })
+      message.success('分类已创建')
+    }
+    formVisible.value = false
+    fetchCategories()
+  } catch (e: any) {
+    message.error(e?.response?.data?.message || '操作失败')
+  } finally {
+    formLoading.value = false
+  }
+}
+
+async function handleDelete(id: number) {
+  try {
+    await deleteCategoryApi(id)
+    message.success('分类已删除')
+    fetchCategories()
+  } catch (e: any) {
+    message.error(e?.response?.data?.message || '删除失败')
+  }
+}
+
+onMounted(() => fetchCategories())
 </script>
 
 <style scoped lang="less">
 .category-manage {
-  max-width: 900px;
+  .toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
+}
+
+.icon-upload-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-preview {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+
+  .icon-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .icon-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    color: #fff;
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  &:hover .icon-overlay {
+    opacity: 1;
+  }
+}
+
+.icon-placeholder {
+  width: 64px;
+  height: 64px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #999;
+  font-size: 12px;
+  gap: 4px;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: #1677ff;
+    color: #1677ff;
+  }
 }
 </style>

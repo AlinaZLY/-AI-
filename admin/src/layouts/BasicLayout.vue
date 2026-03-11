@@ -27,6 +27,10 @@
             <TeamOutlined />
             <span>社区管理</span>
           </template>
+          <a-menu-item key="community/categories">
+            <AppstoreOutlined />
+            <span>分类管理</span>
+          </a-menu-item>
           <a-menu-item key="community/posts">
             <MessageOutlined />
             <span>帖子管理</span>
@@ -34,10 +38,6 @@
           <a-menu-item key="community/comments">
             <CommentOutlined />
             <span>评论管理</span>
-          </a-menu-item>
-          <a-menu-item key="community/categories">
-            <AppstoreOutlined />
-            <span>分类管理</span>
           </a-menu-item>
         </a-sub-menu>
         <a-menu-item v-if="userStore.userInfo?.role === 'admin'" key="system/settings">

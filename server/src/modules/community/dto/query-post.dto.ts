@@ -1,11 +1,13 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
-import { PostCategory, PostStatus } from '../entities/post.entity';
+import { PostStatus } from '../entities/post.entity';
 
 export class QueryPostDto extends PaginationDto {
   @IsOptional()
-  @IsEnum(PostCategory)
-  category?: PostCategory;
+  @Type(() => Number)
+  @IsInt()
+  categoryId?: number;
 
   @IsOptional()
   @IsString()

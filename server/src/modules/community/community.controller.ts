@@ -10,7 +10,13 @@ import {
   UseGuards,
   Request,
   ParseIntPipe,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CommunityService } from './community.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -18,9 +24,71 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostDto } from './dto/query-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 
+// 确保图标上传目录存在
+const iconsDir = join(process.cwd(), 'uploads', 'icons');
+if (!existsSync(iconsDir)) {
+  mkdirSync(iconsDir, { recursive: true });
+}
+
 @Controller('community')
 export class CommunityController {
   constructor(private readonly communityService: CommunityService) {}
+
+  // ==================== 分类管理 ====================
+
+  /** 获取所有分类 */
+  @Get('categories')
+  getCategories() {
+    return this.communityService.getCategories();
+  }
+
+  /** 创建分类（管理员） */
+  @UseGuards(JwtAuthGuard)
+  @HttpPost('categories')
+  createCategory(@Body() body: { name: string; icon?: string; color?: string; description?: string; sort?: number }) {
+    return this.communityService.createCategory(body);
+  }
+
+  /** 更新分类（管理员） */
+  @UseGuards(JwtAuthGuard)
+  @Put('categories/:id')
+  updateCategory(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { name?: string; icon?: string; color?: string; description?: string; sort?: number },
+  ) {
+    return this.communityService.updateCategory(id, body);
+  }
+
+  /** 删除分类（管理员） */
+  @UseGuards(JwtAuthGuard)
+  @Delete('categories/:id')
+  deleteCategory(@Param('id', ParseIntPipe) id: number) {
+    return this.communityService.deleteCategory(id);
+  }
+
+  /** 上传分类图标 */
+  @UseGuards(JwtAuthGuard)
+  @HttpPost('categories/upload-icon')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: join(process.cwd(), 'uploads', 'icons'),
+      filename: (_req, file, cb) => {
+        const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
+        cb(null, uniqueName);
+      },
+    }),
+    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      if (/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i.test(file.originalname)) {
+        cb(null, true);
+      } else {
+        cb(new Error('只支持 jpg/png/gif/webp/svg/ico 格式的图标'), false);
+      }
+    },
+  }))
+  uploadIcon(@UploadedFile() file: Express.Multer.File) {
+    return { url: `/uploads/icons/${file.filename}` };
+  }
 
   // ==================== 帖子 ====================
 

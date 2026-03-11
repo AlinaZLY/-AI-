@@ -1,5 +1,5 @@
-import { IsNotEmpty, IsString, MaxLength, IsEnum, IsOptional } from 'class-validator';
-import { PostCategory } from '../entities/post.entity';
+import { IsNotEmpty, IsString, MaxLength, IsOptional, IsInt } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreatePostDto {
   @IsNotEmpty({ message: '标题不能为空' })
@@ -12,6 +12,7 @@ export class CreatePostDto {
   content: string;
 
   @IsOptional()
-  @IsEnum(PostCategory, { message: '分类不合法' })
-  category?: PostCategory;
+  @Type(() => Number)
+  @IsInt({ message: '分类ID必须为整数' })
+  categoryId?: number;
 }

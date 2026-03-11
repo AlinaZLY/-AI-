@@ -5,19 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
-
-/** 帖子分类枚举 */
-export enum PostCategory {
-  INTERVIEW = 'interview',       // 面经
-  WRITTEN_TEST = 'written_test', // 笔经
-  JOB_HUNTING = 'job_hunting',   // 求职感悟
-  COMPANY = 'company',           // 公司评价
-  OTHER = 'other',               // 其他
-}
+import { Category } from './category.entity';
 
 /** 帖子审核状态枚举 */
 export enum PostStatus {
@@ -37,13 +28,12 @@ export class Post {
   @Column({ type: 'text', comment: '内容' })
   content: string;
 
-  @Column({
-    type: 'enum',
-    enum: PostCategory,
-    default: PostCategory.OTHER,
-    comment: '分类',
-  })
-  category: PostCategory;
+  @Column({ nullable: true, comment: '分类ID' })
+  categoryId: number;
+
+  @ManyToOne(() => Category)
+  @JoinColumn({ name: 'categoryId' })
+  category: Category;
 
   @Column({ comment: '作者ID' })
   userId: number;

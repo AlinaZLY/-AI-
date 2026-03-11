@@ -1,10 +1,43 @@
 import request from '@/utils/request'
 
+// ==================== 分类管理 ====================
+
+/** 获取所有分类 */
+export function getCategoriesApi() {
+  return request.get('/community/categories')
+}
+
+/** 创建分类 */
+export function createCategoryApi(data: { name: string; icon?: string; color?: string; description?: string; sort?: number }) {
+  return request.post('/community/categories', data)
+}
+
+/** 更新分类 */
+export function updateCategoryApi(id: number, data: { name?: string; icon?: string; color?: string; description?: string; sort?: number }) {
+  return request.put(`/community/categories/${id}`, data)
+}
+
+/** 删除分类 */
+export function deleteCategoryApi(id: number) {
+  return request.delete(`/community/categories/${id}`)
+}
+
+/** 上传分类图标 */
+export function uploadCategoryIconApi(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post('/community/categories/upload-icon', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+
+// ==================== 帖子管理 ====================
+
 /** 获取帖子列表 */
 export function getPostsApi(params: {
   page?: number
   pageSize?: number
-  category?: string
+  categoryId?: number
   keyword?: string
   sort?: string
   status?: string
@@ -18,12 +51,12 @@ export function getPostDetailApi(id: number) {
 }
 
 /** 创建帖子 */
-export function createPostApi(data: { title: string; content: string; category: string }) {
+export function createPostApi(data: { title: string; content: string; categoryId?: number }) {
   return request.post('/community/posts', data)
 }
 
 /** 更新帖子 */
-export function updatePostApi(id: number, data: { title?: string; content?: string; category?: string }) {
+export function updatePostApi(id: number, data: { title?: string; content?: string; categoryId?: number }) {
   return request.put(`/community/posts/${id}`, data)
 }
 
