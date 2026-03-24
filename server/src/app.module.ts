@@ -16,6 +16,7 @@ import { ResumeModule } from './modules/resume/resume.module';
 import { InterviewModule } from './modules/interview/interview.module';
 import { JobModule } from './modules/job/job.module';
 import { CompanyModule } from './modules/company/company.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { RedisModule } from './common/redis/redis.module';
 import { MockDataSeed } from './common/seed/mock-data.seed';
 import { databaseConfig } from './config/database.config';
@@ -43,7 +44,7 @@ import { Job } from './modules/job/entities/job.entity';
         username: configService.get<string>('database.username'),
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.database'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],  // 自动扫描所有实体文件
+        autoLoadEntities: true,  // 自动加载通过 forFeature 注册的实体
         synchronize: configService.get<string>('NODE_ENV') !== 'production', // 开发环境自动同步表结构，生产环境禁用
         charset: 'utf8mb4',  // 支持中文和 emoji
       }),
@@ -64,6 +65,7 @@ import { Job } from './modules/job/entities/job.entity';
     InterviewModule,    // 智能面试模块
     JobModule,          // 职位管理模块
     CompanyModule,      // 企业管理模块
+    ChatModule,         // 聊天通讯模块
     TypeOrmModule.forFeature([User, Company, Job]),
   ],
   providers: [MockDataSeed],

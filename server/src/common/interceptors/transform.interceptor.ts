@@ -9,8 +9,14 @@ import {
   ExecutionContext,
   CallHandler,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import {
+  resolveRequestLocale,
+  translateBackendMessage,
+  translateResponseData,
+} from '../i18n/backend-message.util';
 
 /** 统一 API 响应结构 */
 export interface ApiResponse<T> {
@@ -28,11 +34,14 @@ export class TransformInterceptor<T>
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<ApiResponse<T>> {
+    const request = context.switchToHttp().getRequest<Request>();
+    const locale = resolveRequestLocale(request);
+
     return next.handle().pipe(
       map((data) => ({
         code: 200,
-        message: '操作成功',
-        data,
+        message: translateBackendMessage('操作成功', locale),
+        data: translateResponseData(data, locale),
         timestamp: new Date().toISOString(),
       })),
     );

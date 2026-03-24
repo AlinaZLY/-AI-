@@ -11,7 +11,8 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
+import { resolveRequestLocale, translateBackendMessage } from '../i18n/backend-message.util';
 
 @Catch()  // 捕获所有类型的异常
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -19,6 +20,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
+    const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
@@ -39,7 +41,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message = message.join('; ');
     }
 
-    const request = ctx.getRequest();
+    const locale = resolveRequestLocale(request);
+    message = translateBackendMessage(message, locale) as string;
+
     if (exception instanceof HttpException) {
       this.logger.warn(`${request.method} ${request.url} ${status} - ${message}`);
     } else {
