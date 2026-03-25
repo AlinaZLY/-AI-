@@ -13,13 +13,13 @@
         :to="{ name: 'Login', query: { redirect: currentPath } }"
         class="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
       >
-        立即登录
+        {{ $t('立即登录') }}
       </router-link>
       <router-link
         to="/register"
         class="px-6 py-2.5 border border-gray-200 text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
       >
-        注册账号
+        {{ $t('注册账号') }}
       </router-link>
     </div>
   </div>
@@ -28,6 +28,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from '@/i18n'
+
+const { t } = useI18n()
 
 withDefaults(defineProps<{
   title?: string
