@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { LOCALE_CHANGED_EVENT, translate } from '@/i18n'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -138,6 +139,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '系统设置', icon: 'SettingOutlined', roles: ['admin'], parent: 'system' },
       },
       {
+        path: 'system/i18n',
+        name: 'I18nManage',
+        component: () => import('@/views/system/I18nManageView.vue'),
+        meta: { title: 'i18n 内容', icon: 'GlobalOutlined', roles: ['admin'], parent: 'system' },
+      },
+      {
         path: 'system/dict',
         name: 'DictManage',
         component: () => import('@/views/system/DictManage.vue'),
@@ -211,7 +218,15 @@ router.beforeEach(async (to, _from, next) => {
 })
 
 router.afterEach((to) => {
-  document.title = (to.meta?.title as string) || '校园招聘管理后台'
+  const title = translate((to.meta?.title as string) || '校园招聘管理后台')
+  document.title = title
 })
+
+if (typeof window !== 'undefined') {
+  window.addEventListener(LOCALE_CHANGED_EVENT, () => {
+    const current = router.currentRoute.value
+    document.title = translate((current.meta?.title as string) || '校园招聘管理后台')
+  })
+}
 
 export default router

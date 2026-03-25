@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { message } from 'ant-design-vue'
 import router from '@/router'
+import { translate } from '@/i18n'
 
 /* 创建 axios 实例 */
 const request = axios.create({
@@ -12,9 +13,12 @@ const request = axios.create({
 request.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
+    const locale = localStorage.getItem('admin-locale') || document.documentElement.lang || navigator.language || 'zh-CN'
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    config.headers['X-Locale'] = locale
+    config.headers['Accept-Language'] = locale
     return config
   },
   (error) => Promise.reject(error)
@@ -27,7 +31,7 @@ request.interceptors.response.use(
     if (data.code === 200) {
       return data
     }
-    message.error(data.message || '请求失败')
+    message.error(translate(data.message || '请求失败'))
     return Promise.reject(new Error(data.message))
   },
   (error) => {
@@ -37,10 +41,10 @@ request.interceptors.response.use(
         localStorage.removeItem('token')
         const currentPath = router.currentRoute.value.fullPath
         router.push({ path: '/login', query: { redirect: currentPath } })
-        message.error('登录已过期，请重新登录')
+        message.error(translate('登录已过期，请重新登录'))
       }
     } else {
-      message.error(error.response?.data?.message || '网络异常')
+      message.error(translate(error.response?.data?.message || '网络异常'))
     }
     return Promise.reject(error)
   }

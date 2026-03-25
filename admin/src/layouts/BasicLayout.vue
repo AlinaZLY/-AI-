@@ -9,8 +9,9 @@
       class="layout-sider"
     >
       <div class="logo">
+        <img v-if="systemStore.siteLogo" :src="systemStore.siteLogo" alt="LOGO" class="logo-img" />
         <span v-if="!collapsed" class="logo-text">{{ systemStore.siteName }}</span>
-        <span v-else class="logo-text">{{ systemStore.siteName.charAt(0) }}</span>
+        <span v-else-if="!systemStore.siteLogo" class="logo-text">{{ systemStore.siteName.charAt(0) }}</span>
       </div>
       <a-menu
         v-model:selectedKeys="selectedKeys"
@@ -20,127 +21,131 @@
       >
         <a-menu-item key="dashboard">
           <DashboardOutlined />
-          <span>仪表盘</span>
+          <span>{{ $t('仪表盘') }}</span>
         </a-menu-item>
         <a-menu-item v-if="userStore.userInfo?.role === 'admin'" key="users">
           <TeamOutlined />
-          <span>用户管理</span>
+          <span>{{ $t('用户管理') }}</span>
         </a-menu-item>
         <a-menu-item v-if="userStore.userInfo?.role === 'admin'" key="audit">
           <SafetyCertificateOutlined />
-          <span>入驻审核</span>
+          <span>{{ $t('入驻审核') }}</span>
         </a-menu-item>
         <a-sub-menu v-if="userStore.userInfo?.role === 'admin'" key="recruitment">
           <template #title>
             <BankOutlined />
-            <span>招聘管理</span>
+            <span>{{ $t('招聘管理') }}</span>
           </template>
           <a-menu-item key="jobs">
             <SolutionOutlined />
-            <span>职位管理</span>
+            <span>{{ $t('职位管理') }}</span>
           </a-menu-item>
           <a-menu-item key="companies">
             <BankOutlined />
-            <span>企业管理</span>
+            <span>{{ $t('企业管理') }}</span>
           </a-menu-item>
           <a-menu-item key="applications">
             <SendOutlined />
-            <span>投递管理</span>
+            <span>{{ $t('投递管理') }}</span>
           </a-menu-item>
         </a-sub-menu>
         <a-sub-menu v-if="userStore.userInfo?.role === 'admin'" key="community">
           <template #title>
             <TeamOutlined />
-            <span>社区管理</span>
+            <span>{{ $t('社区管理') }}</span>
           </template>
           <a-menu-item key="community/categories">
             <AppstoreOutlined />
-            <span>分类管理</span>
+            <span>{{ $t('分类管理') }}</span>
           </a-menu-item>
           <a-menu-item key="community/posts">
             <MessageOutlined />
-            <span>帖子管理</span>
+            <span>{{ $t('帖子管理') }}</span>
           </a-menu-item>
           <a-menu-item key="community/comments">
             <CommentOutlined />
-            <span>评论管理</span>
+            <span>{{ $t('评论管理') }}</span>
           </a-menu-item>
         </a-sub-menu>
         <a-sub-menu v-if="userStore.userInfo?.role === 'admin'" key="resume">
           <template #title>
             <FileTextOutlined />
-            <span>简历中心</span>
+            <span>{{ $t('简历中心') }}</span>
           </template>
           <a-menu-item key="resumes/templates">
             <LayoutOutlined />
-            <span>模板管理</span>
+            <span>{{ $t('模板管理') }}</span>
           </a-menu-item>
           <a-menu-item key="resumes/categories">
             <AppstoreOutlined />
-            <span>分类管理</span>
+            <span>{{ $t('分类管理') }}</span>
           </a-menu-item>
           <a-menu-item key="resumes/admin">
             <SolutionOutlined />
-            <span>简历管理</span>
+            <span>{{ $t('简历管理') }}</span>
           </a-menu-item>
         </a-sub-menu>
         <a-sub-menu v-if="userStore.userInfo?.role === 'admin'" key="interview">
           <template #title>
             <BulbOutlined />
-            <span>面试题库</span>
+            <span>{{ $t('面试题库') }}</span>
           </template>
           <a-menu-item key="interview/questions">
             <UnorderedListOutlined />
-            <span>题库管理</span>
+            <span>{{ $t('题库管理') }}</span>
           </a-menu-item>
           <a-menu-item key="interview/categories">
             <ApartmentOutlined />
-            <span>分类管理</span>
+            <span>{{ $t('分类管理') }}</span>
           </a-menu-item>
           <a-menu-item key="interview/records">
             <FileTextOutlined />
-            <span>面试记录</span>
+            <span>{{ $t('面试记录') }}</span>
           </a-menu-item>
         </a-sub-menu>
         <a-menu-item key="notifications">
           <BellOutlined />
-          <span>消息通知</span>
+          <span>{{ $t('消息通知') }}</span>
           <a-badge v-if="unreadCount > 0" :count="unreadCount" :offset="[10, 0]" />
         </a-menu-item>
         <a-sub-menu v-if="userStore.userInfo?.role === 'admin'" key="ai-config">
           <template #title>
             <ThunderboltOutlined />
-            <span>AI 配置</span>
+            <span>{{ $t('AI 配置') }}</span>
           </template>
           <a-menu-item key="system/ai-config/key">
             <KeyOutlined />
-            <span>配置 KEY</span>
+            <span>{{ $t('配置 KEY') }}</span>
           </a-menu-item>
           <a-menu-item key="system/ai-config/billing">
             <AccountBookOutlined />
-            <span>用量账单</span>
+            <span>{{ $t('用量账单') }}</span>
           </a-menu-item>
           <a-menu-item key="system/ai-config/logs">
             <FileTextOutlined />
-            <span>调用日志</span>
+            <span>{{ $t('调用日志') }}</span>
           </a-menu-item>
         </a-sub-menu>
         <a-sub-menu v-if="userStore.userInfo?.role === 'admin'" key="system">
           <template #title>
             <SettingOutlined />
-            <span>系统管理</span>
+            <span>{{ $t('系统管理') }}</span>
           </template>
           <a-menu-item key="system/announcement">
             <NotificationOutlined />
-            <span>公告管理</span>
+            <span>{{ $t('公告管理') }}</span>
           </a-menu-item>
           <a-menu-item key="system/settings">
             <SettingOutlined />
-            <span>系统设置</span>
+            <span>{{ $t('系统设置') }}</span>
+          </a-menu-item>
+          <a-menu-item key="system/i18n">
+            <GlobalOutlined />
+            <span>{{ $t('i18n 内容') }}</span>
           </a-menu-item>
           <a-menu-item key="system/dict">
             <DatabaseOutlined />
-            <span>数据字典</span>
+            <span>{{ $t('数据字典') }}</span>
           </a-menu-item>
         </a-sub-menu>
       </a-menu>
@@ -162,17 +167,18 @@
           />
         </div>
         <div class="header-right">
-          <a-tooltip title="访问首页">
+          <LocaleSwitch />
+          <a-tooltip :title="$t('访问首页')">
             <a class="header-action" :href="clientBaseUrl" target="_blank" rel="noopener noreferrer">
               <HomeFilled />
             </a>
           </a-tooltip>
-          <a-tooltip v-if="userStore.userInfo?.role === 'admin'" title="发送公告">
+          <a-tooltip v-if="userStore.userInfo?.role === 'admin'" :title="$t('发送公告')">
             <a class="header-action" @click="openAnnouncementModal">
               <SoundOutlined />
             </a>
           </a-tooltip>
-          <a-tooltip title="消息通知">
+          <a-tooltip :title="$t('消息通知')">
             <a-badge :count="unreadCount" :offset="[-4, 2]" :overflow-count="99">
               <a class="header-action" @click="router.push('/notifications')">
                 <BellOutlined />
@@ -193,22 +199,22 @@
               >
                 {{ String(userStore.userInfo?.nickname || userStore.userInfo?.username || '管').charAt(0) }}
               </a-avatar>
-              <span class="username">{{ userStore.userInfo?.nickname || userStore.userInfo?.username || '管理员' }}</span>
+              <span class="username">{{ userStore.userInfo?.nickname || userStore.userInfo?.username || $t('管理员') }}</span>
             </span>
             <template #overlay>
               <a-menu>
                 <a-menu-item @click="router.push('/profile?tab=info')">
                   <UserOutlined />
-                  <span>个人信息</span>
+                  <span>{{ $t('个人信息') }}</span>
                 </a-menu-item>
                 <a-menu-item @click="router.push('/profile?tab=password')">
                   <LockOutlined />
-                  <span>修改密码</span>
+                  <span>{{ $t('修改密码') }}</span>
                 </a-menu-item>
                 <a-menu-divider />
                 <a-menu-item @click="handleLogout">
                   <LogoutOutlined />
-                  <span>退出登录</span>
+                  <span>{{ $t('退出登录') }}</span>
                 </a-menu-item>
               </a-menu>
             </template>
@@ -224,33 +230,33 @@
 
     <a-modal
       v-model:open="announcementModalOpen"
-      title="发送公告"
+      :title="$t('发送公告')"
       width="640px"
       destroy-on-close
       :footer="null"
     >
       <a-form layout="vertical" class="announcement-form">
-        <a-form-item label="标题" required>
+        <a-form-item :label="$t('标题')" required>
           <a-input
             v-model:value="announcementTitle"
-            placeholder="请输入公告标题"
+            :placeholder="$t('请输入公告标题')"
             :maxlength="200"
             show-count
           />
         </a-form-item>
-        <a-form-item label="正文" required>
+        <a-form-item :label="$t('正文')" required>
           <a-textarea
             v-model:value="announcementContent"
-            placeholder="请输入公告内容"
+            :placeholder="$t('请输入公告内容')"
             :rows="6"
             :maxlength="5000"
             show-count
           />
         </a-form-item>
-        <a-form-item label="预览（用户收到的通知文案）">
+        <a-form-item :label="$t('预览（用户收到的通知文案）')">
           <div class="announcement-preview">{{ announcementPreview }}</div>
           <div v-if="announcementPreviewTruncated" class="announcement-preview-hint">
-            通知正文最长 500 字，超出部分已截断预览（发送时同样截断）
+            {{ $t('通知正文最长 500 字，超出部分已截断预览（发送时同样截断）') }}
           </div>
         </a-form-item>
         <a-alert
@@ -262,9 +268,9 @@
         />
       </a-form>
       <div class="announcement-modal-footer">
-        <a-button @click="announcementModalOpen = false">取消</a-button>
+        <a-button @click="announcementModalOpen = false">{{ $t('取消') }}</a-button>
         <a-button type="primary" :loading="announcementSubmitting" @click="submitAnnouncement">
-          发送给所有用户
+          {{ $t('发送给所有用户') }}
         </a-button>
       </div>
     </a-modal>
@@ -303,11 +309,14 @@ import {
   AccountBookOutlined,
   SoundOutlined,
   NotificationOutlined,
+  GlobalOutlined,
 } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
+import LocaleSwitch from '@/components/LocaleSwitch.vue'
 import { getUnreadCountApi, sendAnnouncementApi } from '@/api/system'
 import { message } from 'ant-design-vue'
+import { useI18n } from '@/i18n'
 
 const clientBaseUrl = import.meta.env.VITE_CLIENT_URL || 'http://localhost:5173'
 const collapsed = ref(false)
@@ -322,10 +331,13 @@ const announcementResult = ref<{ message: string; notifiedCount: number } | null
 
 const NOTIFICATION_MAX = 500
 const announcementPreviewRaw = computed(() => {
-  const t = announcementTitle.value.trim()
+  const title = announcementTitle.value.trim()
   const c = announcementContent.value.trim()
-  if (!t && !c) return '（填写标题与正文后在此预览）'
-  return `[公告] ${t || '（标题）'}: ${c || '（正文）'}`
+  if (!title && !c) return t('（填写标题与正文后在此预览）')
+  return t('[公告] {title}: {content}', {
+    title: title || t('（标题）'),
+    content: c || t('（正文）'),
+  })
 })
 const announcementPreviewTruncated = computed(
   () => announcementPreviewRaw.value.length > NOTIFICATION_MAX,
@@ -340,6 +352,7 @@ const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const systemStore = useSystemStore()
+const { t } = useI18n()
 
 async function fetchUnreadCount() {
   try {
@@ -401,11 +414,11 @@ async function submitAnnouncement() {
   const title = announcementTitle.value.trim()
   const content = announcementContent.value.trim()
   if (!title) {
-    message.warning('请填写标题')
+    message.warning(t('请填写标题'))
     return
   }
   if (!content) {
-    message.warning('请填写正文')
+    message.warning(t('请填写正文'))
     return
   }
   announcementSubmitting.value = true
@@ -414,7 +427,7 @@ async function submitAnnouncement() {
     const res = await sendAnnouncementApi({ title, content })
     const payload = res.data as { message: string; notifiedCount: number }
     announcementResult.value = payload
-    message.success(`已通知 ${payload.notifiedCount} 位用户`)
+    message.success(t('已通知 {count} 位用户', { count: payload.notifiedCount }))
     await fetchUnreadCount()
   } finally {
     announcementSubmitting.value = false
@@ -443,7 +456,11 @@ async function submitAnnouncement() {
     padding: 0 12px;
   }
 
-  .logo-avatar {
+  .logo-img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    border-radius: 6px;
     flex-shrink: 0;
   }
 

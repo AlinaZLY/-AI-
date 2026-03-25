@@ -4,6 +4,7 @@ import { getPublicSettingsApi } from '@/api/system'
 
 export const useSystemStore = defineStore('system', () => {
   const siteName = ref('校园招聘服务平台')
+  const siteLogo = ref('')
 
   async function fetchSettings() {
     try {
@@ -11,8 +12,11 @@ export const useSystemStore = defineStore('system', () => {
       if (res.data?.siteName) {
         siteName.value = res.data.siteName
       }
+      if (res.data?.site_logo) {
+        siteLogo.value = res.data.site_logo
+      }
     } catch { /* 使用默认值 */ }
   }
 
-  return { siteName, fetchSettings }
+  return { siteName, siteLogo, fetchSettings }
 })
