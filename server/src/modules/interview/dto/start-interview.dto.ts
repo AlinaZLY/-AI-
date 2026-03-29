@@ -8,6 +8,7 @@ export class StartInterviewDto {
 
   @IsOptional()
   @IsString()
+  @Length(0, 10000)
   jobDescription?: string;
 
   @IsOptional()

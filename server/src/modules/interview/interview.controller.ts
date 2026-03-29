@@ -15,7 +15,6 @@ import { StartInterviewDto } from './dto/start-interview.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 
 @Controller('interview')
-@UseGuards(JwtAuthGuard)
 export class InterviewController {
   constructor(private readonly interviewService: InterviewService) {}
 
@@ -87,6 +86,8 @@ export class InterviewController {
   }
 
   @Post('questions')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   createQuestion(@Request() req, @Body() dto: CreateQuestionDto) {
     return this.interviewService.createQuestion(dto, req.user.id);
   }
@@ -143,26 +144,31 @@ export class InterviewController {
   // ==================== 模拟面试 ====================
 
   @Post('start')
+  @UseGuards(JwtAuthGuard)
   startInterview(@Request() req, @Body() dto: StartInterviewDto) {
     return this.interviewService.startInterview(req.user.id, dto);
   }
 
   @Get('list')
+  @UseGuards(JwtAuthGuard)
   getInterviews(@Request() req, @Query('page') page?: number, @Query('pageSize') pageSize?: number) {
     return this.interviewService.getInterviews(req.user.id, page || 1, pageSize || 10);
   }
 
   @Get('radar')
+  @UseGuards(JwtAuthGuard)
   getRadarData(@Request() req) {
     return this.interviewService.getRadarData(req.user.id);
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   getInterviewDetail(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.interviewService.getInterviewDetail(id, req.user.id);
   }
 
   @Post(':id/questions/:questionId/answer')
+  @UseGuards(JwtAuthGuard)
   submitAnswer(
     @Param('id', ParseIntPipe) id: number,
     @Param('questionId', ParseIntPipe) questionId: number,
@@ -173,6 +179,7 @@ export class InterviewController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   deleteInterview(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.interviewService.deleteInterview(id, req.user.id);
   }

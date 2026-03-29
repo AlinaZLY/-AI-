@@ -9,7 +9,8 @@ import { Resume } from '../resume/entities/resume.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { StartInterviewDto } from './dto/start-interview.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
-import { seedQuestions } from './seed-questions';
+import { seedQuestions } from './seed-questions-en';
+import { AiRuntimeService } from '../system/ai-runtime.service';
 
 @Injectable()
 export class InterviewService implements OnModuleInit {
@@ -19,37 +20,46 @@ export class InterviewService implements OnModuleInit {
     @InjectRepository(QuestionBank) private qbRepo: Repository<QuestionBank>,
     @InjectRepository(QuestionCategory) private qcRepo: Repository<QuestionCategory>,
     @InjectRepository(Resume) private resumeRepo: Repository<Resume>,
+    private readonly aiRuntimeService: AiRuntimeService,
   ) {}
 
   async onModuleInit() {
+    // Force re-seed: clear old data and re-populate with English seed data
+    const existingQ = await this.qbRepo.count();
+    if (existingQ > 0) {
+      await this.qbRepo.clear();
+      await this.qcRepo.clear();
+      console.log(`Cleared ${existingQ} old questions for English re-seed`);
+    }
+
     const catCount = await this.qcRepo.count();
     if (catCount === 0) {
-      const tech = await this.qcRepo.save(this.qcRepo.create({ name: '技术面试', type: 'type', description: '技术类面试题', sort: 1 }));
+      const tech = await this.qcRepo.save(this.qcRepo.create({ name: 'Technical Interview', type: 'type', description: 'Technical interview questions', sort: 1 }));
       await this.qcRepo.save(this.qcRepo.create([
-        { name: '数据结构与算法', parentId: tech.id, type: 'type', sort: 1 },
-        { name: '计算机网络', parentId: tech.id, type: 'type', sort: 2 },
-        { name: '操作系统', parentId: tech.id, type: 'type', sort: 3 },
-        { name: '数据库', parentId: tech.id, type: 'type', sort: 4 },
-        { name: '系统设计', parentId: tech.id, type: 'type', sort: 5 },
+        { name: 'Data Structures & Algorithms', parentId: tech.id, type: 'type', sort: 1 },
+        { name: 'Computer Networks', parentId: tech.id, type: 'type', sort: 2 },
+        { name: 'Operating Systems', parentId: tech.id, type: 'type', sort: 3 },
+        { name: 'Database', parentId: tech.id, type: 'type', sort: 4 },
+        { name: 'System Design', parentId: tech.id, type: 'type', sort: 5 },
       ]));
 
-      const behavior = await this.qcRepo.save(this.qcRepo.create({ name: '行为面试', type: 'type', description: '行为和情景类', sort: 2 }));
+      const behavior = await this.qcRepo.save(this.qcRepo.create({ name: 'Behavioral Interview', type: 'type', description: 'Behavioral and situational questions', sort: 2 }));
       await this.qcRepo.save(this.qcRepo.create([
-        { name: '自我介绍', parentId: behavior.id, type: 'type', sort: 1 },
-        { name: 'STAR法则', parentId: behavior.id, type: 'type', sort: 2 },
-        { name: '职业规划', parentId: behavior.id, type: 'type', sort: 3 },
-        { name: '情景模拟', parentId: behavior.id, type: 'type', sort: 4 },
+        { name: 'Self Introduction', parentId: behavior.id, type: 'type', sort: 1 },
+        { name: 'STAR Method', parentId: behavior.id, type: 'type', sort: 2 },
+        { name: 'Career Planning', parentId: behavior.id, type: 'type', sort: 3 },
+        { name: 'Scenario Simulation', parentId: behavior.id, type: 'type', sort: 4 },
       ]));
 
-      const company = await this.qcRepo.save(this.qcRepo.create({ name: '公司专题', type: 'company', description: '按公司分类的面试题', sort: 3 }));
+      const company = await this.qcRepo.save(this.qcRepo.create({ name: 'Company Topics', type: 'company', description: 'Interview questions by company', sort: 3 }));
       await this.qcRepo.save(this.qcRepo.create([
-        { name: '宝洁八大问', parentId: company.id, type: 'company', sort: 1 },
-        { name: '字节跳动', parentId: company.id, type: 'company', sort: 2 },
-        { name: '腾讯', parentId: company.id, type: 'company', sort: 3 },
-        { name: '阿里巴巴', parentId: company.id, type: 'company', sort: 4 },
+        { name: 'P&G Eight Questions', parentId: company.id, type: 'company', sort: 1 },
+        { name: 'ByteDance', parentId: company.id, type: 'company', sort: 2 },
+        { name: 'Tencent', parentId: company.id, type: 'company', sort: 3 },
+        { name: 'Alibaba', parentId: company.id, type: 'company', sort: 4 },
       ]));
 
-      await this.qcRepo.save(this.qcRepo.create({ name: '项目经验', type: 'type', description: '项目深挖类', sort: 4 }));
+      await this.qcRepo.save(this.qcRepo.create({ name: 'Project Experience', type: 'type', description: 'Project deep-dive questions', sort: 4 }));
     }
 
     const qCount = await this.qbRepo.count();
@@ -66,7 +76,7 @@ export class InterviewService implements OnModuleInit {
         .map((sq) => ({
           question: sq.question,
           referenceAnswer: sq.referenceAnswer,
-          categoryId: catMap[sq.categoryName] || catMap['行为面试'],
+          categoryId: catMap[sq.categoryName] || catMap['Behavioral Interview'],
           difficulty: sq.difficulty,
           source: QuestionSource.SYSTEM,
           company: sq.company,
@@ -84,7 +94,7 @@ export class InterviewService implements OnModuleInit {
         await this.qcRepo.update(cat.id, { questionCount: count });
       }
 
-      console.log(`面试题库已更新：新增 ${newQuestions.length} 道题，总计 ${qCount + newQuestions.length} 道`);
+      console.log(`Question bank updated: added ${newQuestions.length} questions, total ${qCount + newQuestions.length}`);
     }
   }
 
@@ -92,12 +102,23 @@ export class InterviewService implements OnModuleInit {
 
   async getCategories() {
     const all = await this.qcRepo.find({ order: { sort: 'ASC', id: 'ASC' } });
+
+    // 单条 GROUP BY 查询替代 N 次 count()，避免 N+1 性能问题
+    const countRows = await this.qbRepo
+      .createQueryBuilder('q')
+      .select('q.categoryId', 'categoryId')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('q.categoryId')
+      .getRawMany();
+    const countMap = new Map<number, number>(
+      countRows.map((r: any) => [Number(r.categoryId), Number(r.count)]),
+    );
+
     const map = new Map<number, any>();
     const tree: any[] = [];
 
     for (const cat of all) {
-      const count = await this.qbRepo.count({ where: { categoryId: cat.id } });
-      map.set(cat.id, { ...cat, questionCount: count, children: [] });
+      map.set(cat.id, { ...cat, questionCount: countMap.get(cat.id) || 0, children: [] });
     }
 
     for (const cat of map.values()) {
@@ -129,7 +150,14 @@ export class InterviewService implements OnModuleInit {
 
   async getQuestions(page = 1, pageSize = 10, categoryId?: number, difficulty?: string, keyword?: string, source?: string, questionType?: string) {
     const qb = this.qbRepo.createQueryBuilder('q');
-    if (categoryId) qb.andWhere('q.categoryId = :categoryId', { categoryId });
+    if (categoryId) {
+      const catIds = await this.collectDescendantCategoryIds(categoryId);
+      if (catIds.length > 0) {
+        qb.andWhere('q.categoryId IN (:...catIds)', { catIds });
+      } else {
+        qb.andWhere('q.categoryId = :categoryId', { categoryId });
+      }
+    }
     if (difficulty) qb.andWhere('q.difficulty = :difficulty', { difficulty });
     if (source) qb.andWhere('q.source = :source', { source });
     if (questionType) qb.andWhere('q.questionType = :questionType', { questionType });
@@ -301,7 +329,7 @@ export class InterviewService implements OnModuleInit {
     const question = await this.iqRepo.findOne({ where: { id: questionId, interviewId } });
     if (!question) throw new NotFoundException('题目不存在');
 
-    const { score, dimensionScores, feedback } = this.evaluateAnswer(dto.answer, question.question, question.referenceAnswer);
+    const { score, dimensionScores, feedback } = await this.evaluateAnswer(dto.answer, question.question, question.referenceAnswer);
 
     question.answer = dto.answer;
     question.score = score;
@@ -379,7 +407,57 @@ export class InterviewService implements OnModuleInit {
     return { dimensions, scores: avg, interviewCount: interviews.length };
   }
 
-  private evaluateAnswer(answer: string, question: string, referenceAnswer?: string): {
+  private async evaluateAnswer(answer: string, question: string, referenceAnswer?: string): Promise<{
+    score: number;
+    dimensionScores: Record<string, number>;
+    feedback: string;
+  }> {
+    if (await this.aiRuntimeService.isConfigured()) {
+      try {
+        const aiResult = await this.aiRuntimeService.chatJson<{
+          score?: number;
+          dimensionScores?: Record<string, number>;
+          feedback?: string;
+        }>({
+          scene: 'interview_score',
+          maxTokens: 1200,
+          temperature: 0.2,
+          systemPrompt: [
+            '你是一名严格但专业的校园面试官。',
+            '请根据题目、参考答案和候选人回答进行评分。',
+            '输出 JSON，不要输出 markdown。',
+            'JSON 格式必须为：{"score":86,"dimensionScores":{"内容完整性":80,"逻辑性":88,"专业性":90,"表达能力":84,"创新思维":78},"feedback":"三段以内中文反馈"}',
+            '所有分数取 0-100 的整数。',
+          ].join('\n'),
+          userPrompt: JSON.stringify({
+            question,
+            referenceAnswer: referenceAnswer || '',
+            answer,
+          }),
+        });
+
+        if (aiResult && aiResult.dimensionScores && typeof aiResult.feedback === 'string') {
+          const dimensionScores = this.normalizeDimensionScores(aiResult.dimensionScores);
+          const score = this.normalizeScore(
+            typeof aiResult.score === 'number'
+              ? aiResult.score
+              : Math.round(Object.values(dimensionScores).reduce((sum, value) => sum + value, 0) / 5),
+          );
+          return {
+            score,
+            dimensionScores,
+            feedback: aiResult.feedback.trim() || 'AI 已完成评分',
+          };
+        }
+      } catch {
+        // AI 不可用时自动回退到规则评分，避免答题流程中断。
+      }
+    }
+
+    return this.evaluateAnswerRuleBased(answer, referenceAnswer);
+  }
+
+  private evaluateAnswerRuleBased(answer: string, referenceAnswer?: string): {
     score: number;
     dimensionScores: Record<string, number>;
     feedback: string;
@@ -390,7 +468,8 @@ export class InterviewService implements OnModuleInit {
     const logic = answerLen > 100 ? Math.min(90, 50 + Math.round(answerLen / 10)) : Math.round(answerLen / 2);
     const professionalism = referenceAnswer ? this.calculateSimilarity(answer, referenceAnswer) : Math.min(70, answerLen / 4);
     const expression = answerLen > 50 ? Math.min(85, 40 + Math.round(answerLen / 8)) : Math.round(answerLen * 0.8);
-    const innovation = Math.min(75, 30 + Math.round(Math.random() * 30));
+    const uniqueWords = new Set(answer.replace(/[^\w\u4e00-\u9fff]/g, ' ').split(/\s+/).filter(Boolean));
+    const innovation = Math.min(85, Math.round(uniqueWords.size * 1.5) + (answerLen > 200 ? 20 : 0));
 
     const dimensionScores = {
       '内容完整性': Math.round(completeness),
@@ -432,6 +511,20 @@ export class InterviewService implements OnModuleInit {
       result[d] = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
     }
     return result;
+  }
+
+  private normalizeDimensionScores(raw: Record<string, number>) {
+    const dimensions = ['内容完整性', '逻辑性', '专业性', '表达能力', '创新思维'];
+    const normalized: Record<string, number> = {};
+    for (const key of dimensions) {
+      normalized[key] = this.normalizeScore(raw?.[key] ?? 0);
+    }
+    return normalized;
+  }
+
+  private normalizeScore(value: number) {
+    const safe = Number.isFinite(value) ? Math.round(value) : 0;
+    return Math.max(0, Math.min(100, safe));
   }
 
   private generateOverallFeedback(score: number, dimensions: Record<string, number>): string {
