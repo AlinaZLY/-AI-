@@ -12,12 +12,13 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User } from '../user/entities/user.entity';
+import { Company } from '../company/entities/company.entity';
 import { NotificationModule } from '../notification/notification.module';
 import { SystemModule } from '../system/system.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, Company]),
     PassportModule,
     NotificationModule,
     SystemModule,

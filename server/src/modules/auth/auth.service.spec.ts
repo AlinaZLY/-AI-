@@ -5,6 +5,8 @@ import { ConflictException, UnauthorizedException, BadRequestException } from '@
 import { AuthService } from './auth.service';
 import { User, UserRole } from '../user/entities/user.entity';
 import { RedisService } from '@common/redis/redis.service';
+import { NotificationService } from '../notification/notification.service';
+import { SystemService } from '../system/system.service';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt');
@@ -14,6 +16,8 @@ describe('AuthService', () => {
   let mockUserRepository: any;
   let mockJwtService: any;
   let mockRedisService: any;
+  let mockNotificationService: any;
+  let mockSystemService: any;
 
   beforeEach(async () => {
     mockUserRepository = {
@@ -32,12 +36,22 @@ describe('AuthService', () => {
       del: jest.fn(),
     };
 
+    mockNotificationService = {
+      create: jest.fn().mockResolvedValue(null),
+    };
+
+    mockSystemService = {
+      getPublicSettings: jest.fn().mockResolvedValue({}),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
         { provide: JwtService, useValue: mockJwtService },
         { provide: RedisService, useValue: mockRedisService },
+        { provide: NotificationService, useValue: mockNotificationService },
+        { provide: SystemService, useValue: mockSystemService },
       ],
     }).compile();
 
