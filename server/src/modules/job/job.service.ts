@@ -16,6 +16,28 @@ export class JobService {
     private companyService: CompanyService,
   ) {}
 
+  private toPublicRecruiter(user?: {
+    id: number;
+    username?: string;
+    nickname?: string;
+    avatar?: string;
+  } | null) {
+    if (!user) return null;
+    return {
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      avatar: user.avatar,
+    };
+  }
+
+  private toPublicJob(job: Job & { user?: any }) {
+    return {
+      ...job,
+      user: this.toPublicRecruiter(job.user),
+    };
+  }
+
   async create(userId: number, dto: CreateJobDto, userRole?: string) {
     if (userRole !== UserRole.ADMIN) {
       const company = await this.companyService.findByUserId(userId);
@@ -33,7 +55,8 @@ export class JobService {
   async findAll(query: QueryJobDto) {
     const { page = 1, pageSize = 10, keyword, location, positionType, workType, status, companyId, salaryMin, salaryMax, sort } = query;
     const qb = this.jobRepo.createQueryBuilder('job')
-      .leftJoinAndSelect('job.user', 'user');
+      .leftJoin('job.user', 'user')
+      .addSelect(['user.id', 'user.username', 'user.nickname', 'user.avatar']);
 
     if (keyword) {
       qb.andWhere('(job.title LIKE :kw OR job.companyName LIKE :kw OR job.description LIKE :kw)', { kw: `%${keyword}%` });
@@ -72,7 +95,12 @@ export class JobService {
 
     qb.skip(((+page) - 1) * (+pageSize)).take(+pageSize);
     const [list, total] = await qb.getManyAndCount();
-    return { list, total, page: +page, pageSize: +pageSize };
+    return {
+      list: list.map((job) => this.toPublicJob(job as Job & { user?: any })),
+      total,
+      page: +page,
+      pageSize: +pageSize,
+    };
   }
 
   async findAllAdmin(page = 1, pageSize = 10, keyword?: string, status?: string) {
@@ -94,14 +122,15 @@ export class JobService {
   }
 
   async findOne(id: number) {
-    const job = await this.jobRepo.findOne({
-      where: { id },
-      relations: ['user'],
-    });
+    const job = await this.jobRepo.createQueryBuilder('job')
+      .leftJoin('job.user', 'user')
+      .addSelect(['user.id', 'user.username', 'user.nickname', 'user.avatar'])
+      .where('job.id = :id', { id })
+      .getOne();
     if (!job) throw new NotFoundException('职位不存在');
     await this.jobRepo.increment({ id }, 'viewCount', 1);
     job.viewCount += 1;
-    return job;
+    return this.toPublicJob(job as Job & { user?: any });
   }
 
   async update(id: number, userId: number, dto: UpdateJobDto, isAdmin = false) {

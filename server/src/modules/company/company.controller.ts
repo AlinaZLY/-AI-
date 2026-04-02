@@ -52,7 +52,14 @@ export class CompanyController {
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.companyService.findOne(id);
+    return this.companyService.findOnePublic(id);
+  }
+
+  @Get('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findOneAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.companyService.findOneAdmin(id);
   }
 
   @Post()

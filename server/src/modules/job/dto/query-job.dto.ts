@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsNumberString, Max } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 import { JobStatus, WorkType } from '../entities/job.entity';
 
@@ -33,15 +33,18 @@ export class QueryJobDto {
   status?: JobStatus;
 
   @IsOptional()
-  @IsNumberString()
+  @Type(() => Number)
+  @IsNumber()
   companyId?: number;
 
   @IsOptional()
-  @IsNumberString()
+  @Type(() => Number)
+  @IsNumber()
   salaryMin?: number;
 
   @IsOptional()
-  @IsNumberString()
+  @Type(() => Number)
+  @IsNumber()
   salaryMax?: number;
 
   @IsOptional()

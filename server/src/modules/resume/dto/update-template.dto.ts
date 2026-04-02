@@ -1,4 +1,4 @@
-import { IsString, Length, IsOptional, IsNumber } from 'class-validator';
+import { IsString, Length, IsOptional, IsNumber, IsBoolean, IsObject } from 'class-validator';
 
 export class UpdateTemplateDto {
   @IsOptional()
@@ -27,4 +27,16 @@ export class UpdateTemplateDto {
   @IsOptional()
   @IsNumber()
   sort?: number;
+
+  @IsOptional()
+  @IsString()
+  thumbnail?: string;
+
+  @IsOptional()
+  @IsObject()
+  layout?: Record<string, any>;
+
+  @IsOptional()
+  @IsBoolean()
+  isSystem?: boolean;
 }

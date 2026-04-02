@@ -177,8 +177,12 @@ export class ResumeController {
 
   @Post('item/:id/optimize')
   @UseGuards(JwtAuthGuard)
-  optimize(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    return this.resumeService.optimize(id, req.user.id);
+  optimize(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+    @Body() body?: Record<string, any>,
+  ) {
+    return this.resumeService.optimize(id, req.user.id, body);
   }
 
   @Get('item/:id/render')
