@@ -2,13 +2,15 @@ import { IsString, IsNumber, Length, IsOptional, IsEnum, IsDateString } from 'cl
 import { ApplicationTag } from '../entities/application.entity';
 
 export class CreateApplicationDto {
+  @IsOptional()
   @IsString()
   @Length(1, 100)
-  company: string;
+  company?: string;
 
+  @IsOptional()
   @IsString()
   @Length(1, 100)
-  position: string;
+  position?: string;
 
   @IsOptional()
   @IsNumber()
