@@ -16,6 +16,7 @@ import { Company } from '../company/entities/company.entity';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '../notification/entities/notification.entity';
 import { SendAnnouncementDto } from './dto/send-announcement.dto';
+import { AnnouncementRecord } from './entities/announcement-record.entity';
 
 @Injectable()
 export class SystemService {
@@ -48,10 +49,12 @@ export class SystemService {
     private dictItemRepo: Repository<DictItem>,
     @InjectRepository(AiCallLog)
     private aiLogRepo: Repository<AiCallLog>,
+    @InjectRepository(AnnouncementRecord)
+    private announcementRecordRepo: Repository<AnnouncementRecord>,
   ) {}
 
   /** 向指定范围活跃用户发送系统公告通知 */
-  async sendAnnouncement(dto: SendAnnouncementDto): Promise<{ message: string; notifiedCount: number }> {
+  async sendAnnouncement(dto: SendAnnouncementDto, adminUserId?: number): Promise<{ message: string; notifiedCount: number }> {
     const title = dto.title.trim();
     const content = dto.content.trim();
     const raw = `[公告] ${title}: ${content}`;
@@ -97,10 +100,30 @@ export class SystemService {
       notifiedCount += 1;
     }
 
+    await this.announcementRecordRepo.save(
+      this.announcementRecordRepo.create({
+        title,
+        content,
+        target: userIds && userIds.length > 0 ? 'specific' : target,
+        userIds: userIds && userIds.length > 0 ? userIds : null as any,
+        notifiedCount,
+        adminUserId: adminUserId || null as any,
+      }),
+    );
+
     return {
       message: `公告已发送，共通知 ${notifiedCount} 位用户`,
       notifiedCount,
     };
+  }
+
+  async getAnnouncementRecords(page = 1, pageSize = 50) {
+    const [list, total] = await this.announcementRecordRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return { list, total, page, pageSize };
   }
 
   async initDictData() {
@@ -108,35 +131,35 @@ export class SystemService {
     if (count > 0) return;
 
     const types = [
-      { code: 'application_channel', name: '投递渠道', items: [
-        { value: 'official', label: '官网', sort: 1 },
-        { value: 'boss', label: 'Boss直聘', sort: 2 },
-        { value: 'nowcoder', label: '牛客网', sort: 3 },
-        { value: 'lagou', label: '拉勾', sort: 4 },
-        { value: 'zhilian', label: '智联招聘', sort: 5 },
-        { value: 'liepin', label: '猎聘', sort: 6 },
-        { value: 'campus', label: '校招宣讲', sort: 7 },
-        { value: 'referral', label: '内推', sort: 8 },
-        { value: 'other', label: '其他', sort: 99 },
+      { code: 'application_channel', name: 'Application Channel', items: [
+        { value: 'official', label: 'Official Website', sort: 1 },
+        { value: 'boss', label: 'Boss Zhipin', sort: 2 },
+        { value: 'nowcoder', label: 'Nowcoder', sort: 3 },
+        { value: 'lagou', label: 'Lagou', sort: 4 },
+        { value: 'zhilian', label: 'Zhaopin', sort: 5 },
+        { value: 'liepin', label: 'Liepin', sort: 6 },
+        { value: 'campus', label: 'Campus Recruiting', sort: 7 },
+        { value: 'referral', label: 'Employee Referral', sort: 8 },
+        { value: 'other', label: 'Other', sort: 99 },
       ]},
-      { code: 'question_type', name: '面试题类型', items: [
-        { value: 'behavioral', label: '行为面试', sort: 1 },
-        { value: 'technical', label: '技术题', sort: 2 },
-        { value: 'situational', label: '情景题', sort: 3 },
-        { value: 'brain_teaser', label: '智力题', sort: 4 },
-        { value: 'case_study', label: '案例分析', sort: 5 },
+      { code: 'question_type', name: 'Question Type', items: [
+        { value: 'behavioral', label: 'Behavioral', sort: 1 },
+        { value: 'technical', label: 'Technical', sort: 2 },
+        { value: 'situational', label: 'Situational', sort: 3 },
+        { value: 'brain_teaser', label: 'Brain Teaser', sort: 4 },
+        { value: 'case_study', label: 'Case Study', sort: 5 },
       ]},
-      { code: 'position_type', name: '岗位类型', items: [
-        { value: 'frontend', label: '前端开发', sort: 1 },
-        { value: 'backend', label: '后端开发', sort: 2 },
-        { value: 'fullstack', label: '全栈开发', sort: 3 },
-        { value: 'mobile', label: '移动开发', sort: 4 },
-        { value: 'data', label: '数据分析', sort: 5 },
-        { value: 'ai', label: 'AI/算法', sort: 6 },
-        { value: 'product', label: '产品经理', sort: 7 },
-        { value: 'design', label: 'UI设计', sort: 8 },
-        { value: 'test', label: '测试开发', sort: 9 },
-        { value: 'devops', label: '运维', sort: 10 },
+      { code: 'position_type', name: 'Position Type', items: [
+        { value: 'frontend', label: 'Frontend', sort: 1 },
+        { value: 'backend', label: 'Backend', sort: 2 },
+        { value: 'fullstack', label: 'Full Stack', sort: 3 },
+        { value: 'mobile', label: 'Mobile', sort: 4 },
+        { value: 'data', label: 'Data Analysis', sort: 5 },
+        { value: 'ai', label: 'AI/Algorithm', sort: 6 },
+        { value: 'product', label: 'Product Manager', sort: 7 },
+        { value: 'design', label: 'UI Design', sort: 8 },
+        { value: 'test', label: 'QA/SDET', sort: 9 },
+        { value: 'devops', label: 'DevOps', sort: 10 },
       ]},
     ];
 
@@ -146,7 +169,7 @@ export class SystemService {
         await this.dictItemRepo.save(this.dictItemRepo.create({ ...item, dictTypeId: dictType.id }));
       }
     }
-    console.log('数据字典种子数据已初始化');
+    console.log('Dictionary seed data initialized');
   }
 
   /** 获取所有系统设置 */
@@ -525,7 +548,7 @@ export class SystemService {
       .getRawMany();
 
     const roleLabels: Record<string, string> = {
-      [UserRole.STUDENT]: '学生',
+      [UserRole.STUDENT]: '学生',    // translated by response interceptor
       [UserRole.ENTERPRISE]: '企业',
       [UserRole.ADMIN]: '管理员',
     };

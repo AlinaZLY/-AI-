@@ -2,7 +2,7 @@
  * 系统设置控制器
  * 管理平台全局配置（网站名称等），需要管理员权限
  */
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, ParseIntPipe, OnModuleInit, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, ParseIntPipe, OnModuleInit, UploadedFile, UseInterceptors, Request } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
@@ -16,6 +16,9 @@ import { SendAnnouncementDto } from './dto/send-announcement.dto';
 
 const speechDir = join(process.cwd(), 'uploads', 'speech');
 if (!existsSync(speechDir)) mkdirSync(speechDir, { recursive: true });
+
+const logoDir = join(process.cwd(), 'uploads', 'logos');
+if (!existsSync(logoDir)) mkdirSync(logoDir, { recursive: true });
 
 @Controller('system')
 export class SystemController implements OnModuleInit {
@@ -119,6 +122,31 @@ export class SystemController implements OnModuleInit {
     return { success: true, url, path };
   }
 
+  /** POST /api/system/upload-logo - 上传平台 LOGO */
+  @Post('upload-logo')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: logoDir,
+      filename: (_, file, cb) => {
+        const ext = file.originalname?.match(/\.[^.]+$/)?.[0] || '.png';
+        cb(null, `logo_${Date.now()}${ext}`);
+      },
+    }),
+    limits: { fileSize: 2 * 1024 * 1024 },
+    fileFilter: (_, file, cb) => {
+      if (file.mimetype.startsWith('image/')) cb(null, true);
+      else cb(new Error('仅支持图片文件'), false);
+    },
+  }))
+  async uploadLogo(@UploadedFile() file: Express.Multer.File) {
+    if (!file) return { success: false, message: '请上传图片文件' };
+    const logoUrl = `/uploads/logos/${file.filename}`;
+    await this.systemService.updateSetting('site_logo', logoUrl, '平台 LOGO');
+    return { success: true, url: logoUrl };
+  }
+
   /** GET /api/system/stats - 获取仪表盘统计数据（需要管理员权限） */
   @Get('stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -131,8 +159,15 @@ export class SystemController implements OnModuleInit {
   @Post('announcement')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async sendAnnouncement(@Body() body: SendAnnouncementDto) {
-    return this.systemService.sendAnnouncement(body);
+  async sendAnnouncement(@Request() req, @Body() body: SendAnnouncementDto) {
+    return this.systemService.sendAnnouncement(body, req.user.id);
+  }
+
+  @Get('announcement/history')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async getAnnouncementHistory(@Query('page') page?: string, @Query('pageSize') pageSize?: string) {
+    return this.systemService.getAnnouncementRecords(page ? parseInt(page, 10) : 1, pageSize ? parseInt(pageSize, 10) : 50);
   }
 
   @Get('dict')

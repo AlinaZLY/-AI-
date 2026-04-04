@@ -14,16 +14,18 @@ import { Company } from '../company/entities/company.entity';
 import { DictType, DictItem } from './entities/dict.entity';
 import { AiCallLog } from './entities/ai-call-log.entity';
 import { NotificationModule } from '../notification/notification.module';
+import { AiRuntimeService } from './ai-runtime.service';
+import { AnnouncementRecord } from './entities/announcement-record.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      SystemSetting, User, Post, Comment, Category, Resume, Application, Job, Company, DictType, DictItem, AiCallLog,
+      SystemSetting, User, Post, Comment, Category, Resume, Application, Job, Company, DictType, DictItem, AiCallLog, AnnouncementRecord,
     ]),
     NotificationModule,
   ],
   controllers: [SystemController],
-  providers: [SystemService],
-  exports: [SystemService],
+  providers: [SystemService, AiRuntimeService],
+  exports: [SystemService, AiRuntimeService],
 })
 export class SystemModule {}
