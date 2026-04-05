@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, Length, IsEmail, Matches } from 'class-validator';
+import { IsString, IsOptional, IsEnum, Length, IsEmail, Matches, IsNumber, IsArray } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class AdminCreateUserDto {
@@ -26,4 +26,40 @@ export class AdminCreateUserDto {
   @IsOptional()
   @IsEnum(UserRole, { message: '角色必须为 student、enterprise 或 admin' })
   role?: UserRole;
+
+  @IsOptional()
+  @IsString()
+  gender?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  school?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  major?: string;
+
+  @IsOptional()
+  @IsNumber()
+  graduationYear?: number;
+
+  @IsOptional()
+  @IsString()
+  degree?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  jobIntention?: string;
+
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  skills?: string[];
 }

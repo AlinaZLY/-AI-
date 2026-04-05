@@ -75,6 +75,9 @@ export class User {
   @Column({ default: true, comment: '账户是否启用' })
   isActive: boolean;
 
+  @Column({ type: 'datetime', nullable: true, comment: '最后在线时间' })
+  lastOnlineAt: Date;
+
   @CreateDateColumn({ comment: '创建时间' })
   createdAt: Date;
 

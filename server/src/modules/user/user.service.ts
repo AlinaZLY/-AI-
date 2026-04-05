@@ -39,7 +39,7 @@ export class UserService {
     return this.userRepository.save(user);
   }
 
-  async adminCreateUser(data: { username: string; password: string; role?: UserRole; nickname?: string; email?: string; phone?: string }) {
+  async adminCreateUser(data: { username: string; password: string; role?: UserRole; nickname?: string; email?: string; phone?: string; gender?: string; school?: string; major?: string; graduationYear?: number; degree?: string; jobIntention?: string; bio?: string; skills?: string[] }) {
     const existing = await this.userRepository.findOne({ where: { username: data.username } });
     if (existing) throw new ConflictException('用户名已存在');
     if (data.email) {

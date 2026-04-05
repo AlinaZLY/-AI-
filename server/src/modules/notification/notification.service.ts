@@ -17,6 +17,7 @@ export class NotificationService {
     postId?: number;
     commentId?: number;
     content: string;
+    meta?: Record<string, any>;
   }) {
     if (data.userId === data.fromUserId) return null;
     const notification = this.notificationRepo.create(data);
@@ -28,7 +29,7 @@ export class NotificationService {
     page = 1,
     pageSize = 20,
     type?: NotificationType,
-    isRead?: string,
+    isRead?: boolean,
   ) {
     const qb = this.notificationRepo
       .createQueryBuilder('n')
@@ -39,10 +40,8 @@ export class NotificationService {
     if (type) {
       qb.andWhere('n.type = :type', { type });
     }
-    if (isRead === 'true') {
-      qb.andWhere('n.isRead = :isRead', { isRead: true });
-    } else if (isRead === 'false') {
-      qb.andWhere('n.isRead = :isRead', { isRead: false });
+    if (isRead !== undefined) {
+      qb.andWhere('n.isRead = :isRead', { isRead });
     }
 
     qb.orderBy('n.createdAt', 'DESC')

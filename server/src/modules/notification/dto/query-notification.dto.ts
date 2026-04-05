@@ -1,13 +1,16 @@
-import { IsOptional, IsEnum, IsNumberString } from 'class-validator';
+import { IsOptional, IsEnum, IsNumber, IsBoolean } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 import { NotificationType } from '../entities/notification.entity';
 
 export class QueryNotificationDto {
   @IsOptional()
-  @IsNumberString()
+  @Type(() => Number)
+  @IsNumber()
   page?: number;
 
   @IsOptional()
-  @IsNumberString()
+  @Type(() => Number)
+  @IsNumber()
   pageSize?: number;
 
   @IsOptional()
@@ -15,5 +18,7 @@ export class QueryNotificationDto {
   type?: NotificationType;
 
   @IsOptional()
-  isRead?: string;
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isRead?: boolean;
 }

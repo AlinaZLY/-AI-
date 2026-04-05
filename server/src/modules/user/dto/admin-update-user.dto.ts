@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, Length, IsEmail, IsBoolean, Matches } from 'class-validator';
+import { IsString, IsOptional, IsEnum, Length, IsEmail, IsBoolean, Matches, IsNumber, IsArray } from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class AdminUpdateUserDto {
@@ -27,4 +27,40 @@ export class AdminUpdateUserDto {
   @IsString()
   @Length(6, 50)
   password?: string;
+
+  @IsOptional()
+  @IsString()
+  gender?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  school?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  major?: string;
+
+  @IsOptional()
+  @IsNumber()
+  graduationYear?: number;
+
+  @IsOptional()
+  @IsString()
+  degree?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  jobIntention?: string;
+
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  skills?: string[];
 }

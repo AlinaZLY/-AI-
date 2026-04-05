@@ -39,6 +39,9 @@ export class Notification {
   @Column({ length: 500, comment: '通知内容' })
   content: string;
 
+  @Column({ type: 'json', nullable: true, comment: '业务跳转元数据' })
+  meta: Record<string, any>;
+
   @Column({ default: false, comment: '是否已读' })
   isRead: boolean;
 
