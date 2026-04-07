@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-3xl mx-auto">
+  <div class="page-shell">
     <LoginPrompt v-if="!isLoggedIn" title="登录后进行企业认证" description="登录后可以提交企业认证材料，成为认证企业用户发布招聘信息" />
     <template v-else>
     <h1 class="text-2xl font-bold text-gray-900 mb-2">校园招聘企业认证</h1>
@@ -71,6 +71,26 @@
             <label class="block text-sm text-gray-600 mb-1">联系电话</label>
             <input v-model="form.contactPhone" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
           </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">联系邮箱</label>
+            <input v-model="form.contactEmail" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="如：hr@company.com" />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">企业规模</label>
+            <select v-model="form.scale" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm bg-white">
+              <option value="">请选择</option>
+              <option value="1-49人">1-49人</option>
+              <option value="50-149人">50-149人</option>
+              <option value="150-499人">150-499人</option>
+              <option value="500-999人">500-999人</option>
+              <option value="1000-9999人">1000-9999人</option>
+              <option value="10000人以上">10000人以上</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">企业官网</label>
+            <input v-model="form.website" type="url" class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm" placeholder="https://" />
+          </div>
         </div>
         <div>
           <label class="block text-sm text-gray-600 mb-1">详细地址</label>
@@ -92,7 +112,13 @@
           <div>
             <label class="block text-sm text-gray-600 mb-2">营业执照 <span class="text-red-500">*</span></label>
             <div class="upload-area" @click="triggerUpload('businessLicense')" :class="{ 'has-file': form.businessLicense }">
-              <img v-if="form.businessLicense" :src="form.businessLicense" class="upload-preview" />
+              <template v-if="form.businessLicense">
+                <img v-if="!isPdfFile(form.businessLicense)" :src="form.businessLicense" class="upload-preview" />
+                <div v-else class="upload-file-card">
+                  <div class="upload-file-ext">PDF</div>
+                  <a :href="form.businessLicense" target="_blank" rel="noreferrer" class="upload-file-link">打开文件</a>
+                </div>
+              </template>
               <template v-else>
                 <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <div class="text-xs text-gray-400 mt-1">点击上传</div>
@@ -104,7 +130,13 @@
           <div>
             <label class="block text-sm text-gray-600 mb-2">身份证正面 <span class="text-red-500">*</span></label>
             <div class="upload-area" @click="triggerUpload('idCardFront')" :class="{ 'has-file': form.idCardFront }">
-              <img v-if="form.idCardFront" :src="form.idCardFront" class="upload-preview" />
+              <template v-if="form.idCardFront">
+                <img v-if="!isPdfFile(form.idCardFront)" :src="form.idCardFront" class="upload-preview" />
+                <div v-else class="upload-file-card">
+                  <div class="upload-file-ext">PDF</div>
+                  <a :href="form.idCardFront" target="_blank" rel="noreferrer" class="upload-file-link">打开文件</a>
+                </div>
+              </template>
               <template v-else>
                 <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
                 <div class="text-xs text-gray-400 mt-1">点击上传</div>
@@ -116,7 +148,13 @@
           <div>
             <label class="block text-sm text-gray-600 mb-2">身份证反面 <span class="text-red-500">*</span></label>
             <div class="upload-area" @click="triggerUpload('idCardBack')" :class="{ 'has-file': form.idCardBack }">
-              <img v-if="form.idCardBack" :src="form.idCardBack" class="upload-preview" />
+              <template v-if="form.idCardBack">
+                <img v-if="!isPdfFile(form.idCardBack)" :src="form.idCardBack" class="upload-preview" />
+                <div v-else class="upload-file-card">
+                  <div class="upload-file-ext">PDF</div>
+                  <a :href="form.idCardBack" target="_blank" rel="noreferrer" class="upload-file-link">打开文件</a>
+                </div>
+              </template>
               <template v-else>
                 <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
                 <div class="text-xs text-gray-400 mt-1">点击上传</div>
@@ -163,12 +201,19 @@ const form = reactive({
   industry: '',
   city: '',
   contactPhone: '',
+  contactEmail: '',
+  scale: '',
+  website: '',
   address: '',
   description: '',
   businessLicense: '',
   idCardFront: '',
   idCardBack: '',
 })
+
+function isPdfFile(value?: string) {
+  return /\.pdf($|\?)/i.test(value || '')
+}
 
 onMounted(async () => {
   if (!isLoggedIn.value) return
@@ -184,6 +229,9 @@ onMounted(async () => {
         industry: res.data.industry || '',
         city: res.data.city || '',
         contactPhone: res.data.contactPhone || '',
+        contactEmail: res.data.contactEmail || '',
+        scale: res.data.scale || '',
+        website: res.data.website || '',
         address: res.data.address || '',
         description: res.data.description || '',
         businessLicense: res.data.businessLicense || '',
@@ -279,5 +327,25 @@ async function handleSubmit() {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.upload-file-card {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #eef2ff;
+  color: #4338ca;
+}
+.upload-file-ext {
+  font-size: 24px;
+  font-weight: 700;
+}
+.upload-file-link {
+  font-size: 12px;
+  color: #4338ca;
+  text-decoration: underline;
 }
 </style>

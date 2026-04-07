@@ -1,0 +1,277 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <linearGradient id="bgBlob" x1="0" y1="0" x2="800" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF7ED"/>
+      <stop offset="50%" stop-color="#EFF6FF"/>
+      <stop offset="100%" stop-color="#FDF2F8"/>
+    </linearGradient>
+    <linearGradient id="skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FDDCB5"/>
+      <stop offset="100%" stop-color="#F5C99A"/>
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2D1B0E"/>
+      <stop offset="100%" stop-color="#4A2C17"/>
+    </linearGradient>
+    <linearGradient id="topGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF7849"/>
+      <stop offset="100%" stop-color="#FF5722"/>
+    </linearGradient>
+    <linearGradient id="pantsGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="deskGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FED7AA"/>
+      <stop offset="100%" stop-color="#FDBA74"/>
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EFF6FF"/>
+      <stop offset="100%" stop-color="#DBEAFE"/>
+    </linearGradient>
+    <linearGradient id="cardOrange" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFEDD5"/>
+      <stop offset="100%" stop-color="#FED7AA"/>
+    </linearGradient>
+    <linearGradient id="plantGrad" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="100%" stop-color="#4ADE80"/>
+    </linearGradient>
+    <linearGradient id="plantGrad2" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#16A34A"/>
+      <stop offset="100%" stop-color="#22C55E"/>
+    </linearGradient>
+    <filter id="softShadow" x="-6%" y="-4%" width="112%" height="116%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#F97316" flood-opacity="0.08"/>
+    </filter>
+    <filter id="cardShadow" x="-8%" y="-6%" width="116%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#1E3A5F" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <!-- ===== BACKGROUND BLOBS (阿里妈妈柔和底色) ===== -->
+  <ellipse cx="400" cy="310" rx="350" ry="270" fill="url(#bgBlob)" opacity="0.85"/>
+  <circle cx="620" cy="160" r="120" fill="#FFF7ED" opacity="0.5"/>
+  <circle cx="180" cy="440" r="100" fill="#EFF6FF" opacity="0.5"/>
+
+  <!-- ===== GROUND ===== -->
+  <ellipse cx="400" cy="520" rx="320" ry="14" fill="#FDE68A" opacity="0.25"/>
+
+  <!-- ===== DESK ===== -->
+  <rect x="180" y="370" width="340" height="14" rx="7" fill="url(#deskGrad)" filter="url(#softShadow)"/>
+  <!-- Desk legs -->
+  <rect x="210" y="384" width="10" height="130" rx="5" fill="#FDBA74"/>
+  <rect x="480" y="384" width="10" height="130" rx="5" fill="#FDBA74"/>
+  <rect x="205" y="510" width="20" height="6" rx="3" fill="#FB923C" opacity="0.5"/>
+  <rect x="475" y="510" width="20" height="6" rx="3" fill="#FB923C" opacity="0.5"/>
+
+  <!-- ===== MONITOR ON DESK ===== -->
+  <g filter="url(#cardShadow)">
+    <rect x="260" y="240" width="180" height="130" rx="10" fill="#1E293B"/>
+    <rect x="268" y="248" width="164" height="108" rx="6" fill="url(#screenGrad)"/>
+    <!-- Screen content: profile card -->
+    <circle cx="310" cy="280" r="14" fill="#BFDBFE"/>
+    <circle cx="310" cy="276" r="7" fill="#60A5FA"/>
+    <path d="M300 290 C300 286, 305 283, 310 283 C315 283, 320 286, 320 290" fill="#60A5FA"/>
+    <rect x="335" y="270" width="50" height="5" rx="2.5" fill="#3B82F6"/>
+    <rect x="335" y="280" width="80" height="4" rx="2" fill="#93C5FD" opacity="0.7"/>
+    <rect x="335" y="288" width="65" height="4" rx="2" fill="#93C5FD" opacity="0.5"/>
+    <!-- Chat bubbles on screen -->
+    <rect x="280" y="310" width="60" height="20" rx="10" fill="#DBEAFE"/>
+    <rect x="355" y="318" width="55" height="20" rx="10" fill="#FF7849" opacity="0.2"/>
+    <rect x="280" y="338" width="45" height="6" rx="3" fill="#22C55E" opacity="0.6"/>
+    <!-- Monitor stand -->
+    <rect x="335" y="370" width="30" height="0" rx="2" fill="#334155"/>
+  </g>
+  <path d="M330 370 L370 370 L380 384 L320 384 Z" fill="#475569"/>
+
+  <!-- ===== GIRL CHARACTER (阿里妈妈圆润风格) ===== -->
+  <g transform="translate(310, 50)">
+    <!-- Hair back -->
+    <path d="M55 115 C35 130, 22 170, 28 220 C30 235, 38 238, 44 234 L44 160 C44 140, 48 125, 55 115Z" fill="url(#hair)" opacity="0.85"/>
+    <path d="M125 115 C145 130, 158 170, 152 220 C150 235, 142 238, 136 234 L136 160 C136 140, 132 125, 125 115Z" fill="url(#hair)" opacity="0.85"/>
+
+    <!-- Neck -->
+    <rect x="78" y="140" width="24" height="22" rx="8" fill="url(#skin)"/>
+
+    <!-- Body / top -->
+    <path d="M48 158 C48 155, 60 148, 90 148 C120 148, 132 155, 132 158 L136 260 C136 268, 126 272, 90 272 C54 272, 44 268, 44 260Z" fill="url(#topGrad)"/>
+    <!-- V collar -->
+    <path d="M74 152 L90 166 L106 152" stroke="white" stroke-width="2" fill="none" opacity="0.6"/>
+
+    <!-- Head -->
+    <ellipse cx="90" cy="105" rx="42" ry="46" fill="url(#skin)"/>
+
+    <!-- Hair front -->
+    <path d="M48 96 C48 54, 66 38, 90 38 C114 38, 132 54, 132 96 C132 100, 130 103, 126 101 C122 82, 110 70, 90 70 C70 70, 58 82, 54 101 C50 103, 48 100, 48 96Z" fill="url(#hair)"/>
+    <!-- Bangs detail -->
+    <path d="M56 88 C62 76, 72 70, 80 73 C74 78, 64 85, 56 88Z" fill="#2D1B0E" opacity="0.6"/>
+
+    <!-- Eyes (larger, rounder - alimama style) -->
+    <ellipse cx="74" cy="104" rx="6" ry="7" fill="white"/>
+    <ellipse cx="106" cy="104" rx="6" ry="7" fill="white"/>
+    <ellipse cx="75" cy="105.5" rx="4" ry="5" fill="#2D1B0E"/>
+    <ellipse cx="107" cy="105.5" rx="4" ry="5" fill="#2D1B0E"/>
+    <circle cx="76.5" cy="103" r="1.5" fill="white"/>
+    <circle cx="108.5" cy="103" r="1.5" fill="white"/>
+    <!-- Eyebrows (softer) -->
+    <path d="M65 94 C69 91, 78 91, 82 94" stroke="#6B4226" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M98 94 C102 91, 111 91, 115 94" stroke="#6B4226" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- Nose -->
+    <path d="M88 112 C89 114, 91 116, 90 116" stroke="#D4A574" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- Smile -->
+    <path d="M80 122 C83 127, 97 127, 100 122" stroke="#E8826A" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- Blush -->
+    <ellipse cx="65" cy="117" rx="9" ry="5" fill="#FDBA74" opacity="0.35"/>
+    <ellipse cx="115" cy="117" rx="9" ry="5" fill="#FDBA74" opacity="0.35"/>
+
+    <!-- Left arm (typing pose) -->
+    <path d="M48 175 C30 190, 10 220, 5 250 C2 260, 8 265, 18 260 L50 240" fill="url(#skin)"/>
+    <!-- Right arm -->
+    <path d="M132 175 C150 190, 168 215, 172 245 C175 255, 170 260, 160 256 L130 240" fill="url(#skin)"/>
+
+    <!-- Hands on desk area -->
+    <ellipse cx="18" cy="258" rx="12" ry="8" fill="url(#skin)"/>
+    <ellipse cx="160" cy="254" rx="12" ry="8" fill="url(#skin)"/>
+
+    <!-- Skirt -->
+    <path d="M52 268 C52 268, 42 320, 35 350 L145 350 C138 320, 128 268, 128 268Z" fill="url(#pantsGrad)"/>
+
+    <!-- Chair back -->
+    <rect x="22" y="200" width="136" height="8" rx="4" fill="#94A3B8" opacity="0.3"/>
+    <!-- Chair seat implied -->
+
+    <!-- Legs (hidden behind desk) -->
+  </g>
+
+  <!-- ===== FLOATING CARDS (阿里妈妈橙色调) ===== -->
+  <!-- Resume card - top right -->
+  <g filter="url(#cardShadow)" transform="rotate(-6 630 130)">
+    <rect x="580" y="80" width="110" height="140" rx="12" fill="white"/>
+    <rect x="580" y="80" width="110" height="40" rx="12" fill="url(#cardOrange)"/>
+    <rect x="580" y="108" width="110" height="12" fill="url(#cardOrange)"/>
+    <circle cx="635" cy="100" r="12" fill="white" opacity="0.8"/>
+    <circle cx="635" cy="97" r="6" fill="#FB923C"/>
+    <path d="M627 108 C627 105, 631 103, 635 103 C639 103, 643 105, 643 108" fill="#FB923C"/>
+    <rect x="598" y="132" width="74" height="4" rx="2" fill="#FDBA74"/>
+    <rect x="598" y="142" width="58" height="3" rx="1.5" fill="#FED7AA"/>
+    <rect x="598" y="150" width="66" height="3" rx="1.5" fill="#FED7AA"/>
+    <rect x="598" y="158" width="50" height="3" rx="1.5" fill="#FED7AA"/>
+    <rect x="608" y="178" width="54" height="22" rx="11" fill="#FF7849" opacity="0.15"/>
+    <rect x="618" y="184" width="34" height="10" rx="5" fill="#FF7849"/>
+  </g>
+
+  <!-- Small job card - top left -->
+  <g filter="url(#cardShadow)" transform="rotate(8 100 160)">
+    <rect x="50" y="120" width="100" height="72" rx="12" fill="white"/>
+    <rect x="62" y="132" width="40" height="5" rx="2.5" fill="#3B82F6"/>
+    <rect x="62" y="142" width="70" height="3" rx="1.5" fill="#BFDBFE"/>
+    <rect x="62" y="150" width="56" height="3" rx="1.5" fill="#BFDBFE"/>
+    <rect x="62" y="160" width="62" height="3" rx="1.5" fill="#BFDBFE"/>
+    <circle cx="130" cy="134" r="8" fill="#DCFCE7"/>
+    <path d="M126 134 L129 137 L134 131" stroke="#22C55E" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Chat bubble card - bottom right -->
+  <g filter="url(#cardShadow)" transform="translate(600, 340)">
+    <rect x="0" y="0" width="120" height="80" rx="14" fill="white"/>
+    <rect x="14" y="14" width="60" height="18" rx="9" fill="#DBEAFE"/>
+    <rect x="46" y="38" width="60" height="18" rx="9" fill="#FFEDD5"/>
+    <circle cx="24" cy="66" r="3" fill="#3B82F6" opacity="0.4"/>
+    <circle cx="34" cy="66" r="3" fill="#3B82F6" opacity="0.4"/>
+    <circle cx="44" cy="66" r="3" fill="#3B82F6" opacity="0.4"/>
+  </g>
+
+  <!-- ===== DECORATIVE PLANT - LEFT ===== -->
+  <g transform="translate(110, 360)">
+    <!-- Pot -->
+    <path d="M-15 40 L-10 80 L30 80 L35 40Z" fill="#FDBA74"/>
+    <rect x="-18" y="35" width="56" height="10" rx="5" fill="#FB923C"/>
+    <!-- Stems and leaves -->
+    <path d="M10 35 C10 10, 0 -10, -10 -25" stroke="#22C55E" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M10 35 C12 15, 20 0, 30 -15" stroke="#22C55E" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M10 35 C8 20, -5 5, -18 -5" stroke="#4ADE80" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- Leaves -->
+    <ellipse cx="-10" cy="-25" rx="14" ry="7" fill="url(#plantGrad)" transform="rotate(-30 -10 -25)"/>
+    <ellipse cx="30" cy="-15" rx="13" ry="6" fill="url(#plantGrad)" transform="rotate(25 30 -15)"/>
+    <ellipse cx="-18" cy="-5" rx="11" ry="5" fill="url(#plantGrad2)" transform="rotate(-15 -18 -5)"/>
+    <ellipse cx="5" cy="-10" rx="9" ry="5" fill="#4ADE80" transform="rotate(10 5 -10)" opacity="0.7"/>
+  </g>
+
+  <!-- ===== DECORATIVE PLANT - RIGHT ===== -->
+  <g transform="translate(670, 400)">
+    <path d="M-10 30 L-6 60 L26 60 L30 30Z" fill="#FDBA74" opacity="0.8"/>
+    <rect x="-13" y="26" width="46" height="8" rx="4" fill="#FB923C" opacity="0.8"/>
+    <path d="M10 26 C10 8, 2 -8, -5 -18" stroke="#22C55E" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M10 26 C12 10, 18 -2, 25 -10" stroke="#4ADE80" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="-5" cy="-18" rx="11" ry="6" fill="url(#plantGrad)" transform="rotate(-25 -5 -18)"/>
+    <ellipse cx="25" cy="-10" rx="10" ry="5" fill="url(#plantGrad2)" transform="rotate(20 25 -10)"/>
+  </g>
+
+  <!-- ===== COFFEE CUP ON DESK ===== -->
+  <g transform="translate(490, 338)">
+    <path d="M0 18 L4 40 L26 40 L30 18Z" fill="white" stroke="#FDBA74" stroke-width="1.5"/>
+    <rect x="-2" y="15" width="34" height="6" rx="3" fill="white" stroke="#FDBA74" stroke-width="1.5"/>
+    <!-- Handle -->
+    <path d="M30 22 C38 22, 38 34, 30 34" stroke="#FDBA74" stroke-width="1.5" fill="none"/>
+    <!-- Steam -->
+    <path d="M10 12 C8 6, 12 2, 10 -4" stroke="#FDBA74" stroke-width="1.2" fill="none" opacity="0.4" stroke-linecap="round"/>
+    <path d="M18 10 C16 4, 20 0, 18 -6" stroke="#FDBA74" stroke-width="1.2" fill="none" opacity="0.3" stroke-linecap="round"/>
+  </g>
+
+  <!-- ===== PAPER PLANE ===== -->
+  <g transform="translate(570, 260) rotate(-20)">
+    <path d="M0 12 L35 0 L12 26 L10 15Z" fill="#FF7849" opacity="0.7"/>
+    <path d="M10 15 L35 0 L12 26Z" fill="#FDBA74" opacity="0.7"/>
+  </g>
+  <g transform="translate(80, 240) rotate(15)">
+    <path d="M0 8 L22 0 L8 18 L7 10Z" fill="#93C5FD" opacity="0.45"/>
+    <path d="M7 10 L22 0 L8 18Z" fill="#BFDBFE" opacity="0.45"/>
+  </g>
+
+  <!-- ===== NOTIFICATION BADGES ===== -->
+  <g transform="translate(560, 190)">
+    <circle cx="0" cy="0" r="18" fill="#DCFCE7"/>
+    <path d="M-7 0 L-2 5 L7 -5" stroke="#16A34A" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(72, 310)">
+    <circle cx="0" cy="0" r="16" fill="#FFF7ED"/>
+    <path d="M-4 -4 L4 -4 L4 2 L0 5 L-4 2Z" fill="#FB923C" opacity="0.6"/>
+    <circle cx="0" cy="-1" r="1.5" fill="#FB923C"/>
+  </g>
+
+  <!-- ===== DECORATIVE ELEMENTS (阿里妈妈风格圆点与几何) ===== -->
+  <!-- Warm dots -->
+  <circle cx="700" cy="140" r="6" fill="#FB923C" opacity="0.35"/>
+  <circle cx="730" cy="300" r="4" fill="#F472B6" opacity="0.3"/>
+  <circle cx="50" cy="180" r="5" fill="#FBBF24" opacity="0.4"/>
+  <circle cx="750" cy="450" r="7" fill="#FCD34D" opacity="0.3"/>
+  <circle cx="40" cy="500" r="4" fill="#A78BFA" opacity="0.3"/>
+  <circle cx="680" cy="510" r="5" fill="#FB923C" opacity="0.25"/>
+
+  <!-- Soft squares -->
+  <rect x="714" y="220" width="12" height="12" rx="3" fill="#FDBA74" opacity="0.3" transform="rotate(15 720 226)"/>
+  <rect x="30" y="140" width="10" height="10" rx="3" fill="#93C5FD" opacity="0.25" transform="rotate(-10 35 145)"/>
+
+  <!-- Sparkle stars (warm tone) -->
+  <path d="M660 100 l3 7 7 1-5 5 1 7-6-4-6 4 1-7-5-5 7-1z" fill="#FBBF24" opacity="0.45"/>
+  <path d="M160 490 l2 5 5 .8-4 3.8 1 5.5-4.5-2.5-4.5 2.5 1-5.5-4-3.8 5-.8z" fill="#FB923C" opacity="0.3"/>
+  <path d="M740 370 l2 4 4.5.7-3.3 3.2.8 4.5-4-2-4 2 .8-4.5-3.3-3.2 4.5-.7z" fill="#F472B6" opacity="0.3"/>
+
+  <!-- Small rings -->
+  <circle cx="190" cy="100" r="8" fill="none" stroke="#FDBA74" stroke-width="2" opacity="0.3"/>
+  <circle cx="720" cy="480" r="6" fill="none" stroke="#93C5FD" stroke-width="1.5" opacity="0.25"/>
+
+  <!-- Plus signs -->
+  <g stroke="#FDBA74" stroke-width="2" opacity="0.35" stroke-linecap="round">
+    <line x1="56" y1="270" x2="56" y2="282"/>
+    <line x1="50" y1="276" x2="62" y2="276"/>
+  </g>
+  <g stroke="#F472B6" stroke-width="2" opacity="0.25" stroke-linecap="round">
+    <line x1="745" y1="170" x2="745" y2="180"/>
+    <line x1="740" y1="175" x2="750" y2="175"/>
+  </g>
+
+  <!-- Wavy line decoration -->
+  <path d="M30 530 C80 522, 130 538, 180 530 C230 522, 280 538, 330 530 C380 522, 430 538, 480 530 C530 522, 580 538, 630 530 C680 522, 730 538, 770 530" stroke="#FDBA74" stroke-width="2" fill="none" opacity="0.15" stroke-linecap="round"/>
+</svg>
