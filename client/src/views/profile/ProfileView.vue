@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-2xl mx-auto space-y-6">
+  <div class="page-shell space-y-6">
     <LoginPrompt v-if="!isLoggedIn" title="登录后管理个人资料" description="登录后可以完善您的个人信息、上传头像、修改密码" />
     <template v-else>
     <h1 class="text-2xl font-bold text-gray-900">个人资料</h1>

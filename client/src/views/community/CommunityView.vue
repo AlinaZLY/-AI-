@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="page-shell">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-900">校园求职社区</h1>
       <div class="flex gap-3">

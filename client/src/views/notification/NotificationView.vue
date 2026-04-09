@@ -1,19 +1,19 @@
 <template>
-  <div class="max-w-4xl mx-auto pb-10 min-h-[60vh]">
+  <div class="page-shell pb-10 min-h-[60vh]">
     <!-- Header -->
     <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
       <div>
         <div class="flex items-center gap-3">
-          <h1 class="text-2xl font-bold text-gray-900">通知</h1>
+          <h1 class="text-2xl font-bold text-gray-900">{{ $t('通知') }}</h1>
           <span
             v-if="unreadCount > 0"
             class="inline-flex items-center justify-center min-w-[1.5rem] h-6 px-2 rounded-full bg-blue-600 text-white text-xs font-semibold"
           >
             {{ unreadCount > 99 ? '99+' : unreadCount }}
           </span>
-          <span v-else class="text-sm text-gray-400">暂无未读</span>
+          <span v-else class="text-sm text-gray-400">{{ $t('暂无未读') }}</span>
         </div>
-        <p class="text-sm text-gray-500 mt-1">系统、互动与社区相关提醒</p>
+        <p class="text-sm text-gray-500 mt-1">{{ $t('系统、互动与社区相关提醒') }}</p>
       </div>
       <div class="flex flex-wrap gap-2">
         <button
@@ -22,7 +22,7 @@
           class="px-4 py-2 text-sm font-medium rounded-lg border border-blue-200 text-blue-600 bg-white hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           @click="handleMarkAllRead"
         >
-          全部已读
+          {{ $t('全部已读') }}
         </button>
         <button
           type="button"
@@ -30,7 +30,7 @@
           class="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           @click="handleDeleteRead"
         >
-          清除已读
+          {{ $t('清除已读') }}
         </button>
       </div>
     </div>
@@ -55,7 +55,7 @@
 
     <!-- Read filter (uses isRead query param) -->
     <div class="flex flex-wrap items-center gap-2 mb-4">
-      <span class="text-xs font-medium text-gray-400">已读状态</span>
+      <span class="text-xs font-medium text-gray-400">{{ $t('状态') }}</span>
       <button
         v-for="opt in readOptions"
         :key="String(opt.value)"
@@ -114,30 +114,38 @@
                 class="text-xs font-medium px-2 py-0.5 rounded-full"
                 :class="n.isRead ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-700'"
               >
-                {{ n.isRead ? '已读' : '未读' }}
+                {{ n.isRead ? $t('已读') : $t('未读') }}
               </span>
               <span class="text-xs text-gray-400">{{ formatTime(n.createdAt) }}</span>
             </div>
             <p class="text-gray-800 text-sm sm:text-base leading-relaxed">{{ n.content }}</p>
             <p v-if="n.fromUser" class="text-xs text-gray-400 mt-2">
-              来自 {{ n.fromUser.nickname || n.fromUser.username || '用户' }}
+              {{ $t('来自 ') }}{{ n.fromUser.nickname || n.fromUser.username || $t('用户') }}
             </p>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 flex-shrink-0 self-start sm:self-center opacity-90 group-hover:opacity-100 transition-opacity">
+            <button
+              v-if="canOpenNotification(n)"
+              type="button"
+              class="px-3 py-1.5 text-xs font-medium rounded-lg text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+              @click="openNotification(n)"
+            >
+              {{ $t('查看详情') }}
+            </button>
             <button
               v-if="!n.isRead"
               type="button"
               class="px-3 py-1.5 text-xs font-medium rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
               @click="handleMarkOneRead(n)"
             >
-              标为已读
+              {{ $t('标为已读') }}
             </button>
             <button
               type="button"
               class="px-3 py-1.5 text-xs font-medium rounded-lg text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
               @click="handleDeleteOne(n)"
             >
-              删除
+              {{ $t('删除') }}
             </button>
           </div>
         </div>
@@ -154,8 +162,8 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       </div>
-      <p class="text-gray-700 font-medium">暂无通知</p>
-      <p class="text-sm text-gray-400 mt-1 max-w-sm">互动与系统消息会出现在这里</p>
+      <p class="text-gray-700 font-medium">{{ $t('暂无通知') }}</p>
+      <p class="text-sm text-gray-400 mt-1 max-w-sm">{{ $t('互动与系统消息会出现在这里') }}</p>
     </div>
 
     <!-- Pagination -->
@@ -166,7 +174,7 @@
         class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         @click="goPage(page - 1)"
       >
-        上一页
+        {{ $t('上一页') }}
       </button>
       <span class="text-sm text-gray-600">{{ page }} / {{ totalPages }}</span>
       <button
@@ -175,7 +183,7 @@
         class="px-4 py-2 text-sm rounded-lg border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
         @click="goPage(page + 1)"
       >
-        下一页
+        {{ $t('下一页') }}
       </button>
     </div>
   </div>
@@ -183,7 +191,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { toast } from '@/utils/toast'
+import { useI18n } from '@/i18n'
+
 import {
   getNotificationsApi,
   getUnreadCountApi,
@@ -199,6 +210,15 @@ export interface NotificationItem {
   content: string
   isRead: boolean
   createdAt: string
+  postId?: number | null
+  commentId?: number | null
+  meta?: {
+    path?: string
+    applicationId?: number
+    companyId?: number
+    jobId?: number | null
+    [key: string]: unknown
+  }
   fromUser?: {
     id: number
     username?: string
@@ -215,26 +235,38 @@ function unwrapPayload<T = unknown>(res: any): T {
 }
 
 const NOTIFICATIONS_CHANGED = 'app:notifications-changed'
+const router = useRouter()
+const { t } = useI18n()
 
 function emitNotificationsChanged() {
   window.dispatchEvent(new CustomEvent(NOTIFICATIONS_CHANGED))
 }
 
-const typeTabs = [
-  { key: 'all', label: '全部', apiType: undefined as string | undefined },
-  { key: 'system', label: '系统', apiType: 'system' },
-  { key: 'like', label: '点赞', apiType: 'like' },
-  { key: 'comment', label: '评论', apiType: 'comment' },
-  { key: 'follow', label: '收藏', apiType: 'favorite' },
-] as const
+function notificationTarget(n: NotificationItem) {
+  if (n.meta?.path) return String(n.meta.path)
+  if (n.postId) return `/community/post/${n.postId}`
+  return ''
+}
 
-const readOptions = [
-  { value: '' as const, label: '全部' },
-  { value: 'false' as const, label: '未读' },
-  { value: 'true' as const, label: '已读' },
-]
+function canOpenNotification(n: NotificationItem) {
+  return Boolean(notificationTarget(n))
+}
 
-const activeType = ref<(typeof typeTabs)[number]['key']>('all')
+const typeTabs = computed(() => [
+  { key: 'all' as const, label: t('全部'), apiType: undefined as string | undefined },
+  { key: 'system' as const, label: t('系统'), apiType: 'system' },
+  { key: 'like' as const, label: t('点赞'), apiType: 'like' },
+  { key: 'comment' as const, label: t('评论'), apiType: 'comment' },
+  { key: 'follow' as const, label: t('收藏'), apiType: 'favorite' },
+])
+
+const readOptions = computed(() => [
+  { value: '' as const, label: t('全部') },
+  { value: 'false' as const, label: t('未读') },
+  { value: 'true' as const, label: t('已读') },
+])
+
+const activeType = ref<string>('all')
 const readFilter = ref<'' | 'true' | 'false'>('')
 
 const notifications = ref<NotificationItem[]>([])
@@ -249,11 +281,11 @@ const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.v
 
 function typeLabel(type: string) {
   const map: Record<string, string> = {
-    system: '系统',
-    like: '点赞',
-    comment: '评论',
-    comment_like: '评论赞',
-    favorite: '收藏',
+    system: t('系统'),
+    like: t('点赞'),
+    comment: t('评论'),
+    comment_like: t('评论赞'),
+    favorite: t('收藏'),
   }
   return map[type] || type
 }
@@ -273,14 +305,14 @@ function formatTime(iso: string) {
   const d = new Date(iso)
   const now = new Date()
   const diff = now.getTime() - d.getTime()
-  if (diff < 60_000) return '刚刚'
-  if (diff < 3600_000) return `${Math.floor(diff / 60_000)} 分钟前`
-  if (diff < 86400_000) return `${Math.floor(diff / 3600_000)} 小时前`
-  if (diff < 7 * 86400_000) return `${Math.floor(diff / 86400_000)} 天前`
+  if (diff < 60_000) return t('刚刚')
+  if (diff < 3600_000) return t('{n} 分钟前').replace('{n}', String(Math.floor(diff / 60_000)))
+  if (diff < 86400_000) return t('{n} 小时前').replace('{n}', String(Math.floor(diff / 3600_000)))
+  if (diff < 7 * 86400_000) return t('{n} 天前').replace('{n}', String(Math.floor(diff / 86400_000)))
   return d.toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
-function selectType(key: (typeof typeTabs)[number]['key']) {
+function selectType(key: string) {
   activeType.value = key
   page.value = 1
   fetchList()
@@ -310,7 +342,7 @@ async function fetchUnread() {
 async function fetchList() {
   loading.value = true
   try {
-    const tab = typeTabs.find((t) => t.key === activeType.value)
+    const tab = typeTabs.value.find((t) => t.key === activeType.value)
     const params: Record<string, any> = {
       page: page.value,
       pageSize: pageSize.value,
@@ -343,7 +375,7 @@ async function handleMarkOneRead(n: NotificationItem) {
   actionLoading.value = true
   try {
     await markReadApi(n.id)
-    toast('已标记为已读', 'success')
+    toast(t('已标记为已读'), 'success')
     await refreshAll()
   } catch {
     // interceptor
@@ -356,7 +388,7 @@ async function handleMarkAllRead() {
   actionLoading.value = true
   try {
     await markAllReadApi()
-    toast('已全部标记为已读', 'success')
+    toast(t('已全部标记为已读'), 'success')
     await refreshAll()
   } catch {
     // interceptor
@@ -369,7 +401,7 @@ async function handleDeleteRead() {
   actionLoading.value = true
   try {
     await deleteReadNotificationsApi()
-    toast('已删除所有已读通知', 'success')
+    toast(t('已删除所有已读通知'), 'success')
     await refreshAll()
   } catch {
     // interceptor
@@ -382,8 +414,26 @@ async function handleDeleteOne(n: NotificationItem) {
   actionLoading.value = true
   try {
     await deleteNotificationApi(n.id)
-    toast('已删除', 'success')
+    toast(t('已删除'), 'success')
     await refreshAll()
+  } catch {
+    // interceptor
+  } finally {
+    actionLoading.value = false
+  }
+}
+
+async function openNotification(n: NotificationItem) {
+  const target = notificationTarget(n)
+  if (!target) return
+
+  actionLoading.value = true
+  try {
+    if (!n.isRead) {
+      await markReadApi(n.id)
+    }
+    emitNotificationsChanged()
+    await router.push(target)
   } catch {
     // interceptor
   } finally {

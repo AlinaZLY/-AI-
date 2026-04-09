@@ -1,12 +1,15 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div class="fixed top-5 right-5 z-10">
+      <LocaleSwitch />
+    </div>
     <div class="w-full max-w-sm">
       <div class="text-center mb-8">
         <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-600/20">
           <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
         </div>
         <h1 class="text-2xl font-bold text-gray-900">AI 校园招聘平台</h1>
-        <p class="text-gray-400 mt-1 text-sm">大学生 / 企业用户登录</p>
+        <p class="text-gray-400 mt-1 text-sm">{{ $t('大学生 / 企业用户登录') }}</p>
       </div>
 
       <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
@@ -17,7 +20,7 @@
             </span>
             <input v-model="form.username" type="text" required autocomplete="new-password"
               class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              placeholder="用户名" />
+              :placeholder="$t('用户名')" />
           </div>
           <div class="relative">
             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">
@@ -25,7 +28,7 @@
             </span>
             <input v-model="form.password" type="password" required autocomplete="new-password"
               class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              placeholder="密码" />
+              :placeholder="$t('密码')" />
           </div>
           <div class="flex gap-3">
             <div class="relative flex-1">
@@ -34,25 +37,31 @@
               </span>
               <input v-model="form.captcha" type="text" required autocomplete="off"
                 class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition"
-                placeholder="验证码" />
+                :placeholder="$t('验证码')" />
             </div>
             <div class="cursor-pointer border border-gray-200 rounded-xl overflow-hidden flex-shrink-0 bg-gray-50 flex items-center hover:border-blue-300 transition"
               @click="refreshCaptcha" v-html="captchaSvg" />
           </div>
           <button type="submit" :disabled="loading"
             class="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-colors shadow-sm shadow-blue-600/20">
-            {{ loading ? '登录中...' : '登录' }}
+            {{ loading ? $t('登录中...') : $t('登录') }}
           </button>
         </form>
 
-        <div class="mt-4 py-2 text-center cursor-pointer hover:text-blue-600 transition-colors" @click="fillTestAccount">
-          <span class="text-xs text-gray-400">测试: <code class="text-gray-500">admin / admin123</code> <span class="text-blue-500 ml-1">填入</span></span>
+        <div class="mt-4 py-2 flex justify-center gap-4">
+          <button type="button" class="text-xs text-gray-400 hover:text-blue-600 transition-colors" @click="fillTestAccount('student')">
+            {{ $t('应聘者测试') }}: <code class="text-gray-500">student / student123</code>
+          </button>
+          <span class="text-gray-200">|</span>
+          <button type="button" class="text-xs text-gray-400 hover:text-blue-600 transition-colors" @click="fillTestAccount('enterprise')">
+            {{ $t('企业测试') }}: <code class="text-gray-500">enterprise / enterprise123</code>
+          </button>
         </div>
       </div>
 
       <div class="mt-6 text-center">
         <p class="text-sm text-gray-400">
-          没有账号？<router-link to="/register" class="text-blue-600 hover:underline font-medium">注册</router-link>
+          {{ $t('没有账号？') }}<router-link to="/register" class="text-blue-600 hover:underline font-medium">{{ $t('注册') }}</router-link>
         </p>
       </div>
     </div>
@@ -65,19 +74,27 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
 import { toast } from '@/utils/toast'
+import LocaleSwitch from '@/components/LocaleSwitch.vue'
+import { useI18n } from '@/i18n'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const { t } = useI18n()
 const loading = ref(false)
 const captchaSvg = ref('')
 const captchaKey = ref('')
 const form = reactive({ username: '', password: '', captcha: '' })
 
-function fillTestAccount() {
-  form.username = 'admin'
-  form.password = 'admin123'
-  toast('已填入测试账号', 'info')
+function fillTestAccount(type: 'student' | 'enterprise') {
+  if (type === 'student') {
+    form.username = 'student'
+    form.password = 'student123'
+  } else {
+    form.username = 'enterprise'
+    form.password = 'enterprise123'
+  }
+  toast(t('已填入测试账号'), 'info')
 }
 
 async function refreshCaptcha() {
@@ -90,13 +107,13 @@ async function refreshCaptcha() {
 
 async function handleLogin() {
   if (!form.username || !form.password || !form.captcha) {
-    toast('请填写完整', 'warning')
+    toast(t('请填写完整'), 'warning')
     return
   }
   loading.value = true
   try {
     await userStore.login({ ...form, captchaKey: captchaKey.value })
-    toast('登录成功', 'success')
+    toast(t('登录成功'), 'success')
     const redirect = route.query.redirect as string
     const safeRedirect = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/home'
     router.push(safeRedirect)

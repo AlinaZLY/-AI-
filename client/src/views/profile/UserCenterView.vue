@@ -1,5 +1,5 @@
 <template>
-  <div class="flex gap-5 min-h-[70vh]">
+  <div class="page-shell flex gap-5 min-h-[70vh]">
     <!-- Left sidebar -->
     <div class="w-56 shrink-0">
       <div class="bg-white rounded-xl border border-gray-100 overflow-hidden sticky top-24">
@@ -135,14 +135,21 @@
           暂无简历，点击"从模板创建"开始
         </div>
         <div v-else class="space-y-3">
-          <div v-for="r in resumes" :key="r.id" class="flex justify-between items-center p-3 rounded-lg border border-gray-100 hover:border-blue-100 transition-colors">
+          <div
+            v-for="r in resumes" :key="r.id"
+            class="flex justify-between items-center p-3 rounded-lg border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer"
+            @click="$router.push(`/resume-edit/${r.id}`)"
+          >
             <div>
               <div class="text-sm font-medium text-gray-800">{{ r.title }}</div>
-              <div class="text-xs text-gray-400 mt-0.5">更新于 {{ formatDate(r.updatedAt) }}</div>
+              <div class="text-xs text-gray-400 mt-0.5">
+                {{ r.targetPosition ? r.targetPosition + ' · ' : '' }}更新于 {{ formatDate(r.updatedAt) }}
+              </div>
             </div>
             <div class="flex items-center gap-2">
               <span v-if="r.isDefault" class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">默认</span>
-              <button @click="handleDeleteResume(r)" class="text-xs text-gray-400 hover:text-red-500">删除</button>
+              <button @click.stop="$router.push(`/resume-edit/${r.id}`)" class="text-xs text-blue-600 hover:text-blue-700 font-medium">编辑</button>
+              <button @click.stop="handleDeleteResume(r)" class="text-xs text-gray-400 hover:text-red-500">删除</button>
             </div>
           </div>
         </div>
@@ -265,13 +272,48 @@
         </div>
       </div>
 
-      <!-- 企业认证 -->
+      <!-- 企业申请记录 -->
       <div v-if="activeTab === 'enterprise'" class="bg-white rounded-xl border border-gray-100 p-6">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">企业认证</h2>
+          <h2 class="text-lg font-semibold text-gray-900">申请记录</h2>
           <router-link to="/enterprise-cert" class="px-4 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">管理认证</router-link>
         </div>
-        <p class="text-sm text-gray-500">前往企业认证页面查看认证状态或提交认证材料，认证后可发布校招职位。</p>
+        <div v-if="companyCertification" class="space-y-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="text-base font-semibold text-gray-900">{{ companyCertification.name }}</div>
+            <span class="text-xs px-2.5 py-1 rounded-full" :class="companyStatusClass(companyCertification.status)">
+              {{ companyStatusLabel(companyCertification.status) }}
+            </span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="rounded-lg bg-gray-50 p-4">
+              <div class="text-xs text-gray-400 mb-1">申请时间</div>
+              <div class="text-sm text-gray-800">{{ formatDate(companyCertification.createdAt) }}</div>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+              <div class="text-xs text-gray-400 mb-1">最近更新</div>
+              <div class="text-sm text-gray-800">{{ formatDate(companyCertification.updatedAt) }}</div>
+            </div>
+            <div class="rounded-lg bg-gray-50 p-4">
+              <div class="text-xs text-gray-400 mb-1">认证结果</div>
+              <div class="text-sm text-gray-800">{{ companyCertification.isVerified ? '已认证' : '待认证' }}</div>
+            </div>
+          </div>
+          <div class="rounded-lg border border-gray-100 p-4">
+            <div class="text-xs text-gray-400 mb-1">行业 / 城市</div>
+            <div class="text-sm text-gray-700">{{ companyCertification.industry || '未填写' }} · {{ companyCertification.city || '未填写' }}</div>
+          </div>
+          <div v-if="companyCertification.rejectReason" class="rounded-lg border border-red-100 bg-red-50 p-4">
+            <div class="text-xs text-red-400 mb-1">审核反馈</div>
+            <div class="text-sm text-red-700 whitespace-pre-wrap">{{ companyCertification.rejectReason }}</div>
+          </div>
+          <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
+            企业账号不参与学生投递流程。你在这里看到的是自己的企业认证申请记录和审核状态。
+          </div>
+        </div>
+        <div v-else class="rounded-lg border border-dashed border-gray-200 p-6 text-sm text-gray-500">
+          暂无企业认证申请记录，可前往企业认证页面提交申请。
+        </div>
       </div>
     </div>
   </div>
@@ -284,6 +326,7 @@ import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
 import { toast } from '@/utils/toast'
 import { confirmDialog } from '@/utils/confirm'
+import { getMyCompanyApi } from '@/api/company'
 
 const router = useRouter()
 
@@ -304,6 +347,7 @@ const resumes = ref<any[]>([])
 const applications = ref<any[]>([])
 const interviews = ref<any[]>([])
 const notifications = ref<any[]>([])
+const companyCertification = ref<any>(null)
 
 const showTemplateModal = ref(false)
 const templates = ref<any[]>([])
@@ -323,7 +367,7 @@ function startEditProfile() {
 async function saveProfile() {
   profileSaving.value = true
   try {
-    const { username, role, id, createdAt, updatedAt, isActive, avatar, password, ...data } = profileForm.value
+    const { username, role, id, createdAt, updatedAt, isActive, avatar, password, lastOnlineAt, ...data } = profileForm.value
     await request.put('/user/profile', data)
     await userStore.fetchUserInfo()
     profileForm.value = { ...(userStore.userInfo || {}) }
@@ -358,7 +402,7 @@ const menuItems = computed(() => {
     )
   } else {
     items.push(
-      { key: 'enterprise', label: '企业认证', icon: 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008V7.5z' },
+      { key: 'enterprise', label: '申请记录', icon: 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 0h.008v.008h-.008V7.5z' },
     )
   }
   items.push(
@@ -389,6 +433,20 @@ const STATUS_MAP: Record<string, { label: string; cls: string }> = {
 }
 function statusLabel(s: string) { return STATUS_MAP[s]?.label || s }
 function statusClass(s: string) { return STATUS_MAP[s]?.cls || 'bg-gray-100 text-gray-600' }
+function companyStatusLabel(status?: string) {
+  return {
+    pending: '审核中',
+    approved: '已通过',
+    rejected: '审核未通过',
+  }[status || ''] || (status || '未知')
+}
+function companyStatusClass(status?: string) {
+  return {
+    pending: 'bg-amber-50 text-amber-700',
+    approved: 'bg-emerald-50 text-emerald-700',
+    rejected: 'bg-red-50 text-red-700',
+  }[status || ''] || 'bg-gray-100 text-gray-600'
+}
 
 function buildMiniPreview(tpl: any) {
   const css = (tpl.cssContent || '').replace(/<\/?script[^>]*>/gi, '')
@@ -458,12 +516,26 @@ async function fetchData() {
     try { await userStore.fetchUserInfo() } catch {}
   }
   try {
+    if (isEnterprise.value) {
+      const [companyRes, notRes]: any[] = await Promise.allSettled([
+        getMyCompanyApi(),
+        request.get('/notifications', { params: { page: 1, pageSize: 10 } }),
+      ])
+      companyCertification.value = companyRes.status === 'fulfilled' ? (companyRes.value?.data || companyRes.value || null) : null
+      notifications.value = notRes.status === 'fulfilled' ? (notRes.value?.data?.list || []) : []
+      resumes.value = []
+      applications.value = []
+      interviews.value = []
+      return
+    }
+
     const [resRes, appRes, intRes, notRes]: any[] = await Promise.allSettled([
       request.get('/resumes'),
       request.get('/applications', { params: { page: 1, pageSize: 10 } }),
       request.get('/interview/list', { params: { page: 1, pageSize: 10 } }),
       request.get('/notifications', { params: { page: 1, pageSize: 10 } }),
     ])
+    companyCertification.value = null
     if (resRes.status === 'fulfilled') resumes.value = Array.isArray(resRes.value?.data) ? resRes.value.data : (resRes.value?.data?.list || [])
     if (appRes.status === 'fulfilled') applications.value = appRes.value?.data?.list || []
     if (intRes.status === 'fulfilled') interviews.value = intRes.value?.data?.list || []
@@ -471,5 +543,11 @@ async function fetchData() {
   } catch {}
 }
 
-onMounted(() => { fetchData(); fetchTemplates() })
+onMounted(async () => {
+  await fetchData()
+  fetchTemplates()
+  if (isEnterprise.value && activeTab.value === 'profile') {
+    activeTab.value = 'enterprise'
+  }
+})
 </script>

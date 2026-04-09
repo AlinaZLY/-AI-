@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-3xl mx-auto" v-if="post">
+  <div class="page-shell" v-if="post">
     <button @click="$router.back()" class="text-sm text-gray-500 hover:text-blue-600 mb-4">&larr; 返回社区</button>
     <div class="bg-white rounded-xl p-8 border border-gray-100">
       <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ post.title }}</h1>

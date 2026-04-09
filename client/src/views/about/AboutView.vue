@@ -1,13 +1,13 @@
 <template>
   <div class="bg-gray-50 -mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
     <!-- Hero -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl mx-auto max-w-5xl mt-6 px-6 py-8 text-center">
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl page-shell mt-6 px-6 py-8 text-center">
       <h1 class="text-2xl font-bold text-white mb-1.5">基于 AI 的校园招聘服务平台</h1>
       <p class="text-blue-100 text-sm">融合人工智能技术，为校园求职者打造一站式智能招聘服务</p>
     </div>
 
     <!-- Team -->
-    <div class="max-w-5xl mx-auto py-14">
+    <div class="page-shell py-14">
       <h2 class="text-xl font-bold text-gray-900 text-center mb-10">项目团队</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div
@@ -32,7 +32,7 @@
     </div>
 
     <!-- Tech -->
-    <div class="max-w-5xl mx-auto pb-14 text-center">
+    <div class="page-shell pb-14 text-center">
       <p class="text-sm text-gray-400 mb-3">技术栈</p>
       <div class="flex flex-wrap justify-center gap-2">
         <span v-for="t in techStack" :key="t" class="px-3 py-1 text-sm text-gray-600 bg-white border border-gray-100 rounded-full">{{ t }}</span>
