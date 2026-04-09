@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen h-screen flex flex-col bg-gray-50 -mx-4 sm:-mx-6 lg:-mx-8">
     <div class="shrink-0 border-b border-gray-200 bg-white/90 backdrop-blur-sm px-4 sm:px-6 lg:px-8 py-4">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div class="page-shell flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center gap-3">
           <button
             type="button"
@@ -11,7 +11,7 @@
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
             </svg>
-            返回个人中心
+            {{ $t('返回个人中心') }}
           </button>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -21,7 +21,7 @@
             :disabled="previewing"
             @click="onPreview"
           >
-            {{ previewing ? '预览中…' : '预览' }}
+            {{ previewing ? $t('预览中…') : $t('预览') }}
           </button>
           <button
             type="button"
@@ -29,7 +29,7 @@
             :disabled="analyzing"
             @click="onAnalyze"
           >
-            {{ analyzing ? '分析中…' : 'AI 分析' }}
+            {{ analyzing ? $t('分析中…') : $t('AI 分析') }}
           </button>
           <button
             v-if="hasResumeContent"
@@ -38,7 +38,7 @@
             :disabled="polishing || saving || generatingAi"
             @click="onPolish"
           >
-            {{ polishing ? '润色中…' : 'AI 润色' }}
+            {{ polishing ? $t('润色中…') : $t('AI 润色') }}
           </button>
           <button
             type="button"
@@ -46,13 +46,13 @@
             :disabled="saving"
             @click="onSave"
           >
-            {{ saving ? '保存中…' : '保存' }}
+            {{ saving ? $t('保存中…') : $t('保存') }}
           </button>
         </div>
       </div>
     </div>
 
-    <div class="flex flex-1 min-h-0 min-w-0 overflow-hidden">
+    <div class="page-shell w-full flex flex-1 min-h-0 min-w-0 overflow-hidden">
       <div class="w-[55%] min-w-0 overflow-y-auto max-h-full border-r border-gray-200 px-4 sm:px-6 lg:px-8 py-6">
       <!-- AI 一键生成（可折叠） -->
       <div
@@ -66,7 +66,7 @@
         >
           <span class="flex items-center gap-2 text-sm font-semibold text-gray-900">
             <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white text-xs font-bold">AI</span>
-            智能生成与润色
+            {{ $t('智能生成与润色') }}
           </span>
           <svg
             class="w-5 h-5 text-gray-500 shrink-0 transition-transform"
@@ -80,11 +80,11 @@
         </button>
         <div v-show="aiGenerateOpen" class="px-4 pb-4 pt-0 border-t border-blue-100/80">
           <p class="text-xs text-gray-500 mt-3 mb-4">
-            填写关键信息并一键调用 AI 生成建议（将随请求提交至服务端；实际效果取决于 ARK_API_KEY 配置）。
+            {{ $t('填写关键信息并一键调用 AI 生成建议（将随请求提交至服务端；实际效果取决于 ARK_API_KEY 配置）。') }}
           </p>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
             <label class="block text-xs text-gray-500">
-              姓名
+              {{ $t('姓名') }}
               <input
                 v-model="content.basicInfo.name"
                 type="text"
@@ -92,7 +92,7 @@
               />
             </label>
             <label class="block text-xs text-gray-500">
-              学校
+              {{ $t('学校') }}
               <input
                 v-model="content.basicInfo.school"
                 type="text"
@@ -100,7 +100,7 @@
               />
             </label>
             <label class="block text-xs text-gray-500">
-              专业
+              {{ $t('专业') }}
               <input
                 v-model="content.basicInfo.major"
                 type="text"
@@ -108,7 +108,7 @@
               />
             </label>
             <label class="block text-xs text-gray-500">
-              毕业年份
+              {{ $t('毕业年份') }}
               <input
                 v-model="content.basicInfo.graduationYear"
                 type="text"
@@ -117,7 +117,7 @@
               />
             </label>
             <label class="block text-xs text-gray-500 sm:col-span-2 lg:col-span-2">
-              技能（逗号分隔）
+              {{ $t('技能（逗号分隔）') }}
               <input
                 v-model="aiSkillsComma"
                 type="text"
@@ -137,7 +137,7 @@
                 v-if="generatingAi"
                 class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
               />
-              {{ generatingAi ? '生成中…' : 'AI 一键生成' }}
+              {{ generatingAi ? $t('生成中…') : $t('AI 一键生成') }}
             </button>
           </div>
           <div
@@ -147,13 +147,13 @@
             <div class="flex justify-between items-start gap-2 mb-3">
               <div class="flex items-center gap-2">
                 <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" /></svg>
-                <p class="font-semibold text-blue-900">AI 分析结果</p>
+                <p class="font-semibold text-blue-900">{{ $t('AI 分析结果') }}</p>
               </div>
               <button type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="optimizeFeedback.visible = false">&times;</button>
             </div>
             <p v-if="optimizeFeedback.message" class="text-sm text-amber-700 bg-amber-50 rounded-lg px-3 py-2 mb-3">{{ optimizeFeedback.message }}</p>
             <div v-if="optimizeFeedback.suggestions.length">
-              <p class="text-xs font-medium text-gray-500 mb-2">优化建议</p>
+              <p class="text-xs font-medium text-gray-500 mb-2">{{ $t('优化建议') }}</p>
               <div class="space-y-2">
                 <div v-for="(s, i) in optimizeFeedback.suggestions" :key="i" class="flex gap-2 items-start text-sm text-gray-700">
                   <span class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">{{ i + 1 }}</span>
@@ -170,12 +170,12 @@
         v-if="!loading && !loadError"
         class="mb-6 rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm"
       >
-        <p class="text-xs font-semibold text-gray-900 mb-2">撰写小贴士</p>
+        <p class="text-xs font-semibold text-gray-900 mb-2">{{ $t('撰写小贴士') }}</p>
         <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-gray-600 list-disc pl-4">
-          <li>量化成果：用数字体现增长、规模或效率（如「QPS 提升 30%」）。</li>
-          <li>突出技术关键词：对齐目标岗位 JD 中的技能栈表述。</li>
-          <li>STAR 简述项目：情境、任务、行动、结果各一句话即可。</li>
-          <li>保持真实可核验：实习/项目时间与职责尽量具体。</li>
+          <li>{{ $t('量化成果：用数字体现增长、规模或效率（如「QPS 提升 30%」）。') }}</li>
+          <li>{{ $t('突出技术关键词：对齐目标岗位 JD 中的技能栈表述。') }}</li>
+          <li>{{ $t('STAR 简述项目：情境、任务、行动、结果各一句话即可。') }}</li>
+          <li>{{ $t('保持真实可核验：实习/项目时间与职责尽量具体。') }}</li>
         </ul>
       </div>
 
@@ -189,7 +189,7 @@
 
       <div v-else class="space-y-6">
         <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">简历标题</label>
+          <label class="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{{ $t('简历标题') }}</label>
           <input
             v-model="title"
             type="text"
@@ -199,37 +199,64 @@
         </section>
 
         <section id="resume-basic-section" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 scroll-mt-24">
-          <h2 class="text-sm font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">基本信息</h2>
+          <h2 class="text-sm font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">{{ $t('基本信息') }}</h2>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="block text-xs text-gray-500">
-              姓名
+              {{ $t('姓名') }}
               <input v-model="content.basicInfo.name" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </label>
             <label class="block text-xs text-gray-500">
-              手机
+              {{ $t('手机') }}
               <input v-model="content.basicInfo.phone" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </label>
             <label class="block text-xs text-gray-500">
-              邮箱
+              {{ $t('邮箱') }}
               <input v-model="content.basicInfo.email" type="email" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </label>
             <label class="block text-xs text-gray-500">
-              学校
+              {{ $t('学校') }}
               <input v-model="content.basicInfo.school" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </label>
             <label class="block text-xs text-gray-500">
-              专业
+              {{ $t('专业') }}
               <input v-model="content.basicInfo.major" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </label>
             <label class="block text-xs text-gray-500">
-              毕业年份
+              {{ $t('毕业年份') }}
               <input v-model="content.basicInfo.graduationYear" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
             </label>
           </div>
         </section>
 
         <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 class="text-sm font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">自我介绍</h2>
+          <h2 class="text-sm font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">{{ $t('求职意向') }}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block text-xs text-gray-500">
+              {{ $t('目标岗位') }}
+              <input v-model="content.jobIntention.targetPosition" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="如：前端开发工程师" />
+            </label>
+            <label class="block text-xs text-gray-500">
+              {{ $t('期望薪资') }}
+              <input v-model="content.jobIntention.expectedSalary" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="如：8-12K" />
+            </label>
+            <label class="block text-xs text-gray-500">
+              {{ $t('意向城市') }}
+              <input v-model="content.jobIntention.preferredCity" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="如：北京、上海" />
+            </label>
+            <label class="block text-xs text-gray-500">
+              {{ $t('工作类型') }}
+              <select v-model="content.jobIntention.workType" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                <option value="">{{ $t('请选择') }}</option>
+                <option value="full_time">{{ $t('全职') }}</option>
+                <option value="intern">{{ $t('实习') }}</option>
+                <option value="part_time">{{ $t('兼职') }}</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+          <h2 class="text-sm font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">{{ $t('自我介绍') }}</h2>
           <textarea
             v-model="content.selfIntro"
             rows="5"
@@ -242,7 +269,7 @@
           <div class="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
             <h2 class="text-sm font-semibold text-gray-900">{{ section.label }}</h2>
             <button type="button" class="text-xs font-medium text-blue-600 hover:text-blue-700" @click="addArrayRow(section.key)">
-              + 添加
+              {{ $t('+ 添加') }}
             </button>
           </div>
           <div class="space-y-4">
@@ -253,7 +280,7 @@
             >
               <div class="flex justify-end">
                 <button type="button" class="text-xs text-red-500 hover:text-red-600 font-medium" @click="removeArrayRow(section.key, idx)">
-                  删除
+                  {{ $t('删除') }}
                 </button>
               </div>
               <template v-if="section.key === 'education'">
@@ -281,13 +308,29 @@
                 </div>
                 <textarea v-model="row.description" placeholder="项目描述" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </template>
+              <template v-else-if="section.key === 'awards'">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input v-model="row.name" placeholder="证书/奖项名称" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.date" placeholder="获得时间（如 2025.06）" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <input v-model="row.description" placeholder="补充说明（选填）" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              </template>
+              <template v-else-if="section.key === 'activities'">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input v-model="row.organization" placeholder="组织/社团名称" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.role" placeholder="担任职务" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.startDate" placeholder="开始时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.endDate" placeholder="结束时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                </div>
+                <textarea v-model="row.description" placeholder="活动描述与收获" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              </template>
             </div>
           </div>
         </section>
 
         <section class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-          <h2 class="text-sm font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">技能</h2>
-          <p class="text-xs text-gray-500 mb-3">输入后按 Enter 添加为标签</p>
+          <h2 class="text-sm font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100">{{ $t('技能') }}</h2>
+          <p class="text-xs text-gray-500 mb-3">{{ $t('输入后按 Enter 添加为标签') }}</p>
           <div class="flex flex-wrap gap-2 mb-3">
             <span
               v-for="(s, si) in content.skills"
@@ -316,13 +359,13 @@
           <div class="flex items-center justify-between shrink-0">
             <div class="flex items-center gap-2">
               <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-              <p class="text-sm font-semibold text-gray-800">实时预览</p>
+              <p class="text-sm font-semibold text-gray-800">{{ $t('实时预览') }}</p>
             </div>
             <div class="flex items-center gap-2">
-              <span v-if="templateLoading" class="text-xs text-gray-400">模板加载中…</span>
+              <span v-if="templateLoading" class="text-xs text-gray-400">{{ $t('模板加载中…') }}</span>
               <span v-else-if="templateLoadError" class="text-xs text-amber-600 truncate max-w-[60%]">{{ templateLoadError }}</span>
-              <span v-else-if="!resumeTemplateId" class="text-xs text-gray-400">未绑定模板</span>
-              <span v-else class="text-xs text-emerald-600">已同步</span>
+              <span v-else-if="!resumeTemplateId" class="text-xs text-gray-400">{{ $t('未绑定模板') }}</span>
+              <span v-else class="text-xs text-emerald-600">{{ $t('已同步') }}</span>
             </div>
           </div>
           <div class="flex-1 min-h-0 rounded-2xl bg-white shadow-lg border border-gray-200/60 overflow-hidden">
@@ -330,10 +373,10 @@
               :srcdoc="previewHtml"
               class="w-full h-full border-none"
               sandbox=""
-              title="简历实时预览"
+              :title="$t('简历实时预览')"
             />
           </div>
-          <p class="text-[11px] text-gray-400 text-center shrink-0">编辑左侧内容，预览实时更新</p>
+          <p class="text-[11px] text-gray-400 text-center shrink-0">{{ $t('编辑左侧内容，预览实时更新') }}</p>
         </div>
       </div>
     </div>
@@ -347,8 +390,8 @@
       <div class="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl p-6" @click.stop>
         <div class="flex justify-between items-start mb-2">
           <div>
-            <h2 class="text-lg font-bold text-gray-900">AI 简历分析</h2>
-            <p class="text-xs text-gray-500 mt-1">基于当前已保存内容的结构与关键词给出参考，保存最新修改后可再次分析。</p>
+            <h2 class="text-lg font-bold text-gray-900">{{ $t('AI 简历分析') }}</h2>
+            <p class="text-xs text-gray-500 mt-1">{{ $t('基于当前已保存内容的结构与关键词给出参考，保存最新修改后可再次分析。') }}</p>
           </div>
           <button type="button" class="text-gray-400 hover:text-gray-600 text-2xl leading-none" @click="analysisDialog.open = false">
             &times;
@@ -357,17 +400,17 @@
         <div v-if="analysisDialog.data" class="space-y-5 text-sm mt-4">
           <div class="grid grid-cols-2 gap-3">
             <div class="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
-              <p class="text-gray-500 text-xs font-medium mb-1">信息完整度</p>
+              <p class="text-gray-500 text-xs font-medium mb-1">{{ $t('信息完整度') }}</p>
               <p class="text-3xl font-bold text-blue-600 tabular-nums">{{ analysisDialog.data.completeness }}<span class="text-lg">%</span></p>
             </div>
             <div class="rounded-xl border border-gray-100 bg-gray-50 p-4">
-              <p class="text-gray-500 text-xs font-medium mb-1">综合评分</p>
+              <p class="text-gray-500 text-xs font-medium mb-1">{{ $t('综合评分') }}</p>
               <p class="text-3xl font-bold text-gray-900 tabular-nums">{{ analysisDialog.data.score }}</p>
             </div>
           </div>
           <div v-if="analysisDialog.data.keywords?.length" class="rounded-xl border border-gray-100 p-4">
-            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">简历关键词</p>
-            <p class="text-xs text-gray-500 mb-3">可在自我介绍与项目描述中自然覆盖以下方向，提升与岗位的匹配度。</p>
+            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{{ $t('简历关键词') }}</p>
+            <p class="text-xs text-gray-500 mb-3">{{ $t('可在自我介绍与项目描述中自然覆盖以下方向，提升与岗位的匹配度。') }}</p>
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="(kw, i) in analysisDialog.data.keywords"
@@ -379,7 +422,7 @@
             </div>
           </div>
           <div v-if="analysisDialog.data.suggestions?.length" class="rounded-xl border border-amber-100 bg-amber-50/40 p-4">
-            <p class="text-xs font-semibold text-amber-900 uppercase tracking-wide mb-2">改进建议</p>
+            <p class="text-xs font-semibold text-amber-900 uppercase tracking-wide mb-2">{{ $t('改进建议') }}</p>
             <ul class="space-y-2 text-gray-800">
               <li v-for="(sug, i) in analysisDialog.data.suggestions" :key="i" class="flex gap-2">
                 <span class="text-blue-600 font-bold shrink-0">{{ i + 1 }}.</span>
@@ -388,7 +431,7 @@
             </ul>
           </div>
           <div v-if="!analysisDialog.data.keywords?.length && !analysisDialog.data.suggestions?.length" class="text-center py-6 text-gray-500 text-sm">
-            暂无细分建议，可先完善基本信息与经历后再试。
+            {{ $t('暂无细分建议，可先完善基本信息与经历后再试。') }}
           </div>
           <div class="flex flex-col sm:flex-row gap-2 pt-2">
             <button
@@ -396,14 +439,14 @@
               class="flex-1 px-4 py-3 text-sm font-semibold rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
               @click="closeAnalysisAndEdit"
             >
-              根据建议继续编辑
+              {{ $t('根据建议继续编辑') }}
             </button>
             <button
               type="button"
               class="flex-1 px-4 py-3 text-sm font-medium rounded-xl border border-gray-200 text-gray-700 hover:bg-gray-50"
               @click="analysisDialog.open = false"
             >
-              稍后再说
+              {{ $t('稍后再说') }}
             </button>
           </div>
         </div>
@@ -424,6 +467,7 @@ import {
   renderResumeApi,
 } from '@/api/resume'
 import { toast } from '@/utils/toast'
+import { useI18n } from '@/i18n'
 
 interface BasicInfo {
   name: string
@@ -456,17 +500,42 @@ interface ProjRow {
   description: string
 }
 
+interface AwardRow {
+  name: string
+  date: string
+  description: string
+}
+
+interface ActivityRow {
+  organization: string
+  role: string
+  startDate: string
+  endDate: string
+  description: string
+}
+
+interface JobIntention {
+  targetPosition: string
+  expectedSalary: string
+  preferredCity: string
+  workType: string
+}
+
 interface ResumeContent {
   basicInfo: BasicInfo
+  jobIntention: JobIntention
   education: EduRow[]
   experience: ExpRow[]
   projects: ProjRow[]
+  awards: AwardRow[]
+  activities: ActivityRow[]
   skills: string[]
   selfIntro: string
 }
 
 const route = useRoute()
 const router = useRouter()
+const { t, locale: currentLocale } = useI18n()
 
 const resumeId = computed(() => {
   const n = Number(route.params.id)
@@ -508,17 +577,27 @@ const content = reactive<ResumeContent>({
     major: '',
     graduationYear: '',
   },
+  jobIntention: {
+    targetPosition: '',
+    expectedSalary: '',
+    preferredCity: '',
+    workType: '',
+  },
   education: [],
   experience: [],
   projects: [],
+  awards: [],
+  activities: [],
   skills: [],
   selfIntro: '',
 })
 
 const arraySections = [
-  { key: 'education' as const, label: '教育经历' },
-  { key: 'experience' as const, label: '实习/工作经历' },
-  { key: 'projects' as const, label: '项目经验' },
+  { key: 'education' as const, get label() { return t('教育经历') } },
+  { key: 'experience' as const, get label() { return t('实习/工作经历') } },
+  { key: 'projects' as const, get label() { return t('项目经验') } },
+  { key: 'awards' as const, get label() { return t('证书/荣誉奖项') } },
+  { key: 'activities' as const, get label() { return t('校园活动/社会实践') } },
 ]
 
 const analysisDialog = reactive({
@@ -577,6 +656,18 @@ function injectContentIntoTemplateFragment(html: string, c: ResumeContent): stri
         `<div class="item"><strong>${esc(p.name || '')}</strong> <span class="time">${esc(p.startDate || '')} ~ ${esc(p.endDate || '')}</span><p>${esc(p.description || '')}</p></div>`,
     )
     .join('')
+  const awardsHtml = c.awards
+    .map(
+      (a) =>
+        `<div class="item"><strong>${esc(a.name || '')}</strong> <span class="time">${esc(a.date || '')}</span>${a.description ? `<p>${esc(a.description)}</p>` : ''}</div>`,
+    )
+    .join('')
+  const activitiesHtml = c.activities
+    .map(
+      (a) =>
+        `<div class="item"><strong>${esc(a.organization || '')}</strong> - ${esc(a.role || '')} <span class="time">${esc(a.startDate || '')} ~ ${esc(a.endDate || '')}</span>${a.description ? `<p>${esc(a.description)}</p>` : ''}</div>`,
+    )
+    .join('')
 
   return html
     .replace(/\{\{avatar\}\}/g, DEFAULT_AVATAR_DATA_URI)
@@ -591,6 +682,8 @@ function injectContentIntoTemplateFragment(html: string, c: ResumeContent): stri
     .replace(/\{\{education\}\}/g, educationHtml)
     .replace(/\{\{experience\}\}/g, experienceHtml)
     .replace(/\{\{projects\}\}/g, projectsHtml)
+    .replace(/\{\{awards\}\}/g, awardsHtml)
+    .replace(/\{\{activities\}\}/g, activitiesHtml)
 }
 
 function buildPlaceholderPreviewDoc(message: string): string {
@@ -635,19 +728,33 @@ const previewHtml = computed(() => {
     void p.endDate
     void p.description
   })
+  void content.awards.length
+  content.awards.forEach((a) => {
+    void a.name
+    void a.date
+    void a.description
+  })
+  void content.activities.length
+  content.activities.forEach((a) => {
+    void a.organization
+    void a.role
+    void a.startDate
+    void a.endDate
+    void a.description
+  })
 
   if (!tid) {
-    return buildPlaceholderPreviewDoc('当前简历未绑定模板。在模板库选择模板创建简历后即可在此实时预览。')
+    return buildPlaceholderPreviewDoc(t('当前简历未绑定模板。在模板库选择模板创建简历后即可在此实时预览。'))
   }
   if (templateLoading.value) {
-    return buildPlaceholderPreviewDoc('正在加载模板…')
+    return buildPlaceholderPreviewDoc(t('正在加载模板…'))
   }
   const tpl = loadedTemplate.value
   if (templateLoadError.value && !tpl?.htmlContent) {
     return buildPlaceholderPreviewDoc(templateLoadError.value)
   }
   if (!tpl?.htmlContent?.trim()) {
-    return buildPlaceholderPreviewDoc('该模板暂无 HTML 内容。')
+    return buildPlaceholderPreviewDoc(t('该模板暂无 HTML 内容。'))
   }
 
   const bodyHtml = injectContentIntoTemplateFragment(tpl.htmlContent, content)
@@ -665,9 +772,17 @@ function defaultContent(): ResumeContent {
       major: '',
       graduationYear: '',
     },
+    jobIntention: {
+      targetPosition: '',
+      expectedSalary: '',
+      preferredCity: '',
+      workType: '',
+    },
     education: [],
     experience: [],
     projects: [],
+    awards: [],
+    activities: [],
     skills: [],
     selfIntro: '',
   }
@@ -684,6 +799,13 @@ function normalizeContent(raw: Record<string, unknown> | undefined | null): Resu
     school: basic.school ?? '',
     major: basic.major ?? '',
     graduationYear: String(basic.graduationYear ?? ''),
+  }
+  const jobIntention = (raw.jobIntention as Record<string, string>) || {}
+  base.jobIntention = {
+    targetPosition: jobIntention.targetPosition ?? '',
+    expectedSalary: jobIntention.expectedSalary ?? '',
+    preferredCity: jobIntention.preferredCity ?? '',
+    workType: jobIntention.workType ?? '',
   }
   base.selfIntro = String(raw.selfIntro ?? '')
   const edu = raw.education
@@ -714,6 +836,24 @@ function normalizeContent(raw: Record<string, unknown> | undefined | null): Resu
       description: p?.description ?? '',
     }))
   }
+  const awards = raw.awards
+  if (Array.isArray(awards)) {
+    base.awards = awards.map((a: Record<string, string>) => ({
+      name: a?.name ?? '',
+      date: a?.date ?? '',
+      description: a?.description ?? '',
+    }))
+  }
+  const activities = raw.activities
+  if (Array.isArray(activities)) {
+    base.activities = activities.map((a: Record<string, string>) => ({
+      organization: a?.organization ?? '',
+      role: a?.role ?? '',
+      startDate: a?.startDate ?? '',
+      endDate: a?.endDate ?? '',
+      description: a?.description ?? '',
+    }))
+  }
   const skills = raw.skills
   if (Array.isArray(skills)) {
     base.skills = skills.map((s) => String(s)).filter(Boolean)
@@ -725,25 +865,32 @@ function normalizeContent(raw: Record<string, unknown> | undefined | null): Resu
 
 function assignContent(from: ResumeContent) {
   Object.assign(content.basicInfo, from.basicInfo)
+  Object.assign(content.jobIntention, from.jobIntention)
   content.selfIntro = from.selfIntro
   content.education.splice(0, content.education.length, ...from.education.map((e) => ({ ...e })))
   content.experience.splice(0, content.experience.length, ...from.experience.map((e) => ({ ...e })))
   content.projects.splice(0, content.projects.length, ...from.projects.map((p) => ({ ...p })))
+  content.awards.splice(0, content.awards.length, ...from.awards.map((a) => ({ ...a })))
+  content.activities.splice(0, content.activities.length, ...from.activities.map((a) => ({ ...a })))
   content.skills.splice(0, content.skills.length, ...from.skills)
 }
 
-function emptyRow(key: 'education' | 'experience' | 'projects'): EduRow | ExpRow | ProjRow {
+type ArraySectionKey = 'education' | 'experience' | 'projects' | 'awards' | 'activities'
+
+function emptyRow(key: ArraySectionKey): any {
   if (key === 'education') return { school: '', major: '', startDate: '', endDate: '' }
   if (key === 'experience') return { company: '', position: '', startDate: '', endDate: '', description: '' }
+  if (key === 'awards') return { name: '', date: '', description: '' }
+  if (key === 'activities') return { organization: '', role: '', startDate: '', endDate: '', description: '' }
   return { name: '', startDate: '', endDate: '', description: '' }
 }
 
-function addArrayRow(key: 'education' | 'experience' | 'projects') {
+function addArrayRow(key: ArraySectionKey) {
   ;(content[key] as unknown[]).push(emptyRow(key))
 }
 
-function removeArrayRow(key: 'education' | 'experience' | 'projects', idx: number) {
-  content[key].splice(idx, 1)
+function removeArrayRow(key: ArraySectionKey, idx: number) {
+  ;(content[key] as any[]).splice(idx, 1)
 }
 
 function addSkillTag() {
@@ -769,7 +916,7 @@ async function loadTemplate(id: number) {
     }
   } catch {
     loadedTemplate.value = null
-    templateLoadError.value = '模板加载失败，请稍后重试'
+    templateLoadError.value = t('模板加载失败，请稍后重试')
   } finally {
     templateLoading.value = false
   }
@@ -778,7 +925,7 @@ async function loadTemplate(id: number) {
 async function loadResume() {
   const id = resumeId.value
   if (!Number.isFinite(id)) {
-    loadError.value = '无效的简历 ID'
+    loadError.value = t('无效的简历 ID')
     loading.value = false
     resumeTemplateId.value = null
     loadedTemplate.value = null
@@ -791,6 +938,9 @@ async function loadResume() {
     const detail = (res.data ?? res) as Record<string, unknown>
     title.value = String(detail.title ?? '')
     assignContent(normalizeContent(detail.content as Record<string, unknown>))
+    if (!content.jobIntention.targetPosition && typeof detail.targetPosition === 'string') {
+      content.jobIntention.targetPosition = detail.targetPosition
+    }
     aiSkillsComma.value = content.skills.join(', ')
 
     const rawTid = detail.templateId
@@ -804,7 +954,7 @@ async function loadResume() {
       loadedTemplate.value = null
     }
   } catch {
-    loadError.value = '加载简历失败，请稍后重试'
+    loadError.value = t('加载简历失败，请稍后重试')
   } finally {
     loading.value = false
   }
@@ -814,11 +964,15 @@ function buildPayload() {
   const skills = content.skills.map((s) => s.trim()).filter(Boolean)
   return {
     title: title.value.trim(),
+    targetPosition: content.jobIntention.targetPosition.trim() || undefined,
     content: {
       basicInfo: { ...content.basicInfo },
+      jobIntention: { ...content.jobIntention },
       education: content.education.filter((e) => e.school || e.major),
       experience: content.experience.filter((e) => e.company || e.position),
       projects: content.projects.filter((p) => p.name),
+      awards: content.awards.filter((a) => a.name || a.date || a.description),
+      activities: content.activities.filter((a) => a.organization || a.role || a.description),
       skills,
       selfIntro: content.selfIntro,
     },
@@ -829,13 +983,13 @@ async function onSave() {
   const id = resumeId.value
   if (!Number.isFinite(id)) return
   if (!title.value.trim()) {
-    toast('请填写简历标题', 'warning')
+    toast(t('请填写简历标题'), 'warning')
     return
   }
   saving.value = true
   try {
     await updateResumeApi(id, buildPayload())
-    toast('保存成功', 'success')
+    toast(t('保存成功'), 'success')
   } catch {
     // request interceptor
   } finally {
@@ -852,14 +1006,14 @@ async function onPreview() {
     const payload = res.data ?? res
     const html = typeof payload === 'object' && payload && 'html' in payload ? String(payload.html ?? '') : ''
     if (!html) {
-      toast('暂无预览内容', 'warning')
+      toast(t('暂无预览内容'), 'warning')
       return
     }
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const w = window.open(url, '_blank', 'noopener,noreferrer')
     if (!w) {
-      toast('请允许弹出窗口以查看预览', 'warning')
+      toast(t('请允许弹出窗口以查看预览'), 'warning')
       URL.revokeObjectURL(url)
       return
     }
@@ -905,7 +1059,7 @@ async function onPolish() {
   polishing.value = true
   try {
     await optimizeResumeApi(id)
-    toast('润色请求已完成', 'success')
+    toast(t('润色请求已完成'), 'success')
     await loadResume()
   } catch {
     // interceptor
@@ -927,6 +1081,8 @@ async function onAiGenerate() {
   generatingAi.value = true
   try {
     const payload: Record<string, unknown> = {
+      mode: 'generate',
+      locale: currentLocale.value,
       basicInfo: {
         name: content.basicInfo.name,
         school: content.basicInfo.school,
@@ -934,14 +1090,26 @@ async function onAiGenerate() {
         graduationYear: content.basicInfo.graduationYear,
       },
       skills: content.skills.map((s) => s.trim()).filter(Boolean),
+      targetPosition: content.jobIntention.targetPosition || '',
     }
     const res: { data?: Record<string, unknown> } & Record<string, unknown> = await optimizeResumeApi(id, payload)
     const data = (res.data ?? res) as Record<string, unknown>
-    optimizeFeedback.visible = true
-    optimizeFeedback.message = typeof data.message === 'string' ? data.message : ''
-    optimizeFeedback.suggestions = Array.isArray(data.suggestions) ? (data.suggestions as string[]) : []
-    optimizeFeedback.rawJson = JSON.stringify(data, null, 2)
-    toast('已收到 AI 优化接口响应', 'success')
+
+    // 如果后端返回了全量生成内容，填充到表单中
+    if (data.mode === 'generate' && data.generatedContent) {
+      const generated = normalizeContent(data.generatedContent as Record<string, unknown>)
+      assignContent(generated)
+      aiSkillsComma.value = content.skills.join(', ')
+      toast(typeof data.message === 'string' ? data.message : t('已成功生成完整简历内容'), 'success')
+      optimizeFeedback.visible = false
+    } else {
+      // 降级为建议模式
+      optimizeFeedback.visible = true
+      optimizeFeedback.message = typeof data.message === 'string' ? data.message : ''
+      optimizeFeedback.suggestions = Array.isArray(data.suggestions) ? (data.suggestions as string[]) : []
+      optimizeFeedback.rawJson = JSON.stringify(data, null, 2)
+      toast(t('已收到 AI 优化接口响应'), 'success')
+    }
   } catch {
     // interceptor
   } finally {

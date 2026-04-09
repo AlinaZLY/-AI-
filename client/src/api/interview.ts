@@ -27,3 +27,7 @@ export function getCategoriesApi() {
 export function getQuestionsApi(params?: Record<string, any>) {
   return request.get('/interview/questions', { params })
 }
+
+export function deleteInterviewApi(id: number) {
+  return request.delete(`/interview/${id}`)
+}

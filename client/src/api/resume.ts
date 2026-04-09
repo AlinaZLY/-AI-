@@ -29,7 +29,7 @@ export function getResumeTemplateApi(id: number) {
 }
 
 export function analyzeResumeApi(id: number) {
-  return request.post(`/resumes/item/${id}/analyze`)
+  return request.post(`/resumes/item/${id}/analyze`, null, { timeout: 120000 })
 }
 
 export function renderResumeApi(id: number) {
@@ -43,7 +43,7 @@ export function uploadResumeFileApi(id: number, file: File) {
 }
 
 export function optimizeResumeApi(id: number, data?: Record<string, unknown>) {
-  return request.post(`/resumes/item/${id}/optimize`, data)
+  return request.post(`/resumes/item/${id}/optimize`, data, { timeout: 120000 })
 }
 
 export function duplicateResumeApi(id: number) {

@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="page-shell min-h-screen bg-gray-50">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-900">校园简历模板</h1>
       <div class="flex gap-3">

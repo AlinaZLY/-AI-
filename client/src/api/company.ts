@@ -1,5 +1,13 @@
 import request from '@/utils/request'
 
+export function getCompaniesApi(params?: Record<string, any>) {
+  return request.get('/companies', { params })
+}
+
+export function getCompanyDetailApi(id: number) {
+  return request.get(`/companies/${id}`)
+}
+
 export function getMyCompanyApi() {
   return request.get('/companies/my')
 }
