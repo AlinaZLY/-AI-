@@ -226,7 +226,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import {
-  getApplicationsApi, getApplicationsAdminApi, getApplicationDetailApi, createApplicationApi,
+  getApplicationsAdminApi, getApplicationDetailApi, createApplicationApi,
   updateApplicationApi, deleteApplicationApi, updateApplicationStatusApi,
   getApplicationNotesApi, addApplicationNoteApi,
   deleteApplicationNoteApi, getApplicationStatsApi,

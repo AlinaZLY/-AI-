@@ -93,15 +93,24 @@
               <div class="cert-grid">
                 <div v-if="currentCompany.businessLicense" class="cert-card">
                   <div class="cert-title">营业执照</div>
-                  <img :src="currentCompany.businessLicense" class="cert-img" @click="previewImg = currentCompany.businessLicense" />
+                  <template v-if="isPdfFile(currentCompany.businessLicense)">
+                    <a-button type="link" :href="currentCompany.businessLicense" target="_blank">查看 PDF</a-button>
+                  </template>
+                  <img v-else :src="currentCompany.businessLicense" class="cert-img" @click="previewImg = currentCompany.businessLicense" />
                 </div>
                 <div v-if="currentCompany.idCardFront" class="cert-card">
                   <div class="cert-title">身份证正面</div>
-                  <img :src="currentCompany.idCardFront" class="cert-img" @click="previewImg = currentCompany.idCardFront" />
+                  <template v-if="isPdfFile(currentCompany.idCardFront)">
+                    <a-button type="link" :href="currentCompany.idCardFront" target="_blank">查看 PDF</a-button>
+                  </template>
+                  <img v-else :src="currentCompany.idCardFront" class="cert-img" @click="previewImg = currentCompany.idCardFront" />
                 </div>
                 <div v-if="currentCompany.idCardBack" class="cert-card">
                   <div class="cert-title">身份证反面</div>
-                  <img :src="currentCompany.idCardBack" class="cert-img" @click="previewImg = currentCompany.idCardBack" />
+                  <template v-if="isPdfFile(currentCompany.idCardBack)">
+                    <a-button type="link" :href="currentCompany.idCardBack" target="_blank">查看 PDF</a-button>
+                  </template>
+                  <img v-else :src="currentCompany.idCardBack" class="cert-img" @click="previewImg = currentCompany.idCardBack" />
                 </div>
               </div>
             </div>
@@ -164,6 +173,7 @@ function statusColor(s: string) { return { pending: 'orange', approved: 'green',
 function formatTime(time: string) {
   return new Date(time).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
+function isPdfFile(value?: string) { return /\.pdf($|\?)/i.test(value || '') }
 
 const columns = [
   { title: 'ID', dataIndex: 'id', width: 60 },

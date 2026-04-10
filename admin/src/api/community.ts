@@ -76,6 +76,11 @@ export function togglePostEnabledApi(id: number) {
   return request.put(`/community/posts/${id}/toggle-enabled`)
 }
 
+/** 切换帖子置顶状态 */
+export function togglePostTopApi(id: number) {
+  return request.put(`/community/posts/${id}/toggle-top`)
+}
+
 /** 获取帖子评论列表 */
 export function getCommentsApi(postId: number) {
   return request.get(`/community/posts/${postId}/comments`)

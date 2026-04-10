@@ -5,7 +5,7 @@ export function getCompaniesAdminApi(params?: Record<string, any>) {
 }
 
 export function getCompanyDetailApi(id: number) {
-  return request.get(`/companies/${id}`)
+  return request.get(`/companies/admin/${id}`)
 }
 
 export function updateCompanyStatusApi(id: number, status: string, rejectReason?: string) {

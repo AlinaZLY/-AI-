@@ -136,7 +136,16 @@ const stats = reactive({
   roleStats: [] as { role: string; count: number }[],
 })
 
-const statCards = computed(() => [
+interface StatCard {
+  label: string
+  value: number
+  today?: number
+  range?: number
+  color: string
+  icon: any
+}
+
+const statCards = computed<StatCard[]>(() => [
   { label: '注册用户', value: stats.totalUsers, today: stats.todayUsers, range: stats.rangeUsers, color: '#1677ff', icon: TeamOutlined },
   { label: '活跃用户', value: stats.activeUsers, color: '#722ed1', icon: ThunderboltOutlined },
   { label: '帖子总数', value: stats.totalPosts, today: stats.todayPosts, range: stats.rangePosts, color: '#13c2c2', icon: FileTextOutlined },

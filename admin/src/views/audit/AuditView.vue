@@ -109,20 +109,27 @@
         <a-divider orientation="left">认证材料</a-divider>
         <div class="cert-preview-row">
           <template v-if="detailRecord.businessLicense || detailRecord.idCardFront || detailRecord.idCardBack">
-            <a-image-preview-group>
-              <div v-if="detailRecord.businessLicense" class="cert-preview-item">
-                <div class="cert-preview-label">营业执照</div>
-                <a-image :width="120" :src="detailRecord.businessLicense" alt="营业执照" />
-              </div>
-              <div v-if="detailRecord.idCardFront" class="cert-preview-item">
-                <div class="cert-preview-label">身份证正面</div>
-                <a-image :width="120" :src="detailRecord.idCardFront" alt="身份证正面" />
-              </div>
-              <div v-if="detailRecord.idCardBack" class="cert-preview-item">
-                <div class="cert-preview-label">身份证反面</div>
-                <a-image :width="120" :src="detailRecord.idCardBack" alt="身份证反面" />
-              </div>
-            </a-image-preview-group>
+            <div v-if="detailRecord.businessLicense" class="cert-preview-item">
+              <div class="cert-preview-label">营业执照</div>
+              <template v-if="isPdfFile(detailRecord.businessLicense)">
+                <a-button type="link" :href="detailRecord.businessLicense" target="_blank">查看 PDF</a-button>
+              </template>
+              <a-image v-else :width="120" :src="detailRecord.businessLicense" alt="营业执照" />
+            </div>
+            <div v-if="detailRecord.idCardFront" class="cert-preview-item">
+              <div class="cert-preview-label">身份证正面</div>
+              <template v-if="isPdfFile(detailRecord.idCardFront)">
+                <a-button type="link" :href="detailRecord.idCardFront" target="_blank">查看 PDF</a-button>
+              </template>
+              <a-image v-else :width="120" :src="detailRecord.idCardFront" alt="身份证正面" />
+            </div>
+            <div v-if="detailRecord.idCardBack" class="cert-preview-item">
+              <div class="cert-preview-label">身份证反面</div>
+              <template v-if="isPdfFile(detailRecord.idCardBack)">
+                <a-button type="link" :href="detailRecord.idCardBack" target="_blank">查看 PDF</a-button>
+              </template>
+              <a-image v-else :width="120" :src="detailRecord.idCardBack" alt="身份证反面" />
+            </div>
           </template>
           <div v-else class="no-cert">未上传材料</div>
         </div>
@@ -177,6 +184,7 @@ const columns: TableColumnType[] = [
 function statusLabel(s: string) { return { pending: '待审核', approved: '已通过', rejected: '已拒绝' }[s] || s }
 function statusColor(s: string) { return { pending: 'orange', approved: 'green', rejected: 'red' }[s] || 'default' }
 function formatTime(t: string) { return new Date(t).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) }
+function isPdfFile(value?: string) { return /\.pdf($|\?)/i.test(value || '') }
 
 function openDetail(record: any) {
   detailRecord.value = { ...record }

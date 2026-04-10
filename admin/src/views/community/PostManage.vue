@@ -1,6 +1,5 @@
 <template>
   <div class="post-manage">
-    <a-page-header title="帖子管理" sub-title="管理社区帖子内容" />
     <!-- 工具栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
@@ -129,6 +128,9 @@
                 </a-menu>
               </template>
             </a-dropdown>
+            <a-button type="link" size="small" @click="handleToggleTop(record.id)">
+              {{ record.isTop ? '取消置顶' : '置顶' }}
+            </a-button>
             <a-popconfirm
               title="确定要删除此帖子吗？删除后不可恢复。"
               ok-text="确定"
@@ -218,7 +220,7 @@
           </div>
         </div>
         <a-divider />
-        <div class="detail-content" v-html="sanitizedContent"></div>
+        <div class="detail-content" v-html="currentPost.content"></div>
 
         <!-- 评论区域 -->
         <a-divider>评论 ({{ comments.length }})</a-divider>
@@ -269,9 +271,8 @@
 
 <script setup lang="ts">
 // @ts-ignore - wangeditor types issue
-import { ref, reactive, computed, onMounted, onBeforeUnmount, shallowRef } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, shallowRef } from 'vue'
 import { message } from 'ant-design-vue'
-import DOMPurify from 'dompurify'
 // @ts-ignore
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IToolbarConfig, IEditorConfig } from '@wangeditor/editor'
@@ -290,13 +291,8 @@ import {
 import {
   getPostsApi, getPostDetailApi, createPostApi, updatePostApi,
   deletePostApi, getCommentsApi, deleteCommentApi, reviewPostApi,
-  getCategoriesApi, togglePostEnabledApi,
+  getCategoriesApi, togglePostEnabledApi, togglePostTopApi,
 } from '@/api/community'
-
-// ========== XSS 防护 ==========
-const sanitizedContent = computed(() =>
-  currentPost.value ? DOMPurify.sanitize(currentPost.value.content || '') : '',
-)
 
 // ========== 分类列表 ==========
 const categoryList = ref<any[]>([])
@@ -469,6 +465,16 @@ async function handleDelete(id: number) {
     fetchPosts()
   } catch {
     message.error('删除失败')
+  }
+}
+
+async function handleToggleTop(id: number) {
+  try {
+    await togglePostTopApi(id)
+    message.success('操作成功')
+    fetchPosts()
+  } catch {
+    message.error('操作失败')
   }
 }
 
