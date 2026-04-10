@@ -1,10 +1,10 @@
 <template>
   <div class="template-manage">
-    <a-page-header title="模板管理" :sub-title="`共 ${pagination.total} 个模板`">
+    <a-page-header :title="$t('模板管理')" :sub-title="pageSubtitle">
       <template #extra>
         <a-space>
-          <a-button @click="showUploadModal = true"><UploadOutlined /> 上传 Word</a-button>
-          <a-button type="primary" @click="openCreateModal"><PlusOutlined /> 新建模板</a-button>
+          <a-button @click="showUploadModal = true"><UploadOutlined /> {{ $t('上传 Word') }}</a-button>
+          <a-button type="primary" @click="openCreateModal"><PlusOutlined /> {{ $t('新建模板') }}</a-button>
         </a-space>
       </template>
     </a-page-header>
@@ -13,12 +13,12 @@
     <div class="filter-bar">
       <a-space>
         <a-radio-group v-model:value="categoryFilter" @change="handleSearch">
-          <a-radio-button value="">全部</a-radio-button>
-          <a-radio-button v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</a-radio-button>
+          <a-radio-button value="">{{ $t('全部') }}</a-radio-button>
+          <a-radio-button v-for="cat in categories" :key="cat" :value="cat">{{ translateCategory(cat) }}</a-radio-button>
         </a-radio-group>
         <a-input-search
           v-model:value="keyword"
-          placeholder="搜索模板"
+          :placeholder="$t('搜索模板')"
           style="width: 200px"
           allow-clear
           @search="handleSearch"
@@ -28,7 +28,7 @@
 
     <!-- 模板卡片列表 -->
     <a-spin :spinning="loading">
-      <a-empty v-if="templates.length === 0 && !loading" description="暂无模板" />
+      <a-empty v-if="templates.length === 0 && !loading" :description="$t('暂无模板')" />
       <a-row :gutter="16">
         <a-col :span="6" v-for="tpl in templates" :key="tpl.id" style="margin-bottom: 16px">
           <a-card hoverable class="template-card" @click="openEditModal(tpl)">
@@ -42,14 +42,14 @@
                 />
                 <div class="preview-overlay">
                   <a-space>
-                    <a-button type="primary" size="small" @click.stop="handlePreview(tpl)"><EyeOutlined /> 预览</a-button>
-                    <a-button size="small" @click.stop="openEditModal(tpl)"><EditOutlined /> 编辑</a-button>
+                    <a-button type="primary" size="small" @click.stop="handlePreview(tpl)"><EyeOutlined /> {{ $t('预览') }}</a-button>
+                    <a-button size="small" @click.stop="openEditModal(tpl)"><EditOutlined /> {{ $t('编辑') }}</a-button>
                   </a-space>
                 </div>
               </div>
               <div class="no-cover" v-else>
                 <FileImageOutlined style="font-size: 40px; color: #d9d9d9" />
-                <div style="color: #999; font-size: 13px; margin-top: 8px">暂无封面</div>
+                <div style="color: #999; font-size: 13px; margin-top: 8px">{{ $t('暂无封面') }}</div>
               </div>
             </template>
             <a-card-meta>
@@ -60,26 +60,26 @@
                 </div>
               </template>
               <template #description>
-                <a-tag color="default" size="small">{{ tpl.category || '未分类' }}</a-tag>
+                <a-tag color="default" size="small">{{ translateCategory(tpl.category) }}</a-tag>
                 <span class="card-desc">{{ tpl.description || '' }}</span>
-                <div class="card-meta">排序: {{ tpl.sort }} · {{ formatTime(tpl.updatedAt || tpl.createdAt) }}</div>
+                <div class="card-meta">{{ $t('排序') }}: {{ tpl.sort }} · {{ formatTime(tpl.updatedAt || tpl.createdAt) }}</div>
               </template>
             </a-card-meta>
             <template #actions>
-              <a-tooltip title="预览"><EyeOutlined @click.stop="handlePreview(tpl)" /></a-tooltip>
-              <a-tooltip title="编辑"><EditOutlined @click.stop="openEditModal(tpl)" /></a-tooltip>
+              <a-tooltip :title="$t('预览')"><EyeOutlined @click.stop="handlePreview(tpl)" /></a-tooltip>
+              <a-tooltip :title="$t('编辑')"><EditOutlined @click.stop="openEditModal(tpl)" /></a-tooltip>
               <a-dropdown :trigger="['click']" @click.stop>
-                <a-tooltip title="下载"><DownloadOutlined /></a-tooltip>
+                <a-tooltip :title="$t('下载')"><DownloadOutlined /></a-tooltip>
                 <template #overlay>
                   <a-menu @click="menuDownloadHandler(tpl)">
-                    <a-menu-item key="word">下载 Word</a-menu-item>
-                    <a-menu-item key="pdf">下载 PDF</a-menu-item>
-                    <a-menu-item key="html">下载 HTML</a-menu-item>
+                    <a-menu-item key="word">{{ $t('下载 Word') }}</a-menu-item>
+                    <a-menu-item key="pdf">{{ $t('下载 PDF') }}</a-menu-item>
+                    <a-menu-item key="html">{{ $t('下载 HTML') }}</a-menu-item>
                   </a-menu>
                 </template>
               </a-dropdown>
-              <a-tooltip title="删除">
-                <a-popconfirm :title="tpl.isSystem ? '这是系统模板，确定要删除吗？' : '确定删除？'" @confirm="handleDelete(tpl.id)">
+              <a-tooltip :title="$t('删除')">
+                <a-popconfirm :title="tpl.isSystem ? $t('这是系统模板，确定要删除吗？') : $t('确定删除？')" @confirm="handleDelete(tpl.id)">
                   <DeleteOutlined @click.stop />
                 </a-popconfirm>
               </a-tooltip>
@@ -95,7 +95,7 @@
           :total="pagination.total"
           :page-size="pagination.pageSize"
           show-size-changer
-          :show-total="(t: number) => `共 ${t} 个`"
+          :show-total="showTotal"
           @change="handlePageChange"
           @showSizeChange="handleSizeChange"
         />
@@ -105,9 +105,9 @@
     <!-- 新建/编辑弹窗 -->
     <a-modal
       v-model:open="formVisible"
-      :title="editingId ? '编辑模板' : '新建模板'"
-      ok-text="保存"
-      cancel-text="取消"
+      :title="editingId ? $t('编辑模板') : $t('新建模板')"
+      :ok-text="$t('保存')"
+      :cancel-text="$t('取消')"
       :confirm-loading="formLoading"
       @ok="handleFormSubmit"
       width="1100px"
@@ -115,48 +115,48 @@
       <a-form layout="vertical">
         <a-row :gutter="16">
           <a-col :span="8">
-            <a-form-item label="模板名称" required>
-              <a-input v-model:value="formData.name" placeholder="如：简约标准" />
+            <a-form-item :label="$t('模板名称')" required>
+              <a-input v-model:value="formData.name" :placeholder="$t('如：简约标准')" />
             </a-form-item>
           </a-col>
           <a-col :span="6">
-            <a-form-item label="模板分类">
+            <a-form-item :label="$t('模板分类')">
               <a-auto-complete
                 v-model:value="formData.category"
                 :options="allCategoryOptions"
-                placeholder="选择或输入新分类"
+                :placeholder="$t('选择或输入新分类')"
                 allow-clear
               />
             </a-form-item>
           </a-col>
           <a-col :span="6">
-            <a-form-item label="描述">
-              <a-input v-model:value="formData.description" placeholder="简要描述" />
+            <a-form-item :label="$t('描述')">
+              <a-input v-model:value="formData.description" :placeholder="$t('简要描述')" />
             </a-form-item>
           </a-col>
           <a-col :span="4">
-            <a-form-item label="排序">
+            <a-form-item :label="$t('排序')">
               <a-input-number v-model:value="formData.sort" :min="0" style="width: 100%" />
             </a-form-item>
           </a-col>
         </a-row>
 
         <a-tabs v-model:activeKey="editMode">
-          <a-tab-pane key="visual" tab="可视化编辑">
+          <a-tab-pane key="visual" :tab="$t('可视化编辑')">
             <div class="visual-editor">
               <div class="editor-left">
                 <div style="margin-bottom: 12px">
-                  <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px">布局类型</div>
+                  <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px">{{ $t('布局类型') }}</div>
                   <a-radio-group v-model:value="layoutType" size="small" @change="rebuildHtml" style="display: flex; flex-wrap: wrap; gap: 4px">
-                    <a-radio-button value="standard">经典居中</a-radio-button>
-                    <a-radio-button value="leftbar">左侧栏</a-radio-button>
-                    <a-radio-button value="banner">顶部横幅</a-radio-button>
-                    <a-radio-button value="timeline">时间轴</a-radio-button>
+                    <a-radio-button value="standard">{{ $t('经典居中') }}</a-radio-button>
+                    <a-radio-button value="leftbar">{{ $t('左侧栏') }}</a-radio-button>
+                    <a-radio-button value="banner">{{ $t('顶部横幅') }}</a-radio-button>
+                    <a-radio-button value="timeline">{{ $t('时间轴') }}</a-radio-button>
                   </a-radio-group>
                 </div>
                 <div class="section-header">
-                  <span style="font-weight: 600; font-size: 14px">模板区块</span>
-                  <a-button size="small" type="dashed" @click="loadDefaultSections">重置</a-button>
+                  <span style="font-weight: 600; font-size: 14px">{{ $t('模板区块') }}</span>
+                  <a-button size="small" type="dashed" @click="loadDefaultSections">{{ $t('重置') }}</a-button>
                 </div>
                 <div class="section-list">
                   <div
@@ -181,7 +181,7 @@
                   </div>
                 </div>
                 <div style="margin-top: 12px">
-                  <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px">主题色</div>
+                  <div style="font-weight: 600; font-size: 14px; margin-bottom: 8px">{{ $t('主题色') }}</div>
                   <div style="display: flex; gap: 8px; flex-wrap: wrap">
                     <div
                       v-for="color in themeColors"
@@ -193,37 +193,37 @@
                 </div>
               </div>
               <div class="editor-right">
-                <div class="preview-label">实时预览</div>
+                <div class="preview-label">{{ $t('实时预览') }}</div>
                 <div class="preview-container">
                   <iframe :srcdoc="livePreviewHtml" class="preview-frame" sandbox="" />
                 </div>
               </div>
             </div>
           </a-tab-pane>
-          <a-tab-pane key="code" tab="代码编辑">
+          <a-tab-pane key="code" :tab="$t('代码编辑')">
             <div style="display: flex; gap: 8px; margin-bottom: 12px">
-              <a-button size="small" @click="formatHtml">格式化 HTML</a-button>
-              <a-button size="small" @click="formatCss">格式化 CSS</a-button>
-              <a-button size="small" type="dashed" @click="loadDefaultTemplate">加载默认模板</a-button>
+              <a-button size="small" @click="formatHtml">{{ $t('格式化 HTML') }}</a-button>
+              <a-button size="small" @click="formatCss">{{ $t('格式化 CSS') }}</a-button>
+              <a-button size="small" type="dashed" @click="loadDefaultTemplate">{{ $t('加载默认模板') }}</a-button>
             </div>
-            <a-form-item label="HTML 模板内容">
+            <a-form-item :label="$t('HTML 模板内容')">
               <a-textarea
                 v-model:value="formData.htmlContent"
                 :rows="16"
                 class="code-editor"
-                placeholder="在此输入 HTML 模板代码，支持占位符如 {{name}}、{{skills}} 等"
+                :placeholder="$t('在此输入 HTML 模板代码，支持占位符如 {{name}}、{{skills}} 等')"
               />
             </a-form-item>
-            <a-form-item label="CSS 样式">
+            <a-form-item :label="$t('CSS 样式')">
               <a-textarea
                 v-model:value="formData.cssContent"
                 :rows="8"
                 class="code-editor"
-                placeholder="在此输入 CSS 样式代码"
+                :placeholder="$t('在此输入 CSS 样式代码')"
               />
             </a-form-item>
           </a-tab-pane>
-          <a-tab-pane key="preview" tab="实时预览">
+          <a-tab-pane key="preview" :tab="$t('实时预览')">
             <div class="live-preview-wrap">
               <iframe
                 :srcdoc="buildPreviewHtml({ htmlContent: formData.htmlContent, cssContent: formData.cssContent }, true)"
@@ -239,7 +239,7 @@
     <!-- 上传 Word 模板弹窗 -->
     <a-modal
       v-model:open="showUploadModal"
-      title="上传 Word 简历模板"
+      :title="$t('上传 Word 简历模板')"
       :footer="null"
       width="640px"
       :destroy-on-close="true"
@@ -248,27 +248,27 @@
         type="info"
         show-icon
         style="margin-bottom: 16px"
-        message="Word 模板上传说明"
+        :message="$t('Word 模板上传说明')"
       >
         <template #description>
           <ul style="margin: 0; padding-left: 16px; line-height: 2">
-            <li>仅支持 <strong>.docx</strong> 格式（Word 2007+）</li>
-            <li>模板中可使用占位符，导入后会自动解析为 HTML</li>
-            <li>建议使用简洁排版，复杂样式可能无法完全还原</li>
-            <li>上传后可在编辑器中进一步调整 HTML 和 CSS</li>
+            <li>{{ $t('仅支持 .docx 格式（Word 2007+）') }}</li>
+            <li>{{ $t('模板中可使用占位符，导入后会自动解析为 HTML') }}</li>
+            <li>{{ $t('建议使用简洁排版，复杂样式可能无法完全还原') }}</li>
+            <li>{{ $t('上传后可在编辑器中进一步调整 HTML 和 CSS') }}</li>
           </ul>
         </template>
       </a-alert>
 
       <div style="margin-bottom: 16px">
-        <a-form-item label="模板名称" style="margin-bottom: 12px">
-          <a-input v-model:value="uploadName" placeholder="为上传的模板命名（可选，默认使用文件名）" />
+        <a-form-item :label="$t('模板名称')" style="margin-bottom: 12px">
+          <a-input v-model:value="uploadName" :placeholder="$t('为上传的模板命名（可选，默认使用文件名）')" />
         </a-form-item>
-        <a-form-item label="模板分类" style="margin-bottom: 12px">
+        <a-form-item :label="$t('模板分类')" style="margin-bottom: 12px">
           <a-auto-complete
             v-model:value="uploadCategory"
             :options="allCategoryOptions"
-            placeholder="选择已有分类或输入新分类"
+            :placeholder="$t('选择已有分类或输入新分类')"
             style="width: 100%"
           />
         </a-form-item>
@@ -284,10 +284,10 @@
           <UploadOutlined />
         </p>
         <p style="font-size: 16px; color: #333; margin-bottom: 4px">
-          {{ uploading ? '解析上传中...' : '点击或拖拽 .docx 文件到此处' }}
+          {{ uploading ? $t('解析上传中...') : $t('点击或拖拽 .docx 文件到此处') }}
         </p>
         <p style="font-size: 13px; color: #999">
-          支持 Word 2007+ (.docx) 格式，最大 10MB
+          {{ $t('支持 Word 2007+ (.docx) 格式，最大 10MB') }}
         </p>
       </a-upload-dragger>
     </a-modal>
@@ -299,53 +299,60 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined, EyeOutlined, EditOutlined, DeleteOutlined, FileImageOutlined, DownloadOutlined } from '@ant-design/icons-vue'
+import { useI18n } from '@/i18n'
 import {
   getResumeTemplatesApi, getTemplateDetailApi,
   createTemplateApi, updateTemplateApi, deleteTemplateApi,
   uploadTemplateDocxApi, getTemplateCategoriesApi,
 } from '@/api/resume'
 
+const { t, formatDateTime } = useI18n()
 const loading = ref(false)
 const templates = ref<any[]>([])
 const categories = ref<string[]>([])
 const categoryFilter = ref('')
 const keyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 12, total: 0 })
+const DEFAULT_CATEGORY = '通用'
+const pageSubtitle = computed(() => t('共 {count} 个模板', { count: pagination.total }))
+const showTotal = (total: number) => t('共 {count} 个', { count: total })
 
 const formVisible = ref(false)
 const formLoading = ref(false)
 const editingId = ref<number | null>(null)
 const editMode = ref('visual')
-const formData = reactive({ name: '', description: '', category: '通用', htmlContent: '', cssContent: '', sort: 0 })
+const formData = reactive({ name: '', description: '', category: DEFAULT_CATEGORY, htmlContent: '', cssContent: '', sort: 0 })
 
 const allCategoryOptions = computed(() => {
-  return categories.value.map(c => ({ value: c }))
+  return categories.value.map(c => ({ value: c, label: translateCategory(c) }))
 })
 
 const showUploadModal = ref(false)
 const uploading = ref(false)
 const uploadName = ref('')
-const uploadCategory = ref('通用')
+const uploadCategory = ref(DEFAULT_CATEGORY)
 
 interface Section { key: string; title: string; placeholder: string; enabled: boolean }
 
-const DEFAULT_SECTIONS: Section[] = [
-  { key: 'header', title: '个人信息', placeholder: '{{name}} · {{phone}} · {{email}}', enabled: true },
-  { key: 'selfIntro', title: '自我评价', placeholder: '{{selfIntro}}', enabled: true },
-  { key: 'education', title: '教育经历', placeholder: '{{education}}', enabled: true },
-  { key: 'experience', title: '实习/工作经历', placeholder: '{{experience}}', enabled: true },
-  { key: 'projects', title: '项目经验', placeholder: '{{projects}}', enabled: true },
-  { key: 'skills', title: '技能', placeholder: '{{skills}}', enabled: true },
-]
+function createDefaultSections(): Section[] {
+  return [
+    { key: 'header', title: t('个人信息'), placeholder: '{{name}} · {{phone}} · {{email}}', enabled: true },
+    { key: 'selfIntro', title: t('自我评价'), placeholder: '{{selfIntro}}', enabled: true },
+    { key: 'education', title: t('教育经历'), placeholder: '{{education}}', enabled: true },
+    { key: 'experience', title: t('实习/工作经历'), placeholder: '{{experience}}', enabled: true },
+    { key: 'projects', title: t('项目经验'), placeholder: '{{projects}}', enabled: true },
+    { key: 'skills', title: t('技能'), placeholder: '{{skills}}', enabled: true },
+  ]
+}
 
-const sections = ref<Section[]>(JSON.parse(JSON.stringify(DEFAULT_SECTIONS)))
+const sections = ref<Section[]>(createDefaultSections())
 const selectedColor = ref('#1677ff')
 const layoutType = ref<'standard' | 'leftbar' | 'banner' | 'timeline'>('standard')
 const themeColors = ['#1677ff', '#2f54eb', '#722ed1', '#eb2f96', '#13c2c2', '#52c41a', '#fa8c16', '#f5222d', '#333333']
 const livePreviewHtml = ref('')
 
 function loadDefaultSections() {
-  sections.value = JSON.parse(JSON.stringify(DEFAULT_SECTIONS))
+  sections.value = createDefaultSections()
   selectedColor.value = '#1677ff'
   rebuildHtml()
 }
@@ -455,7 +462,12 @@ function parseSectionsFromHtml() {
 
 function formatTime(time: string) {
   if (!time) return '-'
-  return new Date(time).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return formatDateTime(time, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
+function translateCategory(category?: string) {
+  const raw = String(category || '').trim()
+  return raw ? t(raw) : t('未分类')
 }
 
 const SAMPLE_DATA: Record<string, string> = {
@@ -501,7 +513,7 @@ async function fetchTemplates() {
     })
     templates.value = res.data?.list || res.data || []
     pagination.total = res.data?.total || templates.value.length
-  } catch { message.error('获取模板失败') }
+  } catch { message.error(t('获取模板失败')) }
   finally { loading.value = false }
 }
 
@@ -523,7 +535,7 @@ function extractColor(css: string): string {
 
 function openCreateModal() {
   editingId.value = null; editMode.value = 'visual'
-  Object.assign(formData, { name: '', description: '', category: '通用', htmlContent: '', cssContent: '', sort: 0 })
+  Object.assign(formData, { name: '', description: '', category: DEFAULT_CATEGORY, htmlContent: '', cssContent: '', sort: 0 })
   loadDefaultSections()
   formVisible.value = true
 }
@@ -536,32 +548,32 @@ async function openEditModal(record: any) {
     Object.assign(formData, {
       name: String(d.name || ''),
       description: String(d.description || ''),
-      category: String(d.category || '通用'),
+      category: String(d.category || DEFAULT_CATEGORY),
       htmlContent: String(d.htmlContent || ''),
       cssContent: String(d.cssContent || ''),
       sort: d.sort || 0,
     })
   } catch {
-    Object.assign(formData, { name: record.name, description: '', category: '通用', htmlContent: '', cssContent: '', sort: 0 })
+    Object.assign(formData, { name: record.name, description: '', category: DEFAULT_CATEGORY, htmlContent: '', cssContent: '', sort: 0 })
   }
   formVisible.value = true
 }
 
 async function handleFormSubmit() {
-  if (!formData.name.trim()) return message.warning('请输入模板名称')
+  if (!formData.name.trim()) return message.warning(t('请输入模板名称'))
   formLoading.value = true
   try {
-    if (editingId.value) { await updateTemplateApi(editingId.value, formData); message.success('已更新') }
-    else { await createTemplateApi(formData); message.success('已创建') }
+    if (editingId.value) { await updateTemplateApi(editingId.value, formData); message.success(t('已更新')) }
+    else { await createTemplateApi(formData); message.success(t('已创建')) }
     formVisible.value = false
     fetchTemplates(); fetchCategories()
-  } catch { message.error('操作失败') }
+  } catch { message.error(t('操作失败')) }
   finally { formLoading.value = false }
 }
 
 async function handleDelete(id: number) {
-  try { await deleteTemplateApi(id); message.success('已删除'); fetchTemplates(); fetchCategories() }
-  catch { message.error('删除失败') }
+  try { await deleteTemplateApi(id); message.success(t('已删除')); fetchTemplates(); fetchCategories() }
+  catch { message.error(t('删除失败')) }
 }
 
 function handlePreview(record: any) {
@@ -579,37 +591,16 @@ async function handleUploadDocxWithModal(file: File) {
   fd.append('file', file)
   fd.append('name', uploadName.value.trim() || file.name.replace(/\.docx$/i, ''))
   try {
-    message.loading({ content: '解析中...', key: 'upload' })
+    message.loading({ content: t('解析中...'), key: 'upload' })
     await uploadTemplateDocxApi(fd)
-    message.success({ content: '导入成功', key: 'upload' })
+    message.success({ content: t('导入成功'), key: 'upload' })
     showUploadModal.value = false
     uploadName.value = ''
-    uploadCategory.value = '通用'
+    uploadCategory.value = DEFAULT_CATEGORY
     fetchTemplates(); fetchCategories()
-  } catch { message.error({ content: '导入失败', key: 'upload' }) }
+  } catch { message.error({ content: t('导入失败'), key: 'upload' }) }
   finally { uploading.value = false }
   return false
-}
-
-async function autoFormatHtml(html: any): Promise<string> {
-  const str = String(html || '')
-  if (!str || str.includes('\n')) return str
-  return str
-    .replace(/>\s*</g, '>\n<')
-    .replace(/(<\/?(div|section|h[1-6]|p|ul|ol|li|table|tr|header|footer)[^>]*>)/gi, '\n$1')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-}
-
-function autoFormatCss(css: any): string | Promise<string> {
-  const str = String(css || '')
-  if (!str || str.includes('\n')) return str
-  return str
-    .replace(/\{/g, ' {\n  ')
-    .replace(/;/g, ';\n  ')
-    .replace(/\s*\}\s*/g, '\n}\n')
-    .replace(/\n\s*\n/g, '\n')
-    .trim()
 }
 
 function formatHtml() {
@@ -642,27 +633,27 @@ function loadDefaultTemplate() {
   </div>
 
   <div class="section">
-    <h2>自我评价</h2>
+    <h2>${t('自我评价')}</h2>
     <p>{{selfIntro}}</p>
   </div>
 
   <div class="section">
-    <h2>教育经历</h2>
+    <h2>${t('教育经历')}</h2>
     {{education}}
   </div>
 
   <div class="section">
-    <h2>实习/工作经历</h2>
+    <h2>${t('实习/工作经历')}</h2>
     {{experience}}
   </div>
 
   <div class="section">
-    <h2>项目经验</h2>
+    <h2>${t('项目经验')}</h2>
     {{projects}}
   </div>
 
   <div class="section">
-    <h2>技能</h2>
+    <h2>${t('技能')}</h2>
     <div class="skills">{{skills}}</div>
   </div>
 </div>`
@@ -683,7 +674,7 @@ body { font-family: 'Microsoft YaHei', sans-serif; color: #333; background: #fff
 .skills { display: flex; flex-wrap: wrap; gap: 8px; }
 .skill-tag { background: #f0f5ff; color: #1677ff; padding: 2px 10px; border-radius: 4px; font-size: 13px; border: 1px solid #d6e4ff; }
 @media print { body { padding: 20px; } @page { margin: 15mm; } }`
-  message.success('已加载默认模板')
+  message.success(t('已加载默认模板'))
 }
 
 function menuDownloadHandler(tpl: any) {
@@ -702,12 +693,12 @@ function handleDownload(tpl: any, format: string) {
       w.document.write(fullHtml + '<script>setTimeout(()=>{window.print()},500)<\/script>')
       w.document.close()
     } else {
-      message.warning('请允许弹窗以下载 PDF')
+      message.warning(t('请允许弹窗以下载 PDF'))
     }
   } else if (format === 'word') {
     const wordDoc = buildWordDocument(tpl)
     downloadBlob(new Blob(['\ufeff' + wordDoc], { type: 'application/msword;charset=utf-8' }), `${fileName}.doc`)
-    message.success('Word 文件已下载')
+    message.success(t('Word 文件已下载'))
   }
 }
 

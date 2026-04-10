@@ -34,7 +34,7 @@
           </a-col>
         </a-row>
       </template>
-      <a-empty v-else description="暂无记录；发送公告后将显示在本页（仅保存在本浏览器）" />
+      <a-empty v-else description="暂无记录；发送公告后将显示在本页（保存在服务端）" />
     </a-card>
 
     <a-modal
@@ -181,10 +181,9 @@ import { NotificationOutlined } from '@ant-design/icons-vue'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import type { IDomEditor, IToolbarConfig, IEditorConfig } from '@wangeditor/editor'
 import '@wangeditor/editor/dist/css/style.css'
-import { sendAnnouncementApi } from '@/api/system'
+import { getAnnouncementHistoryApi, sendAnnouncementApi } from '@/api/system'
 import { getUsersAdminApi } from '@/api/user'
 
-const STORAGE_KEY = 'admin-announcement-history'
 const NOTIFICATION_MAX = 500
 const EXCERPT_LEN = 120
 const CONTENT_PLAIN_MAX = 5000
@@ -332,23 +331,19 @@ function removeSelectedUser(id: number) {
   void runUserSearch()
 }
 
-function loadHistory() {
+async function loadHistory() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      history.value = []
-      return
-    }
-    const parsed = JSON.parse(raw) as HistoryItem[]
-    history.value = Array.isArray(parsed) ? parsed : []
+    const res = await getAnnouncementHistoryApi({ page: 1, pageSize: 50 })
+    const list = (res.data?.list || []) as Array<Record<string, unknown>>
+    history.value = list.map((item) => ({
+      title: String(item.title || ''),
+      content: String(item.content || ''),
+      sentAt: String(item.createdAt || ''),
+      userCount: Number(item.notifiedCount || 0),
+    }))
   } catch {
     history.value = []
   }
-}
-
-function saveHistory(items: HistoryItem[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items.slice(0, 50)))
-  history.value = items
 }
 
 function excerpt(text: string) {
@@ -430,13 +425,7 @@ async function handleSend() {
     const userCount = typeof payloadData?.notifiedCount === 'number' ? payloadData.notifiedCount : 0
     message.success(`公告已发送：${sendScopeDescription(userCount)}`)
     lastSendHint.value = `公告已发送至${sendScopeDescription(userCount)}。用户将在「消息通知」中收到系统通知。`
-    const entry: HistoryItem = {
-      title,
-      content,
-      sentAt: new Date().toISOString(),
-      userCount,
-    }
-    saveHistory([entry, ...history.value])
+    await loadHistory()
     modalOpen.value = false
   } catch {
     /* 拦截器已提示 */
@@ -446,7 +435,7 @@ async function handleSend() {
   }
 }
 
-onMounted(loadHistory)
+onMounted(() => { void loadHistory() })
 </script>
 
 <style scoped lang="less">

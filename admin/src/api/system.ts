@@ -30,6 +30,10 @@ export function sendAnnouncementApi(data: {
   return request.post('/system/announcement', data)
 }
 
+export function getAnnouncementHistoryApi(params?: { page?: number; pageSize?: number }) {
+  return request.get('/system/announcement/history', { params })
+}
+
 /** 获取通知列表 */
 export function getNotificationsApi(params?: {
   page?: number
@@ -98,6 +102,15 @@ export function deleteDictItemApi(id: number) {
 /** 删除字典类型 */
 export function deleteDictTypeApi(id: number) {
   return request.delete(`/system/dict/types/${id}`)
+}
+
+/** 上传平台 LOGO */
+export function uploadLogoApi(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+  return request.post('/system/upload-logo', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
 }
 
 /** 火山语音识别 - 一站式（提交+轮询） */
