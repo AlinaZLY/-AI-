@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { User, UserRole } from '../user/entities/user.entity';
+import { Company } from '../company/entities/company.entity';
 import { RedisService } from '@common/redis/redis.service';
 import { NotificationService } from '../notification/notification.service';
 import { SystemService } from '../system/system.service';
@@ -14,6 +15,7 @@ jest.mock('bcrypt');
 describe('AuthService', () => {
   let service: AuthService;
   let mockUserRepository: any;
+  let mockCompanyRepository: any;
   let mockJwtService: any;
   let mockRedisService: any;
   let mockNotificationService: any;
@@ -21,6 +23,12 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     mockUserRepository = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      save: jest.fn(),
+    };
+
+    mockCompanyRepository = {
       findOne: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
@@ -48,6 +56,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
+        { provide: getRepositoryToken(Company), useValue: mockCompanyRepository },
         { provide: JwtService, useValue: mockJwtService },
         { provide: RedisService, useValue: mockRedisService },
         { provide: NotificationService, useValue: mockNotificationService },

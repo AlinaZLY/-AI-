@@ -91,7 +91,7 @@
               </div>
               <div>
                 <div class="text-xs text-slate-400">{{ $t('企业类型') }}</div>
-                <div class="mt-1 text-slate-700">{{ company.type === 'individual' ? 'Sole Proprietorship' : 'Company' }}</div>
+                <div class="mt-1 text-slate-700">{{ company.type === 'individual' ? $t('个体工商户') : $t('企业') }}</div>
               </div>
             </div>
           </section>

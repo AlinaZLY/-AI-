@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Interview, InterviewStatus } from './entities/interview.entity';
 import { InterviewQuestion } from './entities/interview-question.entity';
-import { QuestionBank, QuestionDifficulty, QuestionSource } from './entities/question-bank.entity';
+import { QuestionBank, QuestionDifficulty, QuestionSource, QuestionReviewStatus } from './entities/question-bank.entity';
 import { QuestionCategory } from './entities/question-category.entity';
 import { Resume } from '../resume/entities/resume.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
@@ -148,8 +148,13 @@ export class InterviewService implements OnModuleInit {
     await this.qcRepo.delete(id);
   }
 
-  async getQuestions(page = 1, pageSize = 10, categoryId?: number, difficulty?: string, keyword?: string, source?: string, questionType?: string) {
+  async getQuestions(page = 1, pageSize = 10, categoryId?: number, difficulty?: string, keyword?: string, source?: string, questionType?: string, reviewStatus?: string, includeAll = false) {
     const qb = this.qbRepo.createQueryBuilder('q');
+    if (reviewStatus) {
+      qb.andWhere('q.reviewStatus = :rs', { rs: reviewStatus });
+    } else if (!includeAll) {
+      qb.andWhere('q.reviewStatus = :rs', { rs: QuestionReviewStatus.APPROVED });
+    }
     if (categoryId) {
       const catIds = await this.collectDescendantCategoryIds(categoryId);
       if (catIds.length > 0) {
@@ -197,33 +202,144 @@ export class InterviewService implements OnModuleInit {
     await this.qbRepo.delete(id);
   }
 
+  // ==================== 用户投稿题目 ====================
+
+  async submitUserQuestion(dto: any, userId: number) {
+    const q = this.qbRepo.create({
+      ...dto,
+      userId,
+      source: QuestionSource.USER,
+      reviewStatus: QuestionReviewStatus.PENDING,
+    });
+    return this.qbRepo.save(q);
+  }
+
+  async getUserSubmittedQuestions(userId: number, page = 1, pageSize = 10) {
+    const [list, total] = await this.qbRepo.findAndCount({
+      where: { userId, source: QuestionSource.USER },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return { list, total, page, pageSize };
+  }
+
+  async reviewQuestion(id: number, status: string, rejectReason?: string) {
+    const q = await this.qbRepo.findOne({ where: { id } });
+    if (!q) throw new NotFoundException('题目不存在');
+    q.reviewStatus = status as QuestionReviewStatus;
+    if (status === QuestionReviewStatus.REJECTED && rejectReason) {
+      q.rejectReason = rejectReason;
+    }
+    return this.qbRepo.save(q);
+  }
+
   // ==================== 模拟面试 ====================
 
   async startInterview(userId: number, dto: StartInterviewDto) {
+    let resumeContent: Record<string, any> | null = null;
     if (dto.resumeId) {
       const resume = await this.resumeRepo.findOne({ where: { id: dto.resumeId } });
       if (!resume || resume.userId !== userId) {
         throw new ForbiddenException('无权使用此简历');
       }
+      resumeContent = resume.content as Record<string, any> || null;
     }
-    const count = dto.questionCount || 5;
+    const totalCount = dto.questionCount || 5;
+    const strategy: Record<string, any> = { bankCount: 0, jdCustomCount: 0, resumeFollowupCount: 0 };
 
-    let questions: QuestionBank[] = [];
+    // ========== 基础层：从题库按分类/难度筛题 ==========
+    const bankCount = Math.max(2, totalCount - 2); // 留 2 个位置给增强层
+    let bankQuestions: QuestionBank[] = [];
+
+    const qb = this.qbRepo.createQueryBuilder('q');
     if (dto.categoryId != null) {
       const catIds = await this.collectDescendantCategoryIds(dto.categoryId);
       if (catIds.length > 0) {
-        questions = await this.qbRepo
-          .createQueryBuilder('q')
-          .where('q.categoryId IN (:...catIds)', { catIds })
-          .orderBy('RAND()')
-          .take(count)
-          .getMany();
+        qb.andWhere('q.categoryId IN (:...catIds)', { catIds });
       }
-      if (questions.length === 0) {
-        questions = await this.qbRepo.createQueryBuilder('q').orderBy('RAND()').take(count).getMany();
+    }
+    // 如果有 JD，优先选与 JD 相关的题
+    if (dto.jobDescription) {
+      const jdKeywords = dto.jobDescription
+        .replace(/[^\w\u4e00-\u9fff]/g, ' ')
+        .split(/\s+/)
+        .filter(w => w.length > 2)
+        .slice(0, 10);
+      if (jdKeywords.length > 0) {
+        const conditions = jdKeywords.map((_, i) => `q.question LIKE :kw${i}`).join(' OR ');
+        const params: Record<string, string> = {};
+        jdKeywords.forEach((kw, i) => { params[`kw${i}`] = `%${kw}%`; });
+        qb.addOrderBy(`CASE WHEN (${conditions}) THEN 0 ELSE 1 END`, 'ASC');
+        qb.setParameters(params);
       }
-    } else {
-      questions = await this.qbRepo.createQueryBuilder('q').orderBy('RAND()').take(count).getMany();
+    }
+    qb.addOrderBy('RAND()').take(bankCount);
+    bankQuestions = await qb.getMany();
+
+    // fallback: if not enough, fill with random
+    if (bankQuestions.length < bankCount) {
+      const existingIds = bankQuestions.map(q => q.id);
+      const fallbackQb = this.qbRepo.createQueryBuilder('q');
+      if (existingIds.length > 0) {
+        fallbackQb.where('q.id NOT IN (:...existingIds)', { existingIds });
+      }
+      fallbackQb.orderBy('RAND()').take(bankCount - bankQuestions.length);
+      const fallback = await fallbackQb.getMany();
+      bankQuestions.push(...fallback);
+    }
+    strategy.bankCount = bankQuestions.length;
+
+    // ========== 增强层：JD 定制题 + 简历追问题 ==========
+    const enhancedQuestions: { question: string; source: string; referenceAnswer?: string }[] = [];
+
+    if (dto.jobDescription && await this.aiRuntimeService.isConfigured()) {
+      try {
+        const jdResult = await this.aiRuntimeService.chatJson<{ questions?: { question: string; referenceAnswer?: string }[] }>({
+          scene: 'interview_generate',
+          maxTokens: 800,
+          temperature: 0.7,
+          systemPrompt: '你是一名专业面试官。根据岗位描述生成 1-2 道针对性面试题。输出 JSON：{"questions":[{"question":"...","referenceAnswer":"..."}]}',
+          userPrompt: `岗位描述：${dto.jobDescription.slice(0, 1500)}`,
+        });
+        if (Array.isArray(jdResult.questions)) {
+          for (const q of jdResult.questions.slice(0, 2)) {
+            enhancedQuestions.push({ question: q.question, source: 'jd_custom', referenceAnswer: q.referenceAnswer });
+          }
+        }
+      } catch { /* AI unavailable, skip */ }
+    }
+    strategy.jdCustomCount = enhancedQuestions.length;
+
+    if (resumeContent && await this.aiRuntimeService.isConfigured() && enhancedQuestions.length < 2) {
+      try {
+        const skills = Array.isArray(resumeContent.skills) ? resumeContent.skills.join(', ') : '';
+        const projects = Array.isArray(resumeContent.projects)
+          ? resumeContent.projects.map((p: any) => p.name || p.description || '').join('; ')
+          : '';
+        const resumeResult = await this.aiRuntimeService.chatJson<{ questions?: { question: string; referenceAnswer?: string }[] }>({
+          scene: 'interview_generate',
+          maxTokens: 800,
+          temperature: 0.7,
+          systemPrompt: '你是一名专业面试官。根据候选人简历技能和项目经历生成 1 道追问题。输出 JSON：{"questions":[{"question":"...","referenceAnswer":"..."}]}',
+          userPrompt: `技能：${skills}\n项目经历：${projects}`,
+        });
+        if (Array.isArray(resumeResult.questions)) {
+          for (const q of resumeResult.questions.slice(0, 1)) {
+            enhancedQuestions.push({ question: q.question, source: 'resume_followup', referenceAnswer: q.referenceAnswer });
+          }
+        }
+      } catch { /* AI unavailable, skip */ }
+    }
+    strategy.resumeFollowupCount = enhancedQuestions.filter(q => q.source === 'resume_followup').length;
+
+    // ========== 组装面试记录 ==========
+    const allQuestionItems: { question: string; questionType: string; referenceAnswer?: string; questionSource: string }[] = [];
+    for (const q of bankQuestions) {
+      allQuestionItems.push({ question: q.question, questionType: q.positionType || 'general', referenceAnswer: q.referenceAnswer, questionSource: 'bank' });
+    }
+    for (const q of enhancedQuestions) {
+      allQuestionItems.push({ question: q.question, questionType: 'custom', referenceAnswer: q.referenceAnswer, questionSource: q.source });
     }
 
     const interview = this.interviewRepo.create({
@@ -231,22 +347,24 @@ export class InterviewService implements OnModuleInit {
       jobTitle: dto.jobTitle,
       jobDescription: dto.jobDescription,
       resumeId: dto.resumeId,
-      questionCount: questions.length,
+      questionCount: allQuestionItems.length,
+      questionStrategy: strategy,
     });
     const saved = await this.interviewRepo.save(interview);
 
-    const iqEntities = questions.map((q, i) =>
+    const iqEntities = allQuestionItems.map((q, i) =>
       this.iqRepo.create({
         interviewId: saved.id,
         orderIndex: i + 1,
         question: q.question,
-        questionType: q.positionType || 'general',
+        questionType: q.questionType,
         referenceAnswer: q.referenceAnswer,
+        questionSource: q.questionSource,
       }),
     );
     await this.iqRepo.save(iqEntities);
 
-    for (const q of questions) {
+    for (const q of bankQuestions) {
       await this.qbRepo.increment({ id: q.id }, 'frequency', 1);
     }
 

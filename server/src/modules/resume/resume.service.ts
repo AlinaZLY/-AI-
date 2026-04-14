@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import * as mammoth from 'mammoth';
 import { Resume } from './entities/resume.entity';
 import { ResumeTemplate } from './entities/resume-template.entity';
+import { Job } from '../job/entities/job.entity';
 import { CreateResumeDto } from './dto/create-resume.dto';
 import { UpdateResumeDto } from './dto/update-resume.dto';
 import { AiRuntimeService } from '../system/ai-runtime.service';
@@ -14,6 +15,7 @@ export class ResumeService implements OnModuleInit {
   constructor(
     @InjectRepository(Resume) private resumeRepo: Repository<Resume>,
     @InjectRepository(ResumeTemplate) private templateRepo: Repository<ResumeTemplate>,
+    @InjectRepository(Job) private jobRepo: Repository<Job>,
     private configService: ConfigService,
     private readonly aiRuntimeService: AiRuntimeService,
   ) {}
@@ -185,18 +187,77 @@ export class ResumeService implements OnModuleInit {
     return rows.map((r: any) => r.category).filter(Boolean);
   }
 
-  async analyze(id: number, userId: number) {
+  async analyze(id: number, userId: number, body?: { jobDescription?: string; jobId?: number }) {
     const resume = await this.resumeRepo.findOne({ where: { id, userId } });
     if (!resume) throw new NotFoundException('简历不存在');
 
     const content = resume.content || {};
+    const completeness = this.calculateCompleteness(content);
+    const keywords = this.extractKeywords(content);
+    const suggestions = this.generateSuggestions(content);
+
+    // 尝试获取岗位 JD
+    let jobDescription = body?.jobDescription || '';
+    let jobTitle = '';
+    if (!jobDescription && body?.jobId) {
+      const job = await this.jobRepo.findOne({ where: { id: body.jobId } });
+      if (job) {
+        jobDescription = [job.description, job.requirements].filter(Boolean).join('\n');
+        jobTitle = job.title;
+      }
+    }
+    if (!jobDescription && resume.targetPosition) {
+      jobDescription = resume.targetPosition;
+    }
+
+    // 岗位匹配分析
+    let jobMatchScore = 0;
+    let missingSkills: string[] = [];
+    let matchedKeywords: string[] = [];
+    let jobMatchSuggestions: string[] = [];
+
+    if (jobDescription) {
+      const jdLower = jobDescription.toLowerCase();
+      const resumeKeywords = keywords.map(k => k.toLowerCase());
+      matchedKeywords = keywords.filter(k => jdLower.includes(k.toLowerCase()));
+
+      // 提取 JD 中的关键技能词
+      const jdWords = jobDescription.replace(/[^\w\u4e00-\u9fff+#.]/g, ' ').split(/\s+/).filter(w => w.length > 1);
+      const jdUniqueWords = [...new Set(jdWords.map(w => w.toLowerCase()))];
+      missingSkills = jdUniqueWords
+        .filter(w => !resumeKeywords.includes(w) && w.length > 2)
+        .slice(0, 8);
+
+      // 计算匹配度
+      const matchRatio = jdUniqueWords.length > 0
+        ? resumeKeywords.filter(k => jdUniqueWords.includes(k)).length / Math.max(jdUniqueWords.length, 1)
+        : 0;
+      jobMatchScore = Math.min(100, Math.round(matchRatio * 100 + completeness * 0.3));
+
+      if (jobMatchScore < 40) {
+        jobMatchSuggestions.push('简历与目标岗位匹配度较低，建议根据 JD 补充相关技能和项目经验');
+      } else if (jobMatchScore < 70) {
+        jobMatchSuggestions.push('简历与岗位有一定匹配，建议进一步突出相关项目经历');
+      }
+      if (missingSkills.length > 0) {
+        jobMatchSuggestions.push(`建议补充以下技能关键词：${missingSkills.slice(0, 5).join('、')}`);
+      }
+    }
+
+    const score = jobDescription
+      ? Math.round(completeness * 0.4 + jobMatchScore * 0.6)
+      : completeness;
+
     const analysis = {
-      completeness: this.calculateCompleteness(content),
-      suggestions: this.generateSuggestions(content),
-      keywords: this.extractKeywords(content),
-      score: 0,
+      completeness,
+      keywords,
+      matchedKeywords,
+      suggestions: [...suggestions, ...jobMatchSuggestions],
+      score,
+      jobMatchScore: jobDescription ? jobMatchScore : null,
+      missingSkills: jobDescription ? missingSkills : [],
+      jobTitle: jobTitle || null,
     };
-    analysis.score = analysis.completeness;
 
     resume.analysisResult = JSON.stringify(analysis);
     await this.resumeRepo.save(resume);

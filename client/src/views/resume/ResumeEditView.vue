@@ -25,6 +25,14 @@
           </button>
           <button
             type="button"
+            class="px-3 py-2 text-sm font-medium rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+            :disabled="exporting"
+            @click="onExportPdf"
+          >
+            {{ exporting ? $t('导出中…') : $t('导出 PDF') }}
+          </button>
+          <button
+            type="button"
             class="px-3 py-2 text-sm font-medium rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
             :disabled="analyzing"
             @click="onAnalyze"
@@ -546,6 +554,7 @@ const loading = ref(true)
 const loadError = ref('')
 const saving = ref(false)
 const previewing = ref(false)
+const exporting = ref(false)
 const analyzing = ref(false)
 const polishing = ref(false)
 const hasResumeContent = computed(() => {
@@ -1022,6 +1031,46 @@ async function onPreview() {
     // interceptor
   } finally {
     previewing.value = false
+  }
+}
+
+async function onExportPdf() {
+  const id = resumeId.value
+  if (!Number.isFinite(id)) return
+  exporting.value = true
+  try {
+    const res: { data?: { html?: string } } & { html?: string } = await renderResumeApi(id)
+    const payload = res.data ?? res
+    const html = typeof payload === 'object' && payload && 'html' in payload ? String(payload.html ?? '') : ''
+    if (!html) {
+      toast(t('暂无可导出的内容'), 'warning')
+      return
+    }
+    const printHtml = html.replace('</head>', `<style>
+      @media print {
+        body { margin: 0; padding: 0; }
+        @page { margin: 10mm; size: A4; }
+      }
+    </style>
+    <script>
+      window.onload = function() {
+        setTimeout(function() { window.print(); }, 300);
+      };
+    <\/script>
+    </head>`)
+    const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const w = window.open(url, '_blank')
+    if (!w) {
+      toast(t('请允许弹出窗口以导出 PDF'), 'warning')
+      URL.revokeObjectURL(url)
+      return
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 120_000)
+  } catch {
+    // interceptor
+  } finally {
+    exporting.value = false
   }
 }
 

@@ -262,7 +262,12 @@ async function handleRegister() {
     }
     await userStore.register(payload)
     if (form.role === 'enterprise' && enterpriseForm.name.trim()) {
-      toast(t('注册成功！企业认证已提交审核'), 'success')
+      const hasCerts = !!(enterpriseForm.businessLicense && enterpriseForm.idCardFront)
+      if (hasCerts) {
+        toast(t('注册成功！企业认证已提交审核，请等待管理员审核'), 'success')
+      } else {
+        toast(t('注册成功！请登录后前往企业认证页上传证件材料以完成审核'), 'warning')
+      }
     } else if (form.role === 'enterprise') {
       toast(t('注册成功！请登录后完成企业认证'), 'success')
     } else {

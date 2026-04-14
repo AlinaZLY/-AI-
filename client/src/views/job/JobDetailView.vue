@@ -36,8 +36,13 @@
             </div>
           </div>
           <div class="shrink-0 flex flex-col items-end gap-2">
-            <button v-if="appliedJobIds.has(job.id)" disabled class="px-6 py-2.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">{{ $t('已沟通') }}</button>
+            <button v-if="appliedJobIds.has(job.id)" @click="goApplicationDetail" class="px-6 py-2.5 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-200">{{ $t('已投递 · 查看进度') }}</button>
+            <button v-else-if="chattedJobIds.has(job.id)" @click="goChat" class="px-6 py-2.5 bg-blue-50 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors border border-blue-200">{{ $t('继续沟通') }}</button>
             <button v-else @click="goChat" class="px-6 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">{{ $t('立即沟通') }}</button>
+            <button @click="toggleFavorite" class="inline-flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg border transition-colors" :class="isFavorited ? 'border-amber-300 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-gray-200 text-gray-500 hover:bg-gray-50'">
+              <svg class="w-4 h-4" :fill="isFavorited ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+              {{ isFavorited ? $t('已收藏') : $t('收藏') }}
+            </button>
           </div>
         </div>
 
@@ -92,11 +97,14 @@
         <p class="text-sm text-gray-600 whitespace-pre-line leading-relaxed">{{ job.benefits }}</p>
       </div>
 
-      <!-- 底部沟通按钮 -->
+      <!-- 底部操作按钮 -->
       <div class="bg-white rounded-xl border border-gray-100 p-5 shadow-sm text-center">
         <p class="text-sm text-gray-500 mb-3">{{ $t('对这个职位感兴趣？') }}</p>
-        <button v-if="appliedJobIds.has(job.id)" disabled class="px-8 py-2.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">{{ $t('已沟通') }}</button>
-        <button v-else @click="goChat" class="px-8 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">{{ $t('立即沟通') }}</button>
+        <div class="flex justify-center gap-3">
+          <button v-if="appliedJobIds.has(job.id)" @click="goApplicationDetail" class="px-8 py-2.5 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-100 transition-colors border border-emerald-200">{{ $t('已投递 · 查看进度') }}</button>
+          <button v-if="chattedJobIds.has(job.id)" @click="goChat" class="px-8 py-2.5 bg-blue-50 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors border border-blue-200">{{ $t('继续沟通') }}</button>
+          <button v-else-if="!appliedJobIds.has(job.id)" @click="goChat" class="px-8 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">{{ $t('立即沟通') }}</button>
+        </div>
       </div>
     </template>
   </div>
@@ -118,6 +126,9 @@ const job = ref<any>(null)
 const loading = ref(true)
 const error = ref('')
 const appliedJobIds = ref(new Set<number>())
+const chattedJobIds = ref(new Set<number>())
+const applicationMap = ref(new Map<number, number>())
+const isFavorited = ref(false)
 
 const parsedTags = computed(() => {
   if (!job.value?.tags) return []
@@ -174,7 +185,29 @@ async function fetchAppliedJobs() {
     const res: any = await request.get('/applications', { params: { pageSize: 100 } })
     const list = res.data?.list || res.list || []
     appliedJobIds.value = new Set(list.filter((a: any) => a.jobId).map((a: any) => a.jobId))
+    const map = new Map<number, number>()
+    list.filter((a: any) => a.jobId).forEach((a: any) => map.set(a.jobId, a.id))
+    applicationMap.value = map
   } catch { /* ignore */ }
+}
+
+async function fetchChattedJobs() {
+  const token = localStorage.getItem('token')
+  if (!token) return
+  try {
+    const res: any = await request.get('/chat/conversations')
+    const convs = res.data || res || []
+    chattedJobIds.value = new Set(convs.filter((c: any) => c.jobId).map((c: any) => c.jobId))
+  } catch { /* ignore */ }
+}
+
+function goApplicationDetail() {
+  const appId = applicationMap.value.get(job.value?.id)
+  if (appId) {
+    router.push(`/applications/${appId}`)
+  } else {
+    router.push('/applications')
+  }
 }
 
 async function fetchJob() {
@@ -192,8 +225,36 @@ async function fetchJob() {
   }
 }
 
+async function checkFavoriteStatus() {
+  const token = localStorage.getItem('token')
+  if (!token) return
+  try {
+    const id = Number(route.params.id)
+    if (!id || isNaN(id)) return
+    const res: any = await request.get(`/jobs/favorites/${id}/check`)
+    isFavorited.value = !!(res.data?.favorited ?? res.favorited)
+  } catch { /* ignore */ }
+}
+
+async function toggleFavorite() {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    toast(t('请先登录'), 'warning')
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  try {
+    const id = Number(route.params.id)
+    const res: any = await request.post(`/jobs/favorites/${id}/toggle`)
+    isFavorited.value = !!(res.data?.favorited ?? res.favorited)
+    toast(isFavorited.value ? t('已收藏') : t('已取消收藏'), 'success')
+  } catch { /* ignore */ }
+}
+
 onMounted(() => {
   fetchJob()
   fetchAppliedJobs()
+  fetchChattedJobs()
+  checkFavoriteStatus()
 })
 </script>

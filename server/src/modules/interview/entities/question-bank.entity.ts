@@ -22,6 +22,13 @@ export enum QuestionType {
   SHORT_ANSWER = 'short_answer',
 }
 
+export enum QuestionReviewStatus {
+  DRAFT = 'draft',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 @Entity('question_bank')
 export class QuestionBank {
   @PrimaryGeneratedColumn()
@@ -59,6 +66,12 @@ export class QuestionBank {
 
   @Column({ type: 'simple-array', nullable: true, comment: '标签' })
   tags: string[];
+
+  @Column({ type: 'varchar', length: 20, default: QuestionReviewStatus.APPROVED, comment: '审核状态(draft/pending/approved/rejected)' })
+  reviewStatus: QuestionReviewStatus;
+
+  @Column({ type: 'text', nullable: true, comment: '拒绝原因' })
+  rejectReason: string;
 
   @Column({ nullable: true, comment: '创建者用户ID' })
   userId: number;

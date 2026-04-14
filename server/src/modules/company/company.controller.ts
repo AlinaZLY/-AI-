@@ -69,7 +69,6 @@ export class CompanyController {
   }
 
   @Post('upload-cert')
-  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: join(process.cwd(), 'uploads', 'certs'),

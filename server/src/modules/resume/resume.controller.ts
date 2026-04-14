@@ -171,8 +171,12 @@ export class ResumeController {
 
   @Post('item/:id/analyze')
   @UseGuards(JwtAuthGuard)
-  analyze(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    return this.resumeService.analyze(id, req.user.id);
+  analyze(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+    @Body() body?: { jobDescription?: string; jobId?: number },
+  ) {
+    return this.resumeService.analyze(id, req.user.id, body);
   }
 
   @Post('item/:id/optimize')

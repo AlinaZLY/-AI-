@@ -49,6 +49,30 @@ export class JobController {
     return this.jobService.findByUser(req.user.id, page || 1, pageSize || 10);
   }
 
+  // ==================== 职位收藏 ====================
+
+  @Post('favorites/:id/toggle')
+  @UseGuards(JwtAuthGuard)
+  toggleFavorite(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.jobService.toggleFavorite(id, req.user.id);
+  }
+
+  @Get('favorites/my')
+  @UseGuards(JwtAuthGuard)
+  getMyFavorites(
+    @Request() req,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+  ) {
+    return this.jobService.getUserFavorites(req.user.id, page || 1, pageSize || 10);
+  }
+
+  @Get('favorites/:id/check')
+  @UseGuards(JwtAuthGuard)
+  checkFavorite(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.jobService.checkFavorite(id, req.user.id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.jobService.findOne(id);

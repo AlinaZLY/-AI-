@@ -14,6 +14,7 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import * as svgCaptcha from 'svg-captcha';
 import { User, UserRole } from '../user/entities/user.entity';
+import { Company, CompanyStatus } from '../company/entities/company.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RedisService } from '@common/redis/redis.service';
@@ -23,6 +24,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(Company)
+    private companyRepository: Repository<Company>,
     private jwtService: JwtService,
     private redisService: RedisService,
   ) {}
@@ -32,7 +35,7 @@ export class AuthService {
    * 检查用户名唯一性，使用 bcrypt 加密密码后存入数据库
    */
   async register(registerDto: RegisterDto) {
-    const { username, password, ...rest } = registerDto;
+    const { username, password, enterpriseInfo, ...rest } = registerDto;
 
     // 检查用户名是否已存在
     const existingUser = await this.userRepository.findOne({
@@ -62,9 +65,32 @@ export class AuthService {
     });
     await this.userRepository.save(user);
 
+    // 企业用户注册时同步创建企业认证记录（pending 状态）
+    let companyRecord: Company | null = null;
+    if (rest.role === UserRole.ENTERPRISE && enterpriseInfo?.name) {
+      const company = this.companyRepository.create({
+        userId: user.id,
+        name: enterpriseInfo.name,
+        type: enterpriseInfo.type || 'company',
+        legalPerson: enterpriseInfo.legalPerson,
+        creditCode: enterpriseInfo.creditCode,
+        industry: enterpriseInfo.industry,
+        contactPhone: enterpriseInfo.contactPhone,
+        businessLicense: enterpriseInfo.businessLicense,
+        idCardFront: enterpriseInfo.idCardFront,
+        idCardBack: enterpriseInfo.idCardBack,
+        status: CompanyStatus.PENDING,
+        isVerified: false,
+      });
+      companyRecord = await this.companyRepository.save(company);
+    }
+
     // 返回用户信息（不含密码）
     const { password: _, ...result } = user;
-    return result;
+    return {
+      ...result,
+      ...(companyRecord ? { companyId: companyRecord.id, certStatus: companyRecord.status } : {}),
+    };
   }
 
   /**

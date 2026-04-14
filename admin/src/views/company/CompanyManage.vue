@@ -142,6 +142,11 @@
       </template>
     </a-modal>
 
+    <!-- 拒绝原因弹窗 -->
+    <a-modal v-model:open="rejectModalVisible" title="拒绝原因" @ok="confirmRejectModal" ok-text="确认拒绝" :ok-button-props="{ danger: true }">
+      <a-textarea v-model:value="rejectModalReason" placeholder="请填写拒绝原因，将反馈给申请者" :rows="4" />
+    </a-modal>
+
     <!-- 图片预览 -->
     <a-modal :open="!!previewImg" :footer="null" width="auto" style="max-width: 90vw" @cancel="previewImg = ''">
       <img :src="previewImg" style="max-width: 100%; max-height: 80vh" />
@@ -168,6 +173,10 @@ const pagination = reactive({ current: 1, pageSize: 10, total: 0, showSizeChange
 const rejectReason = ref('')
 const previewImg = ref('')
 
+const rejectModalVisible = ref(false)
+const rejectModalReason = ref('')
+const rejectModalTargetId = ref(0)
+
 function statusLabel(s: string) { return { pending: '待审核', approved: '已通过', rejected: '已拒绝' }[s] || s }
 function statusColor(s: string) { return { pending: 'orange', approved: 'green', rejected: 'red' }[s] || 'default' }
 function formatTime(time: string) {
@@ -193,7 +202,7 @@ const statCards = computed(() => [
   { label: '总申请数', value: statsData.value.total ?? 0, color: '#1677ff' },
   { label: '已通过', value: statsData.value.approved ?? 0, color: '#52c41a' },
   { label: '待审核', value: statsData.value.pending ?? 0, color: '#faad14' },
-  { label: '已拒绝', value: (statsData.value.total ?? 0) - (statsData.value.approved ?? 0) - (statsData.value.pending ?? 0), color: '#ff4d4f' },
+  { label: '已拒绝', value: statsData.value.rejected ?? 0, color: '#ff4d4f' },
 ])
 
 const detailVisible = ref(false)
@@ -230,18 +239,26 @@ async function handleApprove(id: number) {
   try {
     await updateCompanyStatusApi(id, 'approved')
     message.success('已通过审核')
-    fetchList(); fetchStats()
+    await fetchList(); await fetchStats()
     if (currentCompany.value?.id === id) currentCompany.value = { ...currentCompany.value, status: 'approved', isVerified: true }
   } catch { message.error('操作失败') }
 }
 
-async function handleReject(id: number) {
-  const reason = prompt('请输入拒绝原因：')
-  if (!reason) return
+function handleReject(id: number) {
+  rejectModalTargetId.value = id
+  rejectModalReason.value = ''
+  rejectModalVisible.value = true
+}
+
+async function confirmRejectModal() {
+  if (!rejectModalReason.value.trim()) { message.warning('请填写拒绝原因'); return }
+  const id = rejectModalTargetId.value
   try {
-    await updateCompanyStatusApi(id, 'rejected', reason)
+    await updateCompanyStatusApi(id, 'rejected', rejectModalReason.value)
     message.success('已拒绝')
-    fetchList(); fetchStats()
+    rejectModalVisible.value = false
+    await fetchList(); await fetchStats()
+    if (currentCompany.value?.id === id) currentCompany.value = { ...currentCompany.value, status: 'rejected', rejectReason: rejectModalReason.value }
   } catch { message.error('操作失败') }
 }
 
@@ -250,7 +267,7 @@ async function handleRejectWithReason(id: number) {
   try {
     await updateCompanyStatusApi(id, 'rejected', rejectReason.value)
     message.success('已拒绝')
-    fetchList(); fetchStats()
+    await fetchList(); await fetchStats()
     if (currentCompany.value?.id === id) currentCompany.value = { ...currentCompany.value, status: 'rejected', rejectReason: rejectReason.value }
   } catch { message.error('操作失败') }
 }
@@ -260,7 +277,7 @@ async function handleDelete(id: number) {
     await deleteCompanyAdminApi(id)
     message.success('已删除')
     if (currentCompany.value?.id === id) detailVisible.value = false
-    fetchList(); fetchStats()
+    await fetchList(); await fetchStats()
   } catch { message.error('删除失败') }
 }
 

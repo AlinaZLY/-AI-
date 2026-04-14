@@ -80,6 +80,22 @@ export class InterviewController {
     return this.interviewService.getQuestions(page || 1, pageSize || 10, categoryId, difficulty, keyword, source, questionType);
   }
 
+  @Get('questions/admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getQuestionsAdmin(
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('categoryId') categoryId?: number,
+    @Query('difficulty') difficulty?: string,
+    @Query('keyword') keyword?: string,
+    @Query('source') source?: string,
+    @Query('questionType') questionType?: string,
+    @Query('reviewStatus') reviewStatus?: string,
+  ) {
+    return this.interviewService.getQuestions(page || 1, pageSize || 10, categoryId, difficulty, keyword, source, questionType, reviewStatus, true);
+  }
+
   @Get('questions/type-stats')
   getQuestionTypeStats() {
     return this.interviewService.getQuestionTypeStats();
@@ -104,6 +120,34 @@ export class InterviewController {
   @Roles(UserRole.ADMIN)
   deleteQuestion(@Param('id', ParseIntPipe) id: number) {
     return this.interviewService.deleteQuestion(id);
+  }
+
+  // ==================== 用户投稿题目 ====================
+
+  @Post('questions/submit')
+  @UseGuards(JwtAuthGuard)
+  submitQuestion(@Request() req, @Body() dto: CreateQuestionDto) {
+    return this.interviewService.submitUserQuestion(dto, req.user.id);
+  }
+
+  @Get('questions/my')
+  @UseGuards(JwtAuthGuard)
+  getMyQuestions(
+    @Request() req,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+  ) {
+    return this.interviewService.getUserSubmittedQuestions(req.user.id, page || 1, pageSize || 10);
+  }
+
+  @Put('questions/:id/review')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  reviewQuestion(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { status: string; rejectReason?: string },
+  ) {
+    return this.interviewService.reviewQuestion(id, body.status, body.rejectReason);
   }
 
   // ==================== 管理员面试记录管理 ====================

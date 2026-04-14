@@ -1,12 +1,12 @@
 <template>
   <div class="page-shell min-h-screen bg-gray-50">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-900">校园简历模板</h1>
+      <h1 class="text-2xl font-bold text-gray-900">{{ $t('校园简历模板') }}</h1>
       <div class="flex gap-3">
         <input
           v-model="keyword"
           type="text"
-          placeholder="搜索模板..."
+          :placeholder="$t('搜索模板...')"
           class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           @keyup.enter="fetchTemplates"
         />
@@ -19,7 +19,7 @@
         :class="!selectedCategory ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'"
         class="px-4 py-1.5 rounded-full text-sm border border-gray-200 transition-colors"
       >
-        全部
+        {{ $t('全部') }}
       </button>
       <button
         v-for="cat in categories"
@@ -61,13 +61,13 @@
             <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{{ tpl.name }}</h3>
             <span v-if="tpl.category" class="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">{{ tpl.category }}</span>
           </div>
-          <p class="text-sm text-gray-500 line-clamp-2">{{ tpl.description || '暂无描述' }}</p>
+          <p class="text-sm text-gray-500 line-clamp-2">{{ tpl.description || $t('暂无描述') }}</p>
         </div>
       </div>
     </div>
 
     <div v-if="templates.length === 0 && !loading" class="text-center py-16 text-gray-400">
-      暂无简历模板
+      {{ $t('暂无简历模板') }}
     </div>
 
     <div v-if="total > pageSize" class="flex justify-center gap-2 mt-6">
@@ -76,7 +76,7 @@
         @click="page--; fetchTemplates()"
         class="px-4 py-2 border border-gray-200 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50"
       >
-        上一页
+        {{ $t('上一页') }}
       </button>
       <span class="px-4 py-2 text-sm text-gray-600">{{ page }} / {{ Math.ceil(total / pageSize) }}</span>
       <button
@@ -84,7 +84,7 @@
         @click="page++; fetchTemplates()"
         class="px-4 py-2 border border-gray-200 rounded-lg text-sm disabled:opacity-50 hover:bg-gray-50"
       >
-        下一页
+        {{ $t('下一页') }}
       </button>
     </div>
 
@@ -100,20 +100,20 @@
             <img :src="currentTemplate.thumbnail" :alt="currentTemplate.name" class="w-full" />
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">分类</span>
-            <span>{{ currentTemplate.category || '通用' }}</span>
+            <span class="text-gray-500">{{ $t('分类') }}</span>
+            <span>{{ currentTemplate.category || $t('通用') }}</span>
           </div>
           <div v-if="currentTemplate.description" class="text-sm text-gray-600">
             {{ currentTemplate.description }}
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-gray-500">更新时间</span>
+            <span class="text-gray-500">{{ $t('更新时间') }}</span>
             <span>{{ formatTime(currentTemplate.updatedAt) }}</span>
           </div>
         </div>
         <div class="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex justify-end gap-2">
           <button @click="previewTemplate(currentTemplate)" class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
-            预览模板
+            {{ $t('预览模板') }}
           </button>
           <button
             v-if="isLoggedIn"
@@ -121,14 +121,14 @@
             :disabled="creating"
             class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            {{ creating ? '创建中...' : '使用此模板' }}
+            {{ creating ? $t('创建中...') : $t('使用此模板') }}
           </button>
           <router-link
             v-else
             to="/login"
             class="px-4 py-2 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 inline-block"
           >
-            登录后使用
+            {{ $t('登录后使用') }}
           </router-link>
         </div>
       </div>
@@ -141,6 +141,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
 import toast from '@/utils/toast'
+import { useI18n } from '@/i18n'
+
+const { t } = useI18n()
 
 const router = useRouter()
 
@@ -191,8 +194,8 @@ const total = ref(0)
 const currentTemplate = ref<Template | null>(null)
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
-function formatTime(t: string) {
-  return new Date(t).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+function formatTime(ts: string) {
+  return new Date(ts).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
 }
 
 async function fetchTemplates() {
@@ -244,10 +247,10 @@ async function previewTemplate(tpl: Template) {
       container.querySelectorAll('script').forEach(s => s.remove())
       win.document.body.appendChild(container)
     } else {
-      toast('请允许弹窗以预览模板', 'warning')
+      toast(t('请允许弹窗以预览模板'), 'warning')
     }
   } catch {
-    toast('预览失败', 'error')
+    toast(t('预览失败'), 'error')
   }
 }
 
@@ -268,7 +271,7 @@ async function useTemplate(tpl: Template) {
     })
     const newId = res.data?.id || res.id
     currentTemplate.value = null
-    toast('简历已创建，进入编辑', 'success')
+    toast(t('简历已创建，进入编辑'), 'success')
     if (newId) router.push({ name: 'ResumeEdit', params: { id: newId } })
     else router.push('/user-center')
   } catch {} finally {

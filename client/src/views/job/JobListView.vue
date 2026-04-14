@@ -136,7 +136,7 @@
           <div v-if="job.description" class="mb-4"><h4 class="text-sm font-medium text-gray-700 mb-2">{{ $t('岗位描述') }}</h4><p class="text-sm text-gray-600 whitespace-pre-line">{{ job.description }}</p></div>
           <div v-if="job.requirements" class="mb-4"><h4 class="text-sm font-medium text-gray-700 mb-2">{{ $t('任职要求') }}</h4><p class="text-sm text-gray-600 whitespace-pre-line">{{ job.requirements }}</p></div>
           <div class="flex justify-end">
-            <button v-if="appliedJobIds.has(job.id)" disabled class="px-5 py-2.5 bg-gray-100 text-gray-400 text-sm font-medium rounded-lg cursor-not-allowed">{{ $t('已沟通') }}</button>
+            <button v-if="appliedJobIds.has(job.id)" @click="router.push('/applications')" class="px-5 py-2.5 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-100 border border-emerald-200">{{ $t('已投递 · 查看进度') }}</button>
             <button v-else @click="goChat(job)" class="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">{{ $t('立即沟通') }}</button>
           </div>
         </div>
@@ -164,13 +164,13 @@
             <div v-else class="w-5 h-5 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">{{ (job.user?.nickname || job.companyName || '企').charAt(0) }}</div>
             <span class="text-xs text-gray-400">{{ job.user?.nickname || job.companyName }} · {{ formatDate(job.createdAt) }}</span>
           </div>
-          <button v-if="appliedJobIds.has(job.id)" disabled class="px-4 py-1.5 bg-gray-100 text-gray-400 text-xs font-medium rounded-lg cursor-not-allowed">{{ $t('已沟通') }}</button>
+          <button v-if="appliedJobIds.has(job.id)" @click.stop="router.push('/applications')" class="px-4 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100 border border-emerald-200">{{ $t('已投递') }}</button>
           <button v-else @click.stop="goChat(job)" class="px-4 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">{{ $t('立即沟通') }}</button>
         </div>
         <!-- Card expanded detail -->
         <div v-if="expandedId === job.id" class="mt-3 pt-3 border-t border-gray-100">
           <div v-if="job.description" class="mb-2"><p class="text-xs text-gray-600 line-clamp-4">{{ job.description }}</p></div>
-          <button v-if="appliedJobIds.has(job.id)" disabled class="w-full py-2 bg-gray-100 text-gray-400 text-sm rounded-lg cursor-not-allowed mt-2">{{ $t('已沟通') }}</button>
+          <button v-if="appliedJobIds.has(job.id)" @click.stop="router.push('/applications')" class="w-full py-2 bg-emerald-50 text-emerald-600 text-sm rounded-lg hover:bg-emerald-100 border border-emerald-200 mt-2">{{ $t('已投递 · 查看进度') }}</button>
           <button v-else @click.stop="goChat(job)" class="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 mt-2">{{ $t('立即沟通') }}</button>
         </div>
       </div>

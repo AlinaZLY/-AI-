@@ -1,12 +1,19 @@
 <template>
   <div class="question-manage">
-    <a-page-header title="题库管理" :sub-title="`共 ${pagination.total} 道题`">
+    <a-page-header title="题库管理" :sub-title="manageTab === 'bank' ? `共 ${pagination.total} 道题` : `待审核 ${pendingTotal} 条`">
       <template #extra>
-        <a-button type="primary" @click="openCreateModal"><PlusOutlined /> 新增题目</a-button>
+        <a-button v-if="manageTab === 'bank'" type="primary" @click="openCreateModal"><PlusOutlined /> 新增题目</a-button>
       </template>
     </a-page-header>
 
-    <div class="content-layout">
+    <a-tabs v-model:activeKey="manageTab" style="margin-bottom: 16px" @change="onManageTabChange">
+      <a-tab-pane key="bank" tab="题库管理" />
+      <a-tab-pane key="review">
+        <template #tab>投稿审核 <a-badge v-if="pendingTotal > 0" :count="pendingTotal" :number-style="{ backgroundColor: '#faad14' }" /></template>
+      </a-tab-pane>
+    </a-tabs>
+
+    <div v-show="manageTab === 'bank'" class="content-layout">
       <div class="sidebar">
         <div class="sidebar-header">
           <span>题目分类</span>
@@ -97,6 +104,40 @@
           </template>
         </a-table>
       </div>
+    </div>
+
+    <!-- 投稿审核面板 -->
+    <div v-show="manageTab === 'review'">
+      <a-table :columns="reviewColumns" :data-source="pendingQuestions" :loading="pendingLoading" :pagination="pendingPagination" row-key="id" size="middle" @change="handlePendingTableChange">
+        <template #bodyCell="{ column, record }">
+          <template v-if="column.key === 'question'">
+            <div class="q-cell">
+              <div class="q-text">{{ record.question }}</div>
+              <div v-if="record.referenceAnswer" class="q-meta" style="color: #999; font-size: 12px; margin-top: 2px">参考答案：{{ record.referenceAnswer.slice(0, 60) }}{{ record.referenceAnswer.length > 60 ? '...' : '' }}</div>
+            </div>
+          </template>
+          <template v-if="column.key === 'difficulty'">
+            <a-tag :color="diffColor(record.difficulty)" size="small">{{ diffLabel(record.difficulty) }}</a-tag>
+          </template>
+          <template v-if="column.key === 'submitter'">
+            <span style="font-size: 12px; color: #666">用户#{{ record.userId || '未知' }}</span>
+          </template>
+          <template v-if="column.key === 'createdAt'">
+            <span style="font-size: 12px; color: #999">{{ record.createdAt?.slice(0, 10) }}</span>
+          </template>
+          <template v-if="column.key === 'action'">
+            <a-space>
+              <a-button type="link" size="small" style="color: #52c41a" @click="handleReview(record.id, 'approved')">采纳</a-button>
+              <a-popconfirm title="驳回原因（可选）" @confirm="handleReview(record.id, 'rejected', rejectReason)" ok-text="驳回" cancel-text="取消">
+                <template #description>
+                  <a-input v-model:value="rejectReason" placeholder="输入驳回原因" style="width: 220px; margin-top: 8px" />
+                </template>
+                <a-button type="link" size="small" danger>驳回</a-button>
+              </a-popconfirm>
+            </a-space>
+          </template>
+        </template>
+      </a-table>
     </div>
 
     <!-- 分类管理弹窗 -->
@@ -199,6 +240,7 @@ import {
   getQuestionsApi, createQuestionApi, updateQuestionApi, deleteQuestionApi,
   getInterviewCategoriesApi, createInterviewCategoryApi, updateInterviewCategoryApi,
   deleteInterviewCategoryApi, uploadCategoryCoverApi, getQuestionTypeStatsApi,
+  getPendingQuestionsApi, reviewQuestionApi,
 } from '@/api/interview'
 
 const loading = ref(false)
@@ -322,7 +364,49 @@ async function uploadCover(catId: number, file: File) {
   } catch { message.error('上传失败') }
 }
 
-onMounted(() => { fetchQuestions(); fetchCategories(); fetchTypeStats() })
+// ==================== 投稿审核 ====================
+const manageTab = ref('bank')
+const pendingQuestions = ref<any[]>([])
+const pendingLoading = ref(false)
+const pendingTotal = ref(0)
+const pendingPagination = reactive({ current: 1, pageSize: 10, total: 0, showSizeChanger: false, showTotal: (t: number) => `共 ${t} 条` })
+const rejectReason = ref('')
+const reviewColumns = [
+  { title: '题目', key: 'question', ellipsis: true },
+  { title: '难度', key: 'difficulty', width: 70 },
+  { title: '投稿者', key: 'submitter', width: 100 },
+  { title: '提交时间', key: 'createdAt', width: 100 },
+  { title: '操作', key: 'action', width: 150 },
+]
+
+async function fetchPendingQuestions() {
+  pendingLoading.value = true
+  try {
+    const res: any = await getPendingQuestionsApi({ page: pendingPagination.current, pageSize: pendingPagination.pageSize })
+    pendingQuestions.value = res.data?.list || []
+    pendingTotal.value = res.data?.total || 0
+    pendingPagination.total = pendingTotal.value
+  } catch { message.error('获取投稿列表失败') }
+  finally { pendingLoading.value = false }
+}
+
+function handlePendingTableChange(pag: any) { pendingPagination.current = pag.current; fetchPendingQuestions() }
+
+async function handleReview(id: number, status: string, reason?: string) {
+  try {
+    await reviewQuestionApi(id, { status, rejectReason: reason || undefined })
+    message.success(status === 'approved' ? '已采纳，题目已加入题库' : '已驳回')
+    rejectReason.value = ''
+    fetchPendingQuestions()
+    if (status === 'approved') { fetchQuestions(); fetchTypeStats(); fetchCategories() }
+  } catch { message.error('审核操作失败') }
+}
+
+function onManageTabChange(key: string) {
+  if (key === 'review') fetchPendingQuestions()
+}
+
+onMounted(() => { fetchQuestions(); fetchCategories(); fetchTypeStats(); fetchPendingQuestions() })
 </script>
 
 <style scoped>

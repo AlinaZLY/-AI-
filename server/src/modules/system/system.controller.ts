@@ -84,6 +84,14 @@ export class SystemController implements OnModuleInit {
     return { success: true, data: logs };
   }
 
+  /** POST /api/system/speech/health-check - 语音服务健康检查 */
+  @Post('speech/health-check')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async speechHealthCheck() {
+    return this.systemService.speechHealthCheck();
+  }
+
   /** POST /api/system/speech/submit - 火山语音识别-提交任务 */
   @Post('speech/submit')
   @UseGuards(JwtAuthGuard)

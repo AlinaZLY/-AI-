@@ -104,7 +104,7 @@ export class ApplicationService {
   }
 
   async findAll(userId: number, query: QueryApplicationDto) {
-    const { page = 1, pageSize = 10, keyword, status, tag, company, sort } = query;
+    const { page = 1, pageSize = 10, keyword, status, tag, company, sort, startDate, endDate } = query;
 
     const qb = this.appRepo
       .createQueryBuilder('app')
@@ -123,6 +123,12 @@ export class ApplicationService {
     }
     if (company) {
       qb.andWhere('app.company LIKE :company', { company: `%${company}%` });
+    }
+    if (startDate) {
+      qb.andWhere('app.createdAt >= :startDate', { startDate });
+    }
+    if (endDate) {
+      qb.andWhere('app.createdAt <= :endDate', { endDate: `${endDate} 23:59:59` });
     }
 
     if (sort === 'nextDate') {

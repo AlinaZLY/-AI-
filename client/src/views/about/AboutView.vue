@@ -3,12 +3,12 @@
     <!-- Hero -->
     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl page-shell mt-6 px-6 py-8 text-center">
       <h1 class="text-2xl font-bold text-white mb-1.5">基于 AI 的校园招聘服务平台</h1>
-      <p class="text-blue-100 text-sm">融合人工智能技术，为校园求职者打造一站式智能招聘服务</p>
+      <p class="text-blue-100 text-sm">{{ $t('融合人工智能技术，为校园求职者打造一站式智能招聘服务') }}</p>
     </div>
 
     <!-- Team -->
     <div class="page-shell py-14">
-      <h2 class="text-xl font-bold text-gray-900 text-center mb-10">项目团队</h2>
+      <h2 class="text-xl font-bold text-gray-900 text-center mb-10">{{ $t('项目团队') }}</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div
           v-for="member in members"
@@ -33,7 +33,7 @@
 
     <!-- Tech -->
     <div class="page-shell pb-14 text-center">
-      <p class="text-sm text-gray-400 mb-3">技术栈</p>
+      <p class="text-sm text-gray-400 mb-3">{{ $t('技术栈') }}</p>
       <div class="flex flex-wrap justify-center gap-2">
         <span v-for="t in techStack" :key="t" class="px-3 py-1 text-sm text-gray-600 bg-white border border-gray-100 rounded-full">{{ t }}</span>
       </div>

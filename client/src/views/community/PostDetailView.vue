@@ -1,6 +1,6 @@
 <template>
   <div class="page-shell" v-if="post">
-    <button @click="$router.back()" class="text-sm text-gray-500 hover:text-blue-600 mb-4">&larr; 返回社区</button>
+    <button @click="$router.back()" class="text-sm text-gray-500 hover:text-blue-600 mb-4">{{ $t('← 返回社区') }}</button>
     <div class="bg-white rounded-xl p-8 border border-gray-100">
       <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ post.title }}</h1>
       <div class="flex items-center gap-3 mb-6 text-sm text-gray-500">
@@ -45,20 +45,20 @@
 
     <!-- 评论输入 -->
     <div v-if="userStore.token" class="mt-4 bg-white rounded-xl p-6 border border-gray-100">
-      <h3 class="font-semibold text-gray-900 mb-3">发表评论</h3>
-      <textarea v-model="commentText" rows="3" placeholder="写下你的评论..."
+      <h3 class="font-semibold text-gray-900 mb-3">{{ $t('发表评论') }}</h3>
+      <textarea v-model="commentText" rows="3" :placeholder="$t('写下你的评论...')"
         class="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
       <div class="flex justify-between items-center mt-2">
         <span class="text-xs text-gray-400">{{ commentText.length }}/500</span>
         <button @click="submitComment" :disabled="!commentText.trim() || submitting"
           class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-          {{ submitting ? '提交中...' : '发表评论' }}
+          {{ submitting ? $t('提交中...') : $t('发表评论') }}
         </button>
       </div>
     </div>
 
     <div class="mt-4 bg-white rounded-xl p-6 border border-gray-100">
-      <h3 class="font-semibold text-gray-900 mb-4">评论 ({{ comments.length }})</h3>
+      <h3 class="font-semibold text-gray-900 mb-4">{{ $t('评论 ({n})', { n: comments.length }) }}</h3>
       <div v-for="c in comments" :key="c.id" class="py-3 border-b border-gray-100 last:border-0">
         <div class="flex items-start justify-between gap-3">
           <div class="min-w-0 flex-1">
@@ -77,7 +77,7 @@
           </button>
         </div>
       </div>
-      <div v-if="comments.length === 0" class="text-center text-gray-400 py-4">暂无评论</div>
+      <div v-if="comments.length === 0" class="text-center text-gray-400 py-4">{{ $t('暂无评论') }}</div>
     </div>
   </div>
 </template>
@@ -90,6 +90,9 @@ import request from '@/utils/request'
 import { likeCommentApi } from '@/api/community'
 import { useUserStore } from '@/stores/user'
 import { toast } from '@/utils/toast'
+import { useI18n } from '@/i18n'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -109,7 +112,7 @@ const displayImages = computed(() => {
 })
 
 function sanitize(html: string) { return DOMPurify.sanitize(html) }
-function formatTime(t: string) { return new Date(t).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }
+function formatTime(ts: string) { return new Date(ts).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }
 
 async function fetchComments() {
   const id = route.params.id
@@ -125,14 +128,14 @@ async function submitComment() {
   try {
     await request.post(`/community/posts/${route.params.id}/comments`, { content: commentText.value.trim() })
     commentText.value = ''
-    toast('评论发表成功', 'success')
+    toast(t('评论发表成功'), 'success')
     await fetchComments()
     if (post.value) post.value.commentCount = (post.value.commentCount || 0) + 1
   } catch {} finally { submitting.value = false }
 }
 
 async function toggleLike() {
-  if (!userStore.token) return toast('请先登录', 'warning')
+  if (!userStore.token) return toast(t('请先登录'), 'warning')
   try {
     const res: any = await request.post(`/community/posts/${route.params.id}/like`)
     if (post.value) {
@@ -143,7 +146,7 @@ async function toggleLike() {
 }
 
 async function toggleFavorite() {
-  if (!userStore.token) return toast('请先登录', 'warning')
+  if (!userStore.token) return toast(t('请先登录'), 'warning')
   try {
     const res: any = await request.post(`/community/posts/${route.params.id}/favorite`)
     if (post.value) {
@@ -154,7 +157,7 @@ async function toggleFavorite() {
 }
 
 async function toggleCommentLike(c: any) {
-  if (!userStore.token) return toast('请先登录', 'warning')
+  if (!userStore.token) return toast(t('请先登录'), 'warning')
   if (commentLikeLoading.value === c.id) return
   commentLikeLoading.value = c.id
   try {

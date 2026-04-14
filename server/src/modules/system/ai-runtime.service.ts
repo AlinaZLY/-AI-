@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { SystemSetting } from './entities/system-setting.entity';
 import { AiCallLog } from './entities/ai-call-log.entity';
 
-type AiScene = 'resume_optimize' | 'interview_score' | 'interview_summary' | 'ai_test';
+type AiScene = 'resume_optimize' | 'interview_score' | 'interview_summary' | 'interview_generate' | 'ai_test';
 
 interface AiRuntimeConfig {
   apiKey: string;

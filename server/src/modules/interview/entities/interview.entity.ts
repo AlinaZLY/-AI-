@@ -46,6 +46,9 @@ export class Interview {
   @Column({ default: 0, comment: '已回答数' })
   answeredCount: number;
 
+  @Column({ type: 'json', nullable: true, comment: '出题策略元数据' })
+  questionStrategy: Record<string, any>;
+
   @CreateDateColumn({ comment: '开始时间' })
   createdAt: Date;
 

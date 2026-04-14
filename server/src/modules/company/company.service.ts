@@ -194,7 +194,8 @@ export class CompanyService {
     const total = await this.companyRepo.count();
     const approved = await this.companyRepo.count({ where: { status: CompanyStatus.APPROVED } });
     const pending = await this.companyRepo.count({ where: { status: CompanyStatus.PENDING } });
-    return { total, approved, pending };
+    const rejected = await this.companyRepo.count({ where: { status: CompanyStatus.REJECTED } });
+    return { total, approved, pending, rejected };
   }
 
   private async getOpenJobCountMap(userIds: number[]) {

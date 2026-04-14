@@ -365,6 +365,80 @@
       </div>
     </section>
 
+    <!-- 投稿题目 & 我的投稿 -->
+    <section v-if="isLoggedIn" class="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between mb-5">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900">{{ $t('投稿面试题') }}</h2>
+          <p class="mt-1 text-sm text-gray-500">{{ $t('提交你遇到的面试题目，审核通过后将纳入公共题库。') }}</p>
+        </div>
+        <button @click="showSubmitForm = !showSubmitForm" class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+          {{ showSubmitForm ? $t('收起') : $t('提交题目') }}
+        </button>
+      </div>
+
+      <!-- 投稿表单 -->
+      <div v-if="showSubmitForm" class="mb-6 rounded-xl border border-blue-100 bg-blue-50/40 p-5">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('题目内容') }} *</label>
+            <textarea v-model="submitForm.question" rows="3" :placeholder="$t('请输入面试题目')" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('参考答案') }}</label>
+            <textarea v-model="submitForm.answer" rows="3" :placeholder="$t('可选，提供参考答案')" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('难度') }}</label>
+            <select v-model="submitForm.difficulty" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option value="easy">{{ $t('简单') }}</option>
+              <option value="medium">{{ $t('中等') }}</option>
+              <option value="hard">{{ $t('困难') }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ $t('分类') }}</label>
+            <select v-model="submitForm.categoryId" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white">
+              <option :value="null">{{ $t('不指定') }}</option>
+              <template v-for="cat in categoryTree" :key="cat.id">
+                <option :value="cat.id">{{ cat.name }}</option>
+                <option v-for="sub in cat.children" :key="sub.id" :value="sub.id">&nbsp;&nbsp;└ {{ sub.name }}</option>
+              </template>
+            </select>
+          </div>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <button @click="handleSubmitQuestion" :disabled="submittingQuestion || !submitForm.question.trim()" class="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            {{ submittingQuestion ? $t('提交中...') : $t('提交投稿') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 我的投稿列表 -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-gray-700">{{ $t('我的投稿') }}</h3>
+          <button @click="fetchMySubmissions" class="text-xs text-blue-600 hover:underline">{{ $t('刷新') }}</button>
+        </div>
+        <div v-if="mySubmissionsLoading" class="text-sm text-gray-400 text-center py-4">{{ $t('加载中...') }}</div>
+        <div v-else-if="mySubmissions.length === 0" class="text-sm text-gray-400 text-center py-4">{{ $t('暂无投稿记录') }}</div>
+        <div v-else class="space-y-2">
+          <div v-for="s in mySubmissions" :key="s.id" class="flex items-start justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50/60 p-3">
+            <div class="flex-1 min-w-0">
+              <p class="text-sm text-gray-800 line-clamp-2">{{ s.question }}</p>
+              <div class="mt-1 flex items-center gap-2 text-xs text-gray-400">
+                <span>{{ s.difficulty }}</span>
+                <span>·</span>
+                <span>{{ formatSubmissionDate(s.createdAt) }}</span>
+              </div>
+            </div>
+            <span class="shrink-0 text-xs px-2 py-0.5 rounded-full" :class="reviewStatusClass(s.reviewStatus)">{{ reviewStatusLabel(s.reviewStatus) }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 开始面试弹窗 -->
     <div v-if="showStartModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" @click.self="closeStartModal">
       <div class="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl mx-4 max-h-[90vh] overflow-y-auto">
@@ -546,16 +620,42 @@
             <textarea
               v-model="answerTexts[q.id]"
               rows="3"
-:placeholder="$t('请输入你的回答...')"
+              :placeholder="speechEnabled ? $t('请输入你的回答，或点击录音按钮语音作答...') : $t('请输入你的回答...')"
               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none"
             ></textarea>
-            <button
-              @click="submitAnswer(currentInterview.id, q.id)"
-              :disabled="!answerTexts[q.id]?.trim()"
-              class="mt-2 px-4 py-1.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-            >
-              {{ $t('提交回答') }}
-            </button>
+            <div class="mt-2 flex items-center gap-2">
+              <button
+                @click="submitAnswer(currentInterview.id, q.id)"
+                :disabled="!answerTexts[q.id]?.trim()"
+                class="px-4 py-1.5 text-sm text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {{ $t('提交回答') }}
+              </button>
+              <template v-if="speechEnabled">
+                <button
+                  v-if="!voiceRecording[q.id]"
+                  @click="startRecording(q.id)"
+                  :disabled="!!voiceProcessing[q.id]"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  :title="$t('语音答题')"
+                >
+                  <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+                  {{ $t('录音') }}
+                </button>
+                <button
+                  v-else
+                  @click="stopRecording(q.id)"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm border border-red-300 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors animate-pulse"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                  {{ $t('停止录音') }}
+                </button>
+                <span v-if="voiceProcessing[q.id]" class="text-xs text-gray-400 flex items-center gap-1">
+                  <span class="w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                  {{ $t('语音识别中...') }}
+                </span>
+              </template>
+            </div>
           </div>
         </div>
       </div>
@@ -608,6 +708,11 @@ const showStartModal = ref(false)
 const starting = ref(false)
 const currentInterview = ref<any>(null)
 const answerTexts = reactive<Record<number, string>>({})
+const speechEnabled = ref(false)
+const voiceRecording = reactive<Record<number, boolean>>({})
+const voiceProcessing = reactive<Record<number, boolean>>({})
+const mediaRecorders = reactive<Record<number, MediaRecorder | null>>({})
+const audioChunks = reactive<Record<number, Blob[]>>({})
 const startForm = reactive({ jobTitle: '', questionCount: 5 })
 
 const categoryTree = ref<CategoryNode[]>([])
@@ -918,17 +1023,78 @@ async function openInterview(iv: any) {
   }
 }
 
-async function submitAnswer(interviewId: number, questionId: number) {
+async function submitAnswer(interviewId: number, questionId: number, answerType: 'text' | 'voice' = 'text') {
   const answer = answerTexts[questionId]?.trim()
   if (!answer) return
   try {
-    await request.post(`/interview/${interviewId}/questions/${questionId}/answer`, { answer })
+    await request.post(`/interview/${interviewId}/questions/${questionId}/answer`, { answer, answerType })
     toast(t('回答已提交'), 'success')
     await openInterview({ id: interviewId })
     await fetchInterviews()
     await loadRadar()
   } catch {
     /* */
+  }
+}
+
+async function startRecording(questionId: number) {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const recorder = new MediaRecorder(stream)
+    audioChunks[questionId] = []
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks[questionId].push(e.data)
+    }
+    recorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop())
+      await processVoice(questionId)
+    }
+    recorder.start()
+    mediaRecorders[questionId] = recorder
+    voiceRecording[questionId] = true
+  } catch {
+    toast(t('无法访问麦克风，请检查权限设置'), 'error')
+  }
+}
+
+function stopRecording(questionId: number) {
+  const recorder = mediaRecorders[questionId]
+  if (recorder && recorder.state !== 'inactive') {
+    recorder.stop()
+  }
+  voiceRecording[questionId] = false
+}
+
+async function processVoice(questionId: number) {
+  voiceProcessing[questionId] = true
+  try {
+    const chunks = audioChunks[questionId] || []
+    if (!chunks.length) { toast(t('录音为空'), 'warning'); return }
+    const blob = new Blob(chunks, { type: 'audio/webm' })
+    const formData = new FormData()
+    formData.append('file', blob, `answer_${questionId}.webm`)
+    const uploadRes: any = await request.post('/system/speech/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    const audioUrl = uploadRes.data?.url || uploadRes.url
+    if (!audioUrl) { toast(t('音频上传失败'), 'error'); return }
+
+    const fullUrl = window.location.origin + audioUrl
+    const recognizeRes: any = await request.post('/system/speech/recognize', {
+      audioUrl: fullUrl,
+      format: 'mp3',
+    })
+    const text = recognizeRes.data?.text || recognizeRes.text || ''
+    if (text) {
+      answerTexts[questionId] = (answerTexts[questionId] || '') + text
+      toast(t('语音识别成功'), 'success')
+    } else {
+      toast(t('语音识别未返回文本，请重试或切换文字输入'), 'warning')
+    }
+  } catch {
+    toast(t('语音识别失败，请重试或切换文字输入'), 'error')
+  } finally {
+    voiceProcessing[questionId] = false
   }
 }
 
@@ -1035,12 +1201,75 @@ function changeQuestionPage(page: number) {
   loadQuestionBank()
 }
 
+// ==================== 用户投稿 ====================
+const showSubmitForm = ref(false)
+const submittingQuestion = ref(false)
+const submitForm = reactive({ question: '', answer: '', difficulty: 'medium', categoryId: null as number | null })
+const mySubmissions = ref<any[]>([])
+const mySubmissionsLoading = ref(false)
+
+async function handleSubmitQuestion() {
+  if (!submitForm.question.trim()) return
+  submittingQuestion.value = true
+  try {
+    await request.post('/interview/questions/submit', {
+      question: submitForm.question.trim(),
+      referenceAnswer: submitForm.answer.trim() || undefined,
+      difficulty: submitForm.difficulty,
+      categoryId: submitForm.categoryId || undefined,
+      questionType: 'open',
+    })
+    toast(t('投稿成功，等待管理员审核'), 'success')
+    submitForm.question = ''
+    submitForm.answer = ''
+    submitForm.difficulty = 'medium'
+    submitForm.categoryId = null
+    showSubmitForm.value = false
+    fetchMySubmissions()
+  } catch {}
+  finally { submittingQuestion.value = false }
+}
+
+async function fetchMySubmissions() {
+  mySubmissionsLoading.value = true
+  try {
+    const res: any = await request.get('/interview/questions/my')
+    const d = res.data ?? res
+    mySubmissions.value = Array.isArray(d) ? d : (d.list || [])
+  } catch { mySubmissions.value = [] }
+  finally { mySubmissionsLoading.value = false }
+}
+
+function formatSubmissionDate(d: string) {
+  if (!d) return ''
+  return new Date(d).toLocaleDateString('zh-CN')
+}
+
+function reviewStatusLabel(status: string) {
+  return ({ draft: t('草稿'), pending: t('待审核'), approved: t('已采纳'), rejected: t('已驳回') } as Record<string, string>)[status] || status
+}
+
+function reviewStatusClass(status: string) {
+  return ({ draft: 'bg-gray-100 text-gray-600', pending: 'bg-amber-50 text-amber-600', approved: 'bg-emerald-50 text-emerald-600', rejected: 'bg-red-50 text-red-600' } as Record<string, string>)[status] || 'bg-gray-100 text-gray-600'
+}
+
+async function fetchSpeechConfig() {
+  try {
+    const res: any = await request.get('/system/settings/public')
+    const d = res.data ?? res
+    const provider = d.voice_provider || 'disabled'
+    speechEnabled.value = provider !== 'disabled'
+  } catch { speechEnabled.value = false }
+}
+
 onMounted(() => {
   loadCategories()
   loadQuestionBank()
+  fetchSpeechConfig()
   if (isLoggedIn.value) {
     fetchInterviews()
     loadRadar()
+    fetchMySubmissions()
   }
 })
 </script>

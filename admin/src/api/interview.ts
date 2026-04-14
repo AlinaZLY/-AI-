@@ -37,7 +37,7 @@ export function uploadCategoryCoverApi(formData: FormData) {
 }
 
 export function getQuestionsApi(params?: Record<string, any>) {
-  return request.get('/interview/questions', { params })
+  return request.get('/interview/questions/admin', { params })
 }
 
 export function getQuestionTypeStatsApi() {
@@ -54,4 +54,12 @@ export function updateQuestionApi(id: number, data: Record<string, any>) {
 
 export function deleteQuestionApi(id: number) {
   return request.delete(`/interview/questions/${id}`)
+}
+
+export function getPendingQuestionsApi(params?: Record<string, any>) {
+  return request.get('/interview/questions/admin', { params: { ...params, reviewStatus: 'pending' } })
+}
+
+export function reviewQuestionApi(id: number, data: { status: string; rejectReason?: string }) {
+  return request.put(`/interview/questions/${id}/review`, data)
 }

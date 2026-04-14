@@ -396,6 +396,10 @@ export class SystemService {
   /** 火山引擎语音识别 - 提交任务 */
   async speechSubmit(audioUrl: string, options?: { format?: string; language?: string }) {
     const settings = await this.getAllSettings();
+    const voiceProvider = settings['voice_provider'] || 'disabled';
+    if (voiceProvider === 'disabled') {
+      return { success: false, message: '语音服务未启用，请在后台 AI 配置中开启' };
+    }
     const appKey = settings['voice_app_id'] || '';
     const accessKey = settings['voice_api_key'] || '';
     if (!appKey || !accessKey) {
@@ -440,6 +444,10 @@ export class SystemService {
   /** 火山引擎语音识别 - 查询结果 */
   async speechQuery(taskId: string) {
     const settings = await this.getAllSettings();
+    const voiceProvider = settings['voice_provider'] || 'disabled';
+    if (voiceProvider === 'disabled') {
+      return { success: false, message: '语音服务未启用' };
+    }
     const appKey = settings['voice_app_id'] || '';
     const accessKey = settings['voice_api_key'] || '';
     if (!appKey || !accessKey) {
@@ -480,6 +488,44 @@ export class SystemService {
       if ((queryRes as any).status !== 'processing') return queryRes;
     }
     return { success: false, message: '识别超时' };
+  }
+
+  /** 语音服务健康检查 */
+  async speechHealthCheck() {
+    const settings = await this.getAllSettings();
+    const provider = settings['voice_provider'] || 'disabled';
+    if (provider === 'disabled') {
+      return { success: false, enabled: false, message: '语音服务未启用' };
+    }
+    const appKey = settings['voice_app_id'] || '';
+    const accessKey = settings['voice_api_key'] || '';
+    if (!appKey || !accessKey) {
+      return { success: false, enabled: true, message: '语音密钥未配置（缺少 App ID 或 API Key）' };
+    }
+    // 做一次轻量级 API 调用验证密钥有效性
+    try {
+      const res = await fetch('https://openspeech.bytedance.com/api/v3/auc/bigmodel/query', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Api-App-Key': appKey,
+          'X-Api-Access-Key': accessKey,
+          'X-Api-Resource-Id': 'volc.seedasr.auc',
+          'X-Api-Request-Id': 'health-check-' + Date.now(),
+          'X-Api-Sequence': '-1',
+        },
+        body: '{}',
+      });
+      const statusCode = res.headers.get('X-Api-Status-Code') || '';
+      // 20000000 = ok (even if no task found), authentication errors would differ
+      if (statusCode.startsWith('200') || statusCode === '20000000') {
+        return { success: true, enabled: true, provider, message: '语音服务连接正常' };
+      }
+      const msg = res.headers.get('X-Api-Message') || res.statusText;
+      return { success: false, enabled: true, message: `语音服务连接异常: ${msg}` };
+    } catch (e: any) {
+      return { success: false, enabled: true, message: `网络错误: ${e.message}` };
+    }
   }
 
   async getDashboardStats(startDate?: string, endDate?: string) {

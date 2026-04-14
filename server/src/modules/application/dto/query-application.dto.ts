@@ -35,4 +35,12 @@ export class QueryApplicationDto {
   @IsOptional()
   @IsString()
   sort?: 'nextDate' | 'company' | 'updatedAt';
+
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
 }

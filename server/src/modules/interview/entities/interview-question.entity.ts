@@ -21,6 +21,9 @@ export class InterviewQuestion {
   @Column({ length: 50, nullable: true, comment: '题目类型(behavioral/technical/situational)' })
   questionType: string;
 
+  @Column({ length: 30, default: 'bank', comment: '题目来源(bank/jd_custom/resume_followup)' })
+  questionSource: string;
+
   @Column({ type: 'text', nullable: true, comment: '用户回答' })
   answer: string;
 

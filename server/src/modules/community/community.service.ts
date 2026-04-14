@@ -12,6 +12,8 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostDto } from './dto/query-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UserRole } from '../user/entities/user.entity';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/entities/notification.entity';
 
 @Injectable()
 export class CommunityService implements OnModuleInit {
@@ -22,6 +24,7 @@ export class CommunityService implements OnModuleInit {
     @InjectRepository(PostLike) private postLikeRepo: Repository<PostLike>,
     @InjectRepository(PostFavorite) private postFavoriteRepo: Repository<PostFavorite>,
     @InjectRepository(CommentLike) private commentLikeRepo: Repository<CommentLike>,
+    private readonly notificationService: NotificationService,
   ) {}
 
   /** 模块初始化时插入种子分类数据（仅首次运行时播种） */
@@ -380,6 +383,16 @@ export class CommunityService implements OnModuleInit {
     } else {
       await this.postLikeRepo.save(this.postLikeRepo.create({ userId, postId }));
       await this.postRepo.increment({ id: postId }, 'likeCount', 1);
+      if (post.userId !== userId) {
+        await this.notificationService.create({
+          type: NotificationType.LIKE,
+          userId: post.userId,
+          fromUserId: userId,
+          postId,
+          content: `赞了你的帖子「${post.title.slice(0, 30)}」`,
+          meta: { path: `/community/${postId}` },
+        });
+      }
       return { liked: true };
     }
   }
@@ -401,6 +414,16 @@ export class CommunityService implements OnModuleInit {
     } else {
       await this.postFavoriteRepo.save(this.postFavoriteRepo.create({ userId, postId }));
       await this.postRepo.increment({ id: postId }, 'favoriteCount', 1);
+      if (post.userId !== userId) {
+        await this.notificationService.create({
+          type: NotificationType.FAVORITE,
+          userId: post.userId,
+          fromUserId: userId,
+          postId,
+          content: `收藏了你的帖子「${post.title.slice(0, 30)}」`,
+          meta: { path: `/community/${postId}` },
+        });
+      }
       return { favorited: true };
     }
   }
@@ -451,6 +474,19 @@ export class CommunityService implements OnModuleInit {
 
     // 更新帖子评论数
     await this.postRepo.increment({ id: postId }, 'commentCount', 1);
+
+    // 通知帖子作者有新评论（排除自评论）
+    if (post.userId !== userId) {
+      await this.notificationService.create({
+        type: NotificationType.COMMENT,
+        userId: post.userId,
+        fromUserId: userId,
+        postId,
+        commentId: saved.id,
+        content: `评论了你的帖子「${post.title.slice(0, 30)}」`,
+        meta: { path: `/community/${postId}` },
+      });
+    }
 
     return saved;
   }
@@ -516,6 +552,17 @@ export class CommunityService implements OnModuleInit {
     } else {
       await this.commentLikeRepo.save(this.commentLikeRepo.create({ userId, commentId }));
       await this.commentRepo.increment({ id: commentId }, 'likeCount', 1);
+      if (comment.userId !== userId) {
+        await this.notificationService.create({
+          type: NotificationType.COMMENT_LIKE,
+          userId: comment.userId,
+          fromUserId: userId,
+          commentId,
+          postId: comment.postId,
+          content: `赞了你的评论`,
+          meta: { path: `/community/${comment.postId}` },
+        });
+      }
       return { liked: true };
     }
   }

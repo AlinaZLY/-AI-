@@ -10,19 +10,16 @@
             <a-form-item label="AI 服务提供商">
               <a-radio-group v-model:value="config.aiProvider" button-style="solid">
                 <a-radio-button value="volcano">火山方舟（豆包）</a-radio-button>
-                <a-radio-button value="openai">OpenAI</a-radio-button>
-                <a-radio-button value="zhipu">智谱 AI</a-radio-button>
-                <a-radio-button value="custom">自定义</a-radio-button>
+                <a-radio-button value="custom">自定义（兼容 Chat Completions）</a-radio-button>
               </a-radio-group>
+              <div style="font-size: 12px; color: #999; margin-top: 4px">当前仅支持兼容 OpenAI Chat Completions 协议的服务（包括火山方舟、OpenAI、智谱等）</div>
             </a-form-item>
 
             <a-form-item label="API Key（密钥）">
               <a-input-password v-model:value="config.arkApiKey" placeholder="请输入 API Key" />
               <div style="font-size: 12px; color: #999; margin-top: 4px">
                 <template v-if="config.aiProvider === 'volcano'">前往 <a href="https://www.volcengine.com/experience/ark" target="_blank">方舟控制台</a> 获取</template>
-                <template v-else-if="config.aiProvider === 'openai'">前往 <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI 平台</a> 获取</template>
-                <template v-else-if="config.aiProvider === 'zhipu'">前往 <a href="https://open.bigmodel.cn/" target="_blank">智谱开放平台</a> 获取</template>
-                <template v-else>请输入对应平台的 API Key</template>
+                <template v-else>请输入对应平台的 API Key（如 <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI</a>、<a href="https://open.bigmodel.cn/" target="_blank">智谱</a> 等）</template>
               </div>
             </a-form-item>
 
@@ -51,8 +48,8 @@
                 <a-form-item label="API 接口类型">
                   <a-select v-model:value="config.apiType">
                     <a-select-option value="chat">Chat Completions（对话）</a-select-option>
-                    <a-select-option value="responses">Responses（新版多模态）</a-select-option>
                   </a-select>
+                  <div style="font-size: 12px; color: #999; margin-top: 4px">当前仅支持 Chat Completions 接口</div>
                 </a-form-item>
               </a-col>
             </a-row>
@@ -92,10 +89,9 @@
             <a-form-item label="语音识别服务">
               <a-select v-model:value="voiceConfig.provider" placeholder="选择语音服务提供商">
                 <a-select-option value="volcano">火山引擎语音识别</a-select-option>
-                <a-select-option value="aliyun">阿里云语音识别</a-select-option>
-                <a-select-option value="tencent">腾讯云语音识别</a-select-option>
                 <a-select-option value="disabled">未启用</a-select-option>
               </a-select>
+              <div style="font-size: 12px; color: #999; margin-top: 4px">当前仅支持火山引擎语音识别，选择“未启用”将关闭前端录音入口并拒绝语音接口请求</div>
             </a-form-item>
             <a-form-item label="语音 API Key">
               <a-input-password v-model:value="voiceConfig.apiKey" placeholder="语音服务 API Key" />
@@ -104,7 +100,10 @@
               <a-input v-model:value="voiceConfig.appId" placeholder="语音服务 App ID" />
             </a-form-item>
             <a-form-item>
-              <a-button type="primary" @click="handleSaveVoice" :loading="savingVoice">保存语音配置</a-button>
+              <a-space>
+                <a-button type="primary" @click="handleSaveVoice" :loading="savingVoice">保存语音配置</a-button>
+                <a-button @click="handleTestVoice" :loading="testingVoice">测试连接</a-button>
+              </a-space>
             </a-form-item>
           </a-form>
         </a-card>
@@ -162,12 +161,12 @@
             <a-descriptions-item label="AI 服务商"><a-tag color="blue">{{ providerName(config.aiProvider) }}</a-tag></a-descriptions-item>
             <a-descriptions-item label="API Key"><a-tag :color="config.arkApiKey ? 'green' : 'red'">{{ config.arkApiKey ? '已配置' : '未配置' }}</a-tag></a-descriptions-item>
             <a-descriptions-item label="当前模型"><a-tag v-if="config.arkModelId" color="cyan">{{ config.arkModelId }}</a-tag><a-tag v-else color="red">未配置</a-tag></a-descriptions-item>
-            <a-descriptions-item label="接口类型"><a-tag>{{ config.apiType === 'responses' ? 'Responses (多模态)' : 'Chat Completions' }}</a-tag></a-descriptions-item>
+            <a-descriptions-item label="接口类型"><a-tag>Chat Completions</a-tag></a-descriptions-item>
             <a-descriptions-item label="连接状态"><a-tag :color="testResult === 'success' ? 'green' : testResult === 'failed' ? 'red' : 'default'">{{ testResult === 'success' ? '连接正常' : testResult === 'failed' ? '连接失败' : '未测试' }}</a-tag></a-descriptions-item>
             <a-descriptions-item label="语音服务"><a-tag :color="voiceConfig.provider !== 'disabled' ? 'green' : 'default'">{{ voiceConfig.provider !== 'disabled' ? voiceLabel(voiceConfig.provider) : '未启用' }}</a-tag></a-descriptions-item>
             <a-descriptions-item label="AI 调用地址" :span="2">
               <code style="background: #f5f5f5; padding: 4px 8px; border-radius: 4px; font-size: 12px; word-break: break-all">
-                {{ config.arkBaseUrl || baseUrlPlaceholder }}/{{ config.apiType === 'responses' ? 'responses' : 'chat/completions' }}
+                {{ config.arkBaseUrl || baseUrlPlaceholder }}/chat/completions
               </code>
             </a-descriptions-item>
           </a-descriptions>
@@ -185,7 +184,7 @@
             <a-tag :color="aiEnabled ? 'green' : 'default'">AI 面试题智能生成</a-tag>
             <a-tag :color="aiEnabled ? 'green' : 'default'">AI 面试智能评分</a-tag>
             <a-tag :color="aiEnabled ? 'green' : 'default'">JD 智能解析</a-tag>
-            <a-tag :color="config.apiType === 'responses' && aiEnabled ? 'green' : 'default'">图片识别分析</a-tag>
+            <a-tag color="default">图片识别分析（待支持）</a-tag>
             <a-tag :color="voiceConfig.provider !== 'disabled' ? 'green' : 'default'">语音面试</a-tag>
             <a-tag :color="voiceConfig.provider !== 'disabled' ? 'green' : 'default'">语音转文字</a-tag>
           </div>
@@ -269,25 +268,27 @@ const zhipuModels = [
   { value: 'glm-4v', label: 'GLM-4V (多模态标准, 输入¥50/M 输出¥50/M)' },
 ]
 
+const customModels = [
+  { value: '__openai__', label: '── OpenAI ──', disabled: true },
+  ...openaiModels,
+  { value: '__zhipu__', label: '── 智谱 AI ──', disabled: true },
+  ...zhipuModels,
+  { value: 'custom', label: '自定义模型' },
+]
+
 const modelOptions = computed(() => {
   if (config.aiProvider === 'volcano') return volcanoModels
-  if (config.aiProvider === 'openai') return openaiModels
-  if (config.aiProvider === 'zhipu') return zhipuModels
-  return [{ value: 'custom', label: '自定义模型' }]
+  return customModels
 })
 
 const baseUrlPlaceholder = computed(() => {
-  const map: Record<string, string> = {
-    volcano: 'https://ark.cn-beijing.volces.com/api/v3',
-    openai: 'https://api.openai.com/v1',
-    zhipu: 'https://open.bigmodel.cn/api/paas/v4',
-    custom: 'https://your-api-url.com/v1',
-  }
-  return map[config.aiProvider] || map.custom
+  return config.aiProvider === 'volcano'
+    ? 'https://ark.cn-beijing.volces.com/api/v3'
+    : 'https://api.openai.com/v1 或自定义地址'
 })
 
 function providerName(p: string) { return { volcano: '火山方舟（豆包）', openai: 'OpenAI', zhipu: '智谱 AI', custom: '自定义' }[p] || p }
-function voiceLabel(p: string) { return { volcano: '火山引擎', aliyun: '阿里云', tencent: '腾讯云' }[p] || p }
+function voiceLabel(p: string) { return { volcano: '火山引擎' }[p] || p }
 function filterOption(input: string, option: any) {
   return (option.label || '').toLowerCase().includes(input.toLowerCase())
 }
@@ -371,6 +372,22 @@ async function handleSaveKeys() {
     message.success('密钥已保存')
   } catch { message.error('保存失败') }
   finally { savingKeys.value = false }
+}
+
+const testingVoice = ref(false)
+
+async function handleTestVoice() {
+  testingVoice.value = true
+  try {
+    const res: any = await request.post('/system/speech/health-check')
+    const d = res.data ?? res
+    if (d.success) {
+      message.success(d.message || '语音服务连接正常')
+    } else {
+      message.error(d.message || '语音服务连接失败')
+    }
+  } catch { message.error('测试请求失败') }
+  finally { testingVoice.value = false }
 }
 
 async function handleTest() {

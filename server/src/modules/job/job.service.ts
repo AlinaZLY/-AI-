@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Job, JobStatus } from './entities/job.entity';
+import { JobFavorite } from './entities/job-favorite.entity';
 import { UserRole } from '../user/entities/user.entity';
 import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
@@ -13,6 +14,8 @@ export class JobService {
   constructor(
     @InjectRepository(Job)
     private jobRepo: Repository<Job>,
+    @InjectRepository(JobFavorite)
+    private jobFavRepo: Repository<JobFavorite>,
     private companyService: CompanyService,
   ) {}
 
@@ -168,5 +171,37 @@ export class JobService {
     const open = await this.jobRepo.count({ where: { status: JobStatus.OPEN } });
     const closed = await this.jobRepo.count({ where: { status: JobStatus.CLOSED } });
     return { total, open, closed };
+  }
+
+  // ==================== 职位收藏 ====================
+
+  async toggleFavorite(jobId: number, userId: number) {
+    const job = await this.jobRepo.findOne({ where: { id: jobId } });
+    if (!job) throw new NotFoundException('职位不存在');
+
+    const existing = await this.jobFavRepo.findOne({ where: { userId, jobId } });
+    if (existing) {
+      await this.jobFavRepo.remove(existing);
+      return { favorited: false };
+    } else {
+      await this.jobFavRepo.save(this.jobFavRepo.create({ userId, jobId }));
+      return { favorited: true };
+    }
+  }
+
+  async getUserFavorites(userId: number, page = 1, pageSize = 10) {
+    const [list, total] = await this.jobFavRepo.findAndCount({
+      where: { userId },
+      relations: ['job'],
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return { list: list.map(f => ({ ...f.job, favoritedAt: f.createdAt, favoriteId: f.id })), total, page, pageSize };
+  }
+
+  async checkFavorite(jobId: number, userId: number) {
+    const existing = await this.jobFavRepo.findOne({ where: { userId, jobId } });
+    return { favorited: !!existing };
   }
 }

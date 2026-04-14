@@ -284,6 +284,22 @@
               <option v-for="t in tagOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
             </select>
           </div>
+          <div class="w-40">
+            <label class="block text-sm font-medium text-slate-600 mb-1">{{ $t('开始日期') }}</label>
+            <input
+              v-model="filters.startDate"
+              type="date"
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            />
+          </div>
+          <div class="w-40">
+            <label class="block text-sm font-medium text-slate-600 mb-1">{{ $t('结束日期') }}</label>
+            <input
+              v-model="filters.endDate"
+              type="date"
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            />
+          </div>
           <button
             @click="page = 1; fetchList()"
             class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
@@ -441,6 +457,15 @@
               <div>
                 <h4 class="text-sm font-semibold text-slate-700 mb-3">{{ $t('备注') }}</h4>
                 <div class="flex gap-2 mb-3">
+                  <select
+                    v-model="newNoteType[app.id]"
+                    class="w-28 px-2 py-2 border border-slate-200 rounded-lg text-sm bg-white"
+                  >
+                    <option value="other">{{ $t('其他') }}</option>
+                    <option value="interview">{{ $t('面试') }}</option>
+                    <option value="company">{{ $t('公司') }}</option>
+                    <option value="salary">{{ $t('薪资') }}</option>
+                  </select>
                   <input
                     v-model="newNoteContent[app.id]"
                     :placeholder="$t('添加备注...')"
@@ -462,7 +487,10 @@
                     :key="note.id"
                     class="flex justify-between gap-2 bg-white rounded-lg p-3 border border-slate-100"
                   >
-                    <p class="text-sm text-slate-700 flex-1">{{ note.content }}</p>
+                    <div class="flex-1">
+                      <span v-if="note.type && note.type !== 'other'" class="inline-block mr-1.5 px-1.5 py-0.5 text-[10px] font-medium rounded" :class="noteTypeBadgeClass(note.type)">{{ noteTypeLabel(note.type) }}</span>
+                      <span class="text-sm text-slate-700">{{ note.content }}</span>
+                    </div>
                     <div class="flex items-center gap-1 flex-shrink-0">
                       <span class="text-xs text-slate-400">{{ formatTime(note.createdAt) }}</span>
                       <button
@@ -953,6 +981,7 @@ interface StatusLog {
 
 interface ApplicationNote {
   id: number
+  type?: string
   content: string
   createdAt: string
 }
@@ -975,6 +1004,7 @@ const notesMap = ref<Record<number, ApplicationNote[]>>({})
 const loadingLogs = ref<Record<number, boolean>>({})
 const loadingNotes = ref<Record<number, boolean>>({})
 const newNoteContent = ref<Record<number, string>>({})
+const newNoteType = ref<Record<number, string>>({})
 const showCreate = ref(false)
 const showEdit = ref(false)
 const submitting = ref(false)
@@ -986,6 +1016,8 @@ const filters = reactive({
   keyword: '',
   status: '',
   tag: '',
+  startDate: '',
+  endDate: '',
 })
 
 const form = reactive({
@@ -1155,6 +1187,8 @@ function resetFilters() {
   filters.keyword = ''
   filters.status = ''
   filters.tag = ''
+  filters.startDate = ''
+  filters.endDate = ''
   page.value = 1
   fetchList()
 }
@@ -1270,6 +1304,8 @@ async function fetchList() {
         keyword: filters.keyword.trim() || undefined,
         status: filters.status || undefined,
         tag: filters.tag || undefined,
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
       },
     })
     const d = res?.data ?? res
@@ -1363,12 +1399,21 @@ async function inquireApplicationResult(app: Application) {
   }
 }
 
+function noteTypeLabel(type: string) {
+  return ({ interview: t('面试'), company: t('公司'), salary: t('薪资'), other: t('其他') } as Record<string, string>)[type] || type
+}
+function noteTypeBadgeClass(type: string) {
+  return ({ interview: 'bg-blue-50 text-blue-600', company: 'bg-purple-50 text-purple-600', salary: 'bg-emerald-50 text-emerald-600', other: 'bg-slate-50 text-slate-500' } as Record<string, string>)[type] || 'bg-slate-50 text-slate-500'
+}
+
 async function addNote(app: Application) {
   const content = (newNoteContent.value[app.id] ?? '').trim()
   if (!content) return
+  const type = newNoteType.value[app.id] || 'other'
   try {
-    await request.post(`/applications/${app.id}/notes`, { content })
+    await request.post(`/applications/${app.id}/notes`, { content, type })
     newNoteContent.value = { ...newNoteContent.value, [app.id]: '' }
+    newNoteType.value = { ...newNoteType.value, [app.id]: 'other' }
     toast(t('备注已添加'), 'success')
     fetchNotes(app.id)
   } catch {}

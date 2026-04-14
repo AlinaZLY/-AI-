@@ -59,8 +59,10 @@
           {{ formatTime(record.createdAt) }}
         </template>
         <template v-else-if="column.key === 'actions'">
-          <a-space>
+          <a-space :size="0">
             <a-button type="link" size="small" @click="openDetail(record)">查看详情</a-button>
+            <a-button v-if="record.status === 'pending'" type="link" size="small" style="color: #52c41a" @click="handleApprove(record.id)">通过</a-button>
+            <a-button v-if="record.status === 'pending'" type="link" size="small" danger @click="openReject(record.id)">拒绝</a-button>
           </a-space>
         </template>
       </template>
@@ -178,7 +180,7 @@ const columns: TableColumnType[] = [
   { title: '法人/负责人', key: 'legalPerson', ellipsis: true, width: 140 },
   { title: '状态', key: 'status', width: 100 },
   { title: '提交时间', key: 'createdAt', width: 180 },
-  { title: '操作', key: 'actions', fixed: 'right', width: 120 },
+  { title: '操作', key: 'actions', fixed: 'right', width: 200 },
 ]
 
 function statusLabel(s: string) { return { pending: '待审核', approved: '已通过', rejected: '已拒绝' }[s] || s }
@@ -221,7 +223,7 @@ async function fetchStats() {
     const res = await getCompanyStatsApi()
     stats.pending = res.data?.pending ?? 0
     stats.approved = res.data?.approved ?? 0
-    stats.rejected = (res.data?.total ?? 0) - stats.pending - stats.approved
+    stats.rejected = res.data?.rejected ?? 0
   } catch {}
 }
 
@@ -231,8 +233,12 @@ async function handleApprove(id: number) {
   try {
     await updateCompanyStatusApi(id, 'approved')
     message.success('已通过审核')
-    await fetchList(); fetchStats()
-    refreshDetailInList(id)
+    await fetchList()
+    fetchStats()
+    if (detailRecord.value?.id === id) {
+      detailRecord.value = { ...detailRecord.value, status: 'approved', rejectReason: '' }
+      refreshDetailInList(id)
+    }
   } catch { message.error('操作失败') }
 }
 
@@ -254,8 +260,12 @@ async function confirmReject() {
     await updateCompanyStatusApi(id, 'rejected', rejectReason.value)
     message.success('已拒绝')
     rejectVisible.value = false
-    await fetchList(); fetchStats()
-    refreshDetailInList(id)
+    await fetchList()
+    fetchStats()
+    if (detailRecord.value?.id === id) {
+      detailRecord.value = { ...detailRecord.value, status: 'rejected', rejectReason: rejectReason.value }
+      refreshDetailInList(id)
+    }
   } catch { message.error('操作失败') }
 }
 
@@ -263,8 +273,12 @@ async function handleRevoke(id: number) {
   try {
     await updateCompanyStatusApi(id, 'pending')
     message.success('已撤销认证')
-    await fetchList(); fetchStats()
-    refreshDetailInList(id)
+    await fetchList()
+    fetchStats()
+    if (detailRecord.value?.id === id) {
+      detailRecord.value = { ...detailRecord.value, status: 'pending', isVerified: false }
+      refreshDetailInList(id)
+    }
   } catch { message.error('操作失败') }
 }
 
