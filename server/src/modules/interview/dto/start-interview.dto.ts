@@ -1,0 +1,25 @@
+import { IsString, IsOptional, IsNumber, Length } from 'class-validator';
+
+export class StartInterviewDto {
+  @IsOptional()
+  @IsString()
+  @Length(0, 100)
+  jobTitle?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 10000)
+  jobDescription?: string;
+
+  @IsOptional()
+  @IsNumber()
+  resumeId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  questionCount?: number;
+
+  @IsOptional()
+  @IsNumber()
+  categoryId?: number;
+}

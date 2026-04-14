@@ -1,0 +1,12 @@
+node_modules/
+server/uploads/
+uploads/
+ai_conversations/
+*.xlsx
+dist/
+.vite/
+.env
+.env.*
+!.env.example
+*.log
+scripts/.rewrite-env-generated.sh
