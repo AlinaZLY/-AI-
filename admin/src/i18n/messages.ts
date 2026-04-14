@@ -531,7 +531,6 @@ export const enUS: Record<string, string> = {
   // ── Profile ───────────────────────────────────────────
   '个人资料': 'Profile',
   '管理个人信息和密码': 'Manage profile & password',
-  '个人信息': 'Personal Info',
   '更换头像': 'Change Avatar',
   '支持 jpg/png/gif/webp，最大 5MB': 'Supports jpg/png/gif/webp, max 5MB',
   '保存修改': 'Save Changes',
