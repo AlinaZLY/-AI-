@@ -1,5 +1,6 @@
 <template>
   <div class="comment-manage">
+    <a-page-header title="评论管理" sub-title="管理社区评论" />
     <div class="toolbar">
       <a-input-search
         v-model:value="keyword"

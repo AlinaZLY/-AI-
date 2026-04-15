@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength, IsInt, IsBoolean, IsEnum } from 'class-validator';
+import { IsOptional, IsString, MaxLength, IsInt, IsBoolean, IsEnum, IsArray, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PostSource } from '../entities/post.entity';
 
@@ -24,4 +24,11 @@ export class UpdatePostDto {
   @IsOptional()
   @IsEnum(PostSource)
   source?: PostSource;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(20, { message: '图片最多20张' })
+  @IsString({ each: true })
+  @MaxLength(2048, { each: true, message: '单张图片地址过长' })
+  images?: string[];
 }

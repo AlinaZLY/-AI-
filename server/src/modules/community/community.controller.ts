@@ -12,22 +12,34 @@ import {
   ParseIntPipe,
   UseInterceptors,
   UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../user/entities/user.entity';
 import { CommunityService } from './community.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostDto } from './dto/query-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { ReviewPostDto } from './dto/review-post.dto';
 
 // 确保图标上传目录存在
 const iconsDir = join(process.cwd(), 'uploads', 'icons');
 if (!existsSync(iconsDir)) {
   mkdirSync(iconsDir, { recursive: true });
+}
+
+const communityImagesDir = join(process.cwd(), 'uploads', 'community');
+if (!existsSync(communityImagesDir)) {
+  mkdirSync(communityImagesDir, { recursive: true });
 }
 
 @Controller('community')
@@ -43,31 +55,35 @@ export class CommunityController {
   }
 
   /** 创建分类（管理员） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @HttpPost('categories')
-  createCategory(@Body() body: { name: string; icon?: string; color?: string; description?: string; sort?: number }) {
+  createCategory(@Body() body: CreateCategoryDto) {
     return this.communityService.createCategory(body);
   }
 
   /** 更新分类（管理员） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Put('categories/:id')
   updateCategory(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { name?: string; icon?: string; color?: string; description?: string; sort?: number },
+    @Body() body: UpdateCategoryDto,
   ) {
     return this.communityService.updateCategory(id, body);
   }
 
   /** 删除分类（管理员） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Delete('categories/:id')
   deleteCategory(@Param('id', ParseIntPipe) id: number) {
     return this.communityService.deleteCategory(id);
   }
 
   /** 上传分类图标 */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @HttpPost('categories/upload-icon')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
@@ -87,10 +103,42 @@ export class CommunityController {
     },
   }))
   uploadIcon(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('请上传文件');
+    }
     return { url: `/uploads/icons/${file.filename}` };
   }
 
   // ==================== 帖子 ====================
+
+  /** 上传帖子配图（用户） */
+  @UseGuards(JwtAuthGuard)
+  @HttpPost('posts/upload-image')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: communityImagesDir,
+      filename: (_req, file, cb) => {
+        const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
+        cb(null, uniqueName);
+      },
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (_req, file, cb) => {
+      const okMime = /^(image\/(jpeg|png|gif|webp))$/i.test(file.mimetype);
+      const okExt = /\.(jpe?g|png|gif|webp)$/i.test(file.originalname);
+      if (okMime && okExt) {
+        cb(null, true);
+      } else {
+        cb(new Error('只支持 jpg/jpeg/png/gif/webp 图片'), false);
+      }
+    },
+  }))
+  uploadCommunityPostImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('请上传文件');
+    }
+    return { url: `/uploads/community/${file.filename}` };
+  }
 
   /** 发布帖子 */
   @UseGuards(JwtAuthGuard)
@@ -133,18 +181,20 @@ export class CommunityController {
   }
 
   /** 审核帖子（仅管理员） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Put('posts/:id/review')
   reviewPost(
     @Param('id', ParseIntPipe) id: number,
     @Request() req,
-    @Body() body: { status: string; rejectReason?: string },
+    @Body() body: ReviewPostDto,
   ) {
-    return this.communityService.reviewPost(id, req.user.role, body.status, body.rejectReason);
+    return this.communityService.reviewPost(id, req.user.role, body.status as string, body.rejectReason);
   }
 
   /** 切换帖子启用/关闭状态（仅管理员） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Put('posts/:id/toggle-enabled')
   togglePostEnabled(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.communityService.togglePostEnabled(id, req.user.role);
@@ -167,7 +217,8 @@ export class CommunityController {
   // ==================== 评论 ====================
 
   /** 管理员获取所有评论列表（分页） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Get('comments')
   getAllComments(
     @Query('page') page?: number,

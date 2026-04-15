@@ -32,9 +32,13 @@ request.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      router.push('/login')
-      message.error('登录已过期，请重新登录')
+      const isOnLogin = router.currentRoute.value.path === '/login'
+      if (!isOnLogin) {
+        localStorage.removeItem('token')
+        const currentPath = router.currentRoute.value.fullPath
+        router.push({ path: '/login', query: { redirect: currentPath } })
+        message.error('登录已过期，请重新登录')
+      }
     } else {
       message.error(error.response?.data?.message || '网络异常')
     }

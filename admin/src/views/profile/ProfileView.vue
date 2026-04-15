@@ -1,5 +1,6 @@
 <template>
   <div class="profile-page">
+    <a-page-header title="个人资料" sub-title="管理个人信息和密码" />
     <a-card class="card">
       <a-tabs v-model:activeKey="activeTab">
         <!-- 个人信息选项卡 -->
@@ -89,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { UserOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
@@ -183,6 +184,10 @@ async function handleAvatarUpload(file: File) {
   } catch { /* 错误已在拦截器处理 */ }
   return false
 }
+
+watch(() => route.query.tab, (tab) => {
+  if (tab && typeof tab === 'string') activeTab.value = tab
+})
 
 onMounted(() => {
   fetchProfile()

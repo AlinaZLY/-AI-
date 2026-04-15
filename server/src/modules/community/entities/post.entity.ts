@@ -34,6 +34,9 @@ export class Post {
   @Column({ type: 'text', comment: '内容' })
   content: string;
 
+  @Column({ type: 'json', nullable: true, comment: '帖子图片 URL 列表' })
+  images: string[] | null;
+
   @Column({ nullable: true, comment: '分类ID' })
   categoryId: number;
 

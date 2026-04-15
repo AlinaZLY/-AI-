@@ -4,8 +4,8 @@
  * 所有接口均需要 JWT 认证
  */
 import {
-  Controller, Get, Put, Post, Body, UseGuards, Request,
-  UseInterceptors, UploadedFile,
+  Controller, Get, Put, Post, Delete, Body, Query, Param, UseGuards, Request,
+  UseInterceptors, UploadedFile, BadRequestException, ParseIntPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -14,14 +14,58 @@ import * as sharp from 'sharp';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { AdminCreateUserDto } from './dto/admin-create-user.dto';
+import { AdminUpdateUserDto } from './dto/admin-update-user.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from './entities/user.entity';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  /** GET /api/user/profile - 获取当前登录用户的个人资料 */
+  @Get('admin/list')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async getUsers(
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('keyword') keyword?: string,
+    @Query('role') role?: string,
+  ) {
+    return this.userService.findAllAdmin(page || 1, pageSize || 10, keyword, role);
+  }
+
+  @Put('admin/:id/toggle-active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async toggleUserActive(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.toggleUserActive(id);
+  }
+
+  @Post('admin/create')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminCreate(@Body() body: AdminCreateUserDto) {
+    return this.userService.adminCreateUser(body);
+  }
+
+  @Put('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminUpdate(@Param('id', ParseIntPipe) id: number, @Body() body: AdminUpdateUserDto) {
+    return this.userService.adminUpdateUser(id, body);
+  }
+
+  @Delete('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async adminDelete(@Param('id', ParseIntPipe) id: number) {
+    return this.userService.adminDeleteUser(id);
+  }
+
   @Get('profile')
   async getProfile(@Request() req: any) {
     return this.userService.getProfile(req.user.id);
@@ -59,23 +103,23 @@ export class UserController {
     },
   }))
   async uploadAvatar(@Request() req: any, @UploadedFile() file: Express.Multer.File) {
-    // 压缩图片至不超过 500KB
+    if (!file) throw new BadRequestException('请上传图片文件');
     const inputPath = file.path;
     const compressedName = `compressed-${file.filename.replace(extname(file.filename), '')}.webp`;
     const outputPath = join(process.cwd(), 'uploads', 'avatars', compressedName);
 
     let quality = 80;
-    let buffer = await (sharp as any)(inputPath).resize(400, 400, { fit: 'cover' }).webp({ quality }).toBuffer();
+    const sharpFn = (sharp as any).default || sharp;
+    let buffer = await sharpFn(inputPath).resize(400, 400, { fit: 'cover' }).webp({ quality }).toBuffer();
 
-    // 逐步降低质量直到 <= 500KB
     while (buffer.length > 500 * 1024 && quality > 10) {
       quality -= 10;
-      buffer = await (sharp as any)(inputPath).resize(400, 400, { fit: 'cover' }).webp({ quality }).toBuffer();
+      buffer = await sharpFn(inputPath).resize(400, 400, { fit: 'cover' }).webp({ quality }).toBuffer();
     }
 
-    require('fs').writeFileSync(outputPath, buffer);
-    // 删除原始文件
-    require('fs').unlinkSync(inputPath);
+    const fs = await import('fs');
+    fs.writeFileSync(outputPath, buffer);
+    fs.unlinkSync(inputPath);
 
     const avatarUrl = `/uploads/avatars/${compressedName}`;
     return this.userService.updateProfile(req.user.id, { avatar: avatarUrl });

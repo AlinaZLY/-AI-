@@ -2,12 +2,13 @@
  * Redis 服务
  * 封装 Redis 常用操作，用于缓存、会话管理等
  */
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 @Injectable()
-export class RedisService implements OnModuleDestroy {
+export class RedisService implements OnModuleDestroy, OnModuleInit {
+  private readonly logger = new Logger(RedisService.name);
   private client: Redis;
 
   constructor(private configService: ConfigService) {
@@ -15,6 +16,18 @@ export class RedisService implements OnModuleDestroy {
       host: this.configService.get<string>('redis.host'),
       port: this.configService.get<number>('redis.port'),
       password: this.configService.get<string>('redis.password'),
+    });
+  }
+
+  async onModuleInit() {
+    try {
+      await this.client.ping();
+      this.logger.log('Redis 连接成功');
+    } catch (error) {
+      this.logger.error('Redis 连接失败', (error as Error).message);
+    }
+    this.client.on('error', (err) => {
+      this.logger.error('Redis 错误', err.message);
     });
   }
 

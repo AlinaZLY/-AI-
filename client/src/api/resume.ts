@@ -1,0 +1,55 @@
+import request from '@/utils/request'
+
+export function getResumesApi() {
+  return request.get('/resumes')
+}
+
+export function getResumeDetailApi(id: number) {
+  return request.get(`/resumes/${id}`)
+}
+
+export function createResumeApi(data: Record<string, any>) {
+  return request.post('/resumes', data)
+}
+
+export function updateResumeApi(id: number, data: Record<string, any>) {
+  return request.put(`/resumes/${id}`, data)
+}
+
+export function deleteResumeApi(id: number) {
+  return request.delete(`/resumes/${id}`)
+}
+
+export function getTemplatesApi(params?: Record<string, unknown>) {
+  return request.get('/resumes/templates', { params })
+}
+
+export function getResumeTemplateApi(id: number) {
+  return request.get(`/resumes/templates/${id}`)
+}
+
+export function analyzeResumeApi(id: number) {
+  return request.post(`/resumes/item/${id}/analyze`)
+}
+
+export function renderResumeApi(id: number) {
+  return request.get(`/resumes/item/${id}/render`)
+}
+
+export function uploadResumeFileApi(id: number, file: File) {
+  const fd = new FormData()
+  fd.append('file', file)
+  return request.post(`/resumes/item/${id}/upload`, fd)
+}
+
+export function optimizeResumeApi(id: number, data?: Record<string, unknown>) {
+  return request.post(`/resumes/item/${id}/optimize`, data)
+}
+
+export function duplicateResumeApi(id: number) {
+  return request.post(`/resumes/item/${id}/duplicate`)
+}
+
+export function setDefaultResumeApi(id: number) {
+  return request.put(`/resumes/item/${id}/default`)
+}

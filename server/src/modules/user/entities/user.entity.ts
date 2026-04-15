@@ -51,6 +51,27 @@ export class User {
   @Column({ length: 100, nullable: true, comment: '求职意向' })
   jobIntention: string;
 
+  @Column({ length: 10, nullable: true, comment: '性别' })
+  gender: string;
+
+  @Column({ length: 100, nullable: true, comment: '学校' })
+  school: string;
+
+  @Column({ length: 100, nullable: true, comment: '专业' })
+  major: string;
+
+  @Column({ type: 'int', nullable: true, comment: '毕业年份' })
+  graduationYear: number;
+
+  @Column({ length: 20, nullable: true, comment: '学历(专科/本科/硕士/博士)' })
+  degree: string;
+
+  @Column({ type: 'text', nullable: true, comment: '个人简介' })
+  bio: string;
+
+  @Column({ type: 'simple-array', nullable: true, comment: '技能标签' })
+  skills: string[];
+
   @Column({ default: true, comment: '账户是否启用' })
   isActive: boolean;
 

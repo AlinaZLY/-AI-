@@ -24,8 +24,8 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    // 从请求中获取当前用户信息（由 JwtAuthGuard 注入）
     const { user } = context.switchToHttp().getRequest();
+    if (!user) return false;
     return requiredRoles.includes(user.role);
   }
 }

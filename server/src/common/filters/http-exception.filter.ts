@@ -9,11 +9,14 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Response } from 'express';
 
 @Catch()  // 捕获所有类型的异常
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -34,6 +37,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
     // class-validator 返回的验证错误是数组，需要拼接为字符串
     if (Array.isArray(message)) {
       message = message.join('; ');
+    }
+
+    const request = ctx.getRequest();
+    if (exception instanceof HttpException) {
+      this.logger.warn(`${request.method} ${request.url} ${status} - ${message}`);
+    } else {
+      this.logger.error(
+        `${request.method} ${request.url} 500 - ${(exception as Error).message}`,
+        (exception as Error).stack,
+      );
     }
 
     response.status(status).json({

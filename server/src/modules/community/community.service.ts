@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Post, PostStatus, PostSource } from './entities/post.entity';
 import { Category } from './entities/category.entity';
 import { Comment } from './entities/comment.entity';
@@ -12,6 +12,8 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostDto } from './dto/query-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UserRole } from '../user/entities/user.entity';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/entities/notification.entity';
 
 @Injectable()
 export class CommunityService implements OnModuleInit {
@@ -22,6 +24,7 @@ export class CommunityService implements OnModuleInit {
     @InjectRepository(PostLike) private postLikeRepo: Repository<PostLike>,
     @InjectRepository(PostFavorite) private postFavoriteRepo: Repository<PostFavorite>,
     @InjectRepository(CommentLike) private commentLikeRepo: Repository<CommentLike>,
+    private notificationService: NotificationService,
   ) {}
 
   /** 模块初始化时插入种子分类数据 */
@@ -56,6 +59,7 @@ export class CommunityService implements OnModuleInit {
           userId: 1,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
+          images: ['https://picsum.photos/seed/bytedance1/800/400', 'https://picsum.photos/seed/bytedance2/800/400'],
         },
         {
           title: '腾讯2025春招笔试真题及解析',
@@ -80,6 +84,7 @@ export class CommunityService implements OnModuleInit {
           userId: 1,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
+          images: ['https://picsum.photos/seed/alibaba1/800/400', 'https://picsum.photos/seed/alibaba2/800/400', 'https://picsum.photos/seed/alibaba3/800/400'],
         },
         {
           title: '前端开发者必须掌握的 TypeScript 技巧',
@@ -96,6 +101,7 @@ export class CommunityService implements OnModuleInit {
           userId: 1,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
+          images: ['https://picsum.photos/seed/offer1/800/400'],
         },
       ];
       const savedPosts = await this.postRepo.save(this.postRepo.create(postSeeds));
@@ -136,6 +142,24 @@ export class CommunityService implements OnModuleInit {
       }
       console.log('评论种子数据已初始化');
     }
+
+    // 回填已有帖子的图片数据
+    const postsToBackfill = await this.postRepo
+      .createQueryBuilder('p')
+      .where('p.images IS NULL')
+      .andWhere('p.title IN (:...titles)', {
+        titles: ['字节跳动后端开发一面经验分享', '在阿里实习三个月的真实感受', '秋招结束，分享一下我的 offer 对比思路'],
+      })
+      .getMany();
+    const imageMap: Record<string, string[]> = {
+      '字节跳动后端开发一面经验分享': ['https://picsum.photos/seed/bytedance1/800/400', 'https://picsum.photos/seed/bytedance2/800/400'],
+      '在阿里实习三个月的真实感受': ['https://picsum.photos/seed/alibaba1/800/400', 'https://picsum.photos/seed/alibaba2/800/400', 'https://picsum.photos/seed/alibaba3/800/400'],
+      '秋招结束，分享一下我的 offer 对比思路': ['https://picsum.photos/seed/offer1/800/400'],
+    };
+    for (const p of postsToBackfill) {
+      if (imageMap[p.title]) { p.images = imageMap[p.title]; await this.postRepo.save(p); }
+    }
+    if (postsToBackfill.length > 0) console.log(`已回填 ${postsToBackfill.length} 条帖子的图片数据`);
 
     // 每次启动同步所有帖子的真实计数（likeCount、commentCount、favoriteCount）
     const allPosts = await this.postRepo.find({ select: ['id'] });
@@ -189,10 +213,34 @@ export class CommunityService implements OnModuleInit {
 
   // ==================== 帖子 ====================
 
+  /** 仅允许站内上传路径或 http(s) 外链 */
+  private normalizePostImages(input?: string[] | null): string[] {
+    if (!Array.isArray(input)) return [];
+    const max = 20;
+    const out: string[] = [];
+    for (const u of input) {
+      if (typeof u !== 'string') continue;
+      const t = u.trim();
+      if (!t) continue;
+      if (t.length > 2048) continue;
+      if (t.startsWith('/uploads/') || /^https?:\/\//i.test(t)) {
+        out.push(t);
+      }
+      if (out.length >= max) break;
+    }
+    return out;
+  }
+
   async createPost(userId: number, dto: CreatePostDto, userRole?: string): Promise<Post> {
     // 管理员创建的帖子强制标记为平台帖子
     const source = userRole === UserRole.ADMIN ? PostSource.PLATFORM : (dto.source || PostSource.USER);
-    const post = this.postRepo.create({ ...dto, userId, source });
+    const { images, ...rest } = dto;
+    const post = this.postRepo.create({
+      ...rest,
+      userId,
+      source,
+      images: this.normalizePostImages(images),
+    });
     return this.postRepo.save(post);
   }
 
@@ -206,7 +254,7 @@ export class CommunityService implements OnModuleInit {
         'post.id', 'post.title', 'post.categoryId', 'post.userId',
         'post.viewCount', 'post.likeCount', 'post.commentCount',
         'post.favoriteCount', 'post.isTop', 'post.status', 'post.rejectReason',
-        'post.enabled', 'post.source',
+        'post.enabled', 'post.source', 'post.images',
         'post.createdAt', 'post.updatedAt',
         'user.id', 'user.username', 'user.nickname', 'user.avatar',
         'category.id', 'category.name', 'category.icon', 'category.color',
@@ -270,6 +318,7 @@ export class CommunityService implements OnModuleInit {
     return {
       list: list.map((post) => ({
         ...post,
+        images: post.images ?? [],
         isLiked: likedIds.includes(post.id),
         isFavorited: favoritedIds.includes(post.id),
       })),
@@ -302,7 +351,12 @@ export class CommunityService implements OnModuleInit {
       delete (post.user as any).password;
     }
 
-    return { ...post, isLiked, isFavorited };
+    return {
+      ...post,
+      images: post.images ?? [],
+      isLiked,
+      isFavorited,
+    };
   }
 
   async updatePost(postId: number, userId: number, dto: UpdatePostDto) {
@@ -310,7 +364,11 @@ export class CommunityService implements OnModuleInit {
     if (!post) throw new NotFoundException('帖子不存在');
     if (post.userId !== userId) throw new ForbiddenException('只能编辑自己的帖子');
 
-    Object.assign(post, dto);
+    const { images, ...rest } = dto;
+    Object.assign(post, rest);
+    if (images !== undefined) {
+      post.images = this.normalizePostImages(images);
+    }
     return this.postRepo.save(post);
   }
 
@@ -367,6 +425,13 @@ export class CommunityService implements OnModuleInit {
     } else {
       await this.postLikeRepo.save(this.postLikeRepo.create({ userId, postId }));
       await this.postRepo.increment({ id: postId }, 'likeCount', 1);
+      this.notificationService.create({
+        type: NotificationType.LIKE,
+        userId: post.userId,
+        fromUserId: userId,
+        postId,
+        content: `赞了你的帖子「${post.title.substring(0, 30)}」`,
+      }).catch((e) => console.warn('通知发送失败:', e?.message));
       return { liked: true };
     }
   }
@@ -385,6 +450,13 @@ export class CommunityService implements OnModuleInit {
     } else {
       await this.postFavoriteRepo.save(this.postFavoriteRepo.create({ userId, postId }));
       await this.postRepo.increment({ id: postId }, 'favoriteCount', 1);
+      this.notificationService.create({
+        type: NotificationType.FAVORITE,
+        userId: post.userId,
+        fromUserId: userId,
+        postId,
+        content: `收藏了你的帖子「${post.title.substring(0, 30)}」`,
+      }).catch((e) => console.warn('通知发送失败:', e?.message));
       return { favorited: true };
     }
   }
@@ -433,8 +505,16 @@ export class CommunityService implements OnModuleInit {
     const comment = this.commentRepo.create({ ...dto, postId, userId });
     const saved = await this.commentRepo.save(comment);
 
-    // 更新帖子评论数
     await this.postRepo.increment({ id: postId }, 'commentCount', 1);
+
+    this.notificationService.create({
+      type: NotificationType.COMMENT,
+      userId: post.userId,
+      fromUserId: userId,
+      postId,
+      commentId: saved.id,
+      content: `评论了你的帖子「${post.title.substring(0, 30)}」`,
+    }).catch((e) => console.warn('通知发送失败:', e?.message));
 
     return saved;
   }
@@ -494,6 +574,14 @@ export class CommunityService implements OnModuleInit {
     } else {
       await this.commentLikeRepo.save(this.commentLikeRepo.create({ userId, commentId }));
       await this.commentRepo.increment({ id: commentId }, 'likeCount', 1);
+      this.notificationService.create({
+        type: NotificationType.COMMENT_LIKE,
+        userId: comment.userId,
+        fromUserId: userId,
+        commentId,
+        postId: comment.postId,
+        content: `赞了你的评论`,
+      }).catch((e) => console.warn('通知发送失败:', e?.message));
       return { liked: true };
     }
   }
@@ -507,7 +595,12 @@ export class CommunityService implements OnModuleInit {
       skip: (page - 1) * pageSize,
       take: pageSize,
     });
-    return { list, total, page, pageSize };
+    return {
+      list: list.map((p) => ({ ...p, images: p.images ?? [] })),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   async getUserFavorites(userId: number, page = 1, pageSize = 10) {
@@ -519,7 +612,7 @@ export class CommunityService implements OnModuleInit {
       take: pageSize,
     });
     return {
-      list: favorites.map((f) => f.post),
+      list: favorites.map((f) => ({ ...f.post, images: f.post?.images ?? [] })),
       total,
       page,
       pageSize,

@@ -2,11 +2,11 @@
  * 用户服务
  * 处理用户个人资料的查询、更新和密码修改逻辑
  */
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 
@@ -17,7 +17,71 @@ export class UserService {
     private userRepository: Repository<User>,
   ) {}
 
-  /** 根据 ID 查找用户，不存在则抛出 404 异常 */
+  async findAllAdmin(page = 1, pageSize = 10, keyword?: string, role?: string) {
+    const qb = this.userRepository.createQueryBuilder('user');
+    if (keyword) {
+      qb.andWhere('(user.username LIKE :kw OR user.nickname LIKE :kw OR user.email LIKE :kw)', { kw: `%${keyword}%` });
+    }
+    if (role) {
+      qb.andWhere('user.role = :role', { role });
+    }
+    qb.orderBy('user.createdAt', 'DESC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+    const [list, total] = await qb.getManyAndCount();
+    return { list, total, page: +page, pageSize: +pageSize };
+  }
+
+  async toggleUserActive(id: number) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('用户不存在');
+    user.isActive = !user.isActive;
+    return this.userRepository.save(user);
+  }
+
+  async adminCreateUser(data: { username: string; password: string; role?: UserRole; nickname?: string; email?: string; phone?: string }) {
+    const existing = await this.userRepository.findOne({ where: { username: data.username } });
+    if (existing) throw new ConflictException('用户名已存在');
+    if (data.email) {
+      const emailExists = await this.userRepository.findOne({ where: { email: data.email } });
+      if (emailExists) throw new ConflictException('该邮箱已被使用');
+    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(data.password, salt);
+    const user = this.userRepository.create({
+      ...data,
+      password: hashedPassword,
+      role: data.role || UserRole.STUDENT,
+    });
+    const saved = await this.userRepository.save(user);
+    const { password: _, ...result } = saved;
+    return result;
+  }
+
+  async adminUpdateUser(id: number, data: Partial<User>) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('用户不存在');
+    if (data.email && data.email !== user.email) {
+      const emailExists = await this.userRepository.findOne({ where: { email: data.email } });
+      if (emailExists && emailExists.id !== id) throw new ConflictException('该邮箱已被使用');
+    }
+    if (data.password) {
+      const salt = await bcrypt.genSalt(10);
+      data.password = await bcrypt.hash(data.password, salt);
+    }
+    Object.assign(user, data);
+    const saved = await this.userRepository.save(user);
+    const { password: _, ...result } = saved as any;
+    return result;
+  }
+
+  async adminDeleteUser(id: number) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('用户不存在');
+    await this.userRepository.remove(user);
+    return { message: '删除成功' };
+  }
+
   async findById(id: number): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {

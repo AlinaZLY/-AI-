@@ -46,11 +46,19 @@ async function bootstrap() {
   // 全局响应拦截器：统一成功响应格式 { code, message, data, timestamp }
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // 启用跨域，允许前端项目访问
-  app.enableCors();
+  const corsOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
+    : ['http://localhost:3100', 'http://localhost:5173', 'http://127.0.0.1:3100', 'http://127.0.0.1:5173'];
+  app.enableCors({
+    origin: corsOrigins,
+    credentials: true,
+  });
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`服务已启动，端口: ${port}`);
 }
-bootstrap();
+bootstrap().catch((err) => {
+  console.error('启动失败:', err);
+  process.exit(1);
+});

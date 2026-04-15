@@ -1,5 +1,6 @@
 <template>
   <div class="category-manage">
+    <a-page-header title="分类管理" sub-title="管理社区帖子分类" />
     <!-- 工具栏 -->
     <div class="toolbar">
       <a-button type="primary" @click="openCreateModal">
@@ -172,7 +173,7 @@ function isUrl(str: string) {
 function getIconUrl(icon: string) {
   if (!icon) return ''
   if (icon.startsWith('http')) return icon
-  if (icon.startsWith('/')) return `http://localhost:3000${icon}`
+  if (icon.startsWith('/')) return icon
   return ''
 }
 

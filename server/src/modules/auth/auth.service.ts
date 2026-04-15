@@ -17,6 +17,9 @@ import { User, UserRole } from '../user/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RedisService } from '@common/redis/redis.service';
+import { NotificationService } from '../notification/notification.service';
+import { SystemService } from '../system/system.service';
+import { NotificationType } from '../notification/entities/notification.entity';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +28,8 @@ export class AuthService {
     private userRepository: Repository<User>,
     private jwtService: JwtService,
     private redisService: RedisService,
+    private notificationService: NotificationService,
+    private systemService: SystemService,
   ) {}
 
   /**
@@ -32,9 +37,8 @@ export class AuthService {
    * 检查用户名唯一性，使用 bcrypt 加密密码后存入数据库
    */
   async register(registerDto: RegisterDto) {
-    const { username, password, ...rest } = registerDto;
+    const { username, password, email, phone, nickname, role } = registerDto;
 
-    // 检查用户名是否已存在
     const existingUser = await this.userRepository.findOne({
       where: { username },
     });
@@ -42,19 +46,32 @@ export class AuthService {
       throw new ConflictException('用户名已存在');
     }
 
-    // 密码加密
+    if (email) {
+      const existingByEmail = await this.userRepository.findOne({
+        where: { email },
+      });
+      if (existingByEmail) {
+        throw new ConflictException('该邮箱已被注册');
+      }
+    }
+
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // 创建用户
+    const allowedRole = (role === UserRole.ENTERPRISE) ? UserRole.ENTERPRISE : UserRole.STUDENT;
+
     const user = this.userRepository.create({
       username,
       password: hashedPassword,
-      ...rest,
+      email,
+      phone,
+      nickname,
+      role: allowedRole,
     });
     await this.userRepository.save(user);
 
-    // 返回用户信息（不含密码）
+    this.sendWelcomeNotification(user.id).catch(() => {});
+
     const { password: _, ...result } = user;
     return result;
   }
@@ -122,25 +139,46 @@ export class AuthService {
    * 生成图形验证码
    * 使用 svg-captcha 生成 SVG 格式验证码，存入 Redis（有效期 5 分钟）
    */
-  async generateCaptcha() {
-    const captcha = svgCaptcha.create({
-      size: 4,         // 验证码长度
-      noise: 3,        // 干扰线数量
-      color: true,     // 彩色
-      width: 120,
-      height: 40,
-      fontSize: 40,
+  private async sendWelcomeNotification(userId: number) {
+    const defaultMsg = '欢迎加入 AI 校园招聘平台！在这里你可以浏览校招职位、管理简历、模拟面试，祝你求职顺利！';
+    let content = defaultMsg;
+    try {
+      const settings = await this.systemService.getPublicSettings();
+      const customMsg = (settings as any)?.welcomeMessage;
+      if (customMsg && typeof customMsg === 'string' && customMsg.trim()) {
+        content = customMsg.trim();
+      }
+    } catch {}
+    await this.notificationService.create({
+      type: NotificationType.SYSTEM,
+      userId,
+      content,
     });
+  }
 
-    // 生成唯一 key
+  async generateCaptcha() {
+    const a = Math.floor(Math.random() * 15) + 1;
+    const b = Math.floor(Math.random() * 10) + 1;
+    const op = Math.random() > 0.5 ? '+' : '-';
+    const num1 = op === '-' ? Math.max(a, b) : a;
+    const num2 = op === '-' ? Math.min(a, b) : b;
+    const answer = op === '+' ? num1 + num2 : num1 - num2;
+    const expression = `${num1} ${op} ${num2} = ?`;
+
+    const colors = ['#1677ff', '#4338ca', '#0891b2', '#059669', '#7c3aed'];
+    const color = colors[Math.floor(Math.random() * colors.length)];
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="130" height="44" viewBox="0 0 130 44">
+      <rect width="130" height="44" fill="#f8fafc" rx="8"/>
+      <text x="65" y="30" text-anchor="middle" font-family="Arial,sans-serif" font-size="22" font-weight="bold" fill="${color}" letter-spacing="2">${expression}</text>
+    </svg>`;
+
     const key = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-
-    // 存入 Redis，有效期 5 分钟
-    await this.redisService.set(`captcha:${key}`, captcha.text, 300);
+    await this.redisService.set(`captcha:${key}`, String(answer), 300);
 
     return {
       captchaKey: key,
-      captchaSvg: captcha.data,
+      captchaSvg: svg,
     };
   }
 }

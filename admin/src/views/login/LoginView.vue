@@ -145,11 +145,12 @@ import { message } from 'ant-design-vue'
 import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
 import { getCaptchaApi } from '@/api/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const userStore = useUserStore()
 const systemStore = useSystemStore()
 const router = useRouter()
+const route = useRoute()
 const loading = ref(false)
 const captchaSvg = ref('')
 const captchaKey = ref('')
@@ -193,7 +194,9 @@ async function handleLogin() {
       captchaKey: captchaKey.value,
     })
     message.success('登录成功')
-    router.push('/')
+    const redirect = route.query.redirect as string
+    const safeRedirect = redirect && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/'
+    router.push(safeRedirect)
   } catch {
     refreshCaptcha()
     formState.captcha = ''

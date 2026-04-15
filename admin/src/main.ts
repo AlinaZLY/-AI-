@@ -12,4 +12,33 @@ app.use(createPinia())
 app.use(router)
 app.use(Antd)
 
+app.directive('no-autocomplete', {
+  mounted(el: HTMLElement) {
+    const inputs = el.tagName === 'INPUT' ? [el] : el.querySelectorAll('input')
+    inputs.forEach((input: Element) => {
+      input.setAttribute('autocomplete', 'off')
+      input.setAttribute('autocorrect', 'off')
+      input.setAttribute('autocapitalize', 'off')
+    })
+  },
+})
+
+app.mixin({
+  mounted() {
+    const el = (this as any).$el
+    if (el && el.querySelectorAll) {
+      const inputs = el.querySelectorAll('input, textarea')
+      inputs.forEach((input: Element) => {
+        if (!input.getAttribute('autocomplete')) {
+          input.setAttribute('autocomplete', 'new-password')
+        }
+      })
+      const forms = el.querySelectorAll('form')
+      forms.forEach((form: Element) => {
+        form.setAttribute('autocomplete', 'off')
+      })
+    }
+  },
+})
+
 app.mount('#app')
