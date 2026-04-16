@@ -9,10 +9,11 @@ import { PostLike } from './entities/post-like.entity';
 import { PostFavorite } from './entities/post-favorite.entity';
 import { CommentLike } from './entities/comment-like.entity';
 import { NotificationModule } from '../notification/notification.module';
+import { User } from '../user/entities/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Post, Category, Comment, PostLike, PostFavorite, CommentLike]),
+    TypeOrmModule.forFeature([Post, Category, Comment, PostLike, PostFavorite, CommentLike, User]),
     NotificationModule,
   ],
   controllers: [CommunityController],

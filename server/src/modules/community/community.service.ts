@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { Post, PostStatus, PostSource } from './entities/post.entity';
 import { Category } from './entities/category.entity';
 import { Comment } from './entities/comment.entity';
@@ -11,7 +12,7 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { QueryPostDto } from './dto/query-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
-import { UserRole } from '../user/entities/user.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '../notification/entities/notification.entity';
 
@@ -24,8 +25,24 @@ export class CommunityService implements OnModuleInit {
     @InjectRepository(PostLike) private postLikeRepo: Repository<PostLike>,
     @InjectRepository(PostFavorite) private postFavoriteRepo: Repository<PostFavorite>,
     @InjectRepository(CommentLike) private commentLikeRepo: Repository<CommentLike>,
+    @InjectRepository(User) private userRepo: Repository<User>,
     private readonly notificationService: NotificationService,
   ) {}
+
+  private async ensureSeedAuthorId() {
+    const existing = await this.userRepo.findOne({ where: { username: 'platform_seed' } });
+    if (existing) return existing.id;
+
+    const password = await bcrypt.hash('platform-seed-123', 10);
+    const user = await this.userRepo.save(this.userRepo.create({
+      username: 'platform_seed',
+      password,
+      nickname: 'Platform Seed',
+      email: 'platform-seed@example.com',
+      role: UserRole.ADMIN,
+    }));
+    return user.id;
+  }
 
   /** 模块初始化时插入种子分类数据（仅首次运行时播种） */
   async onModuleInit() {
@@ -43,6 +60,8 @@ export class CommunityService implements OnModuleInit {
       console.log('Category seed data initialized');
     }
 
+    const seedUserId = await this.ensureSeedAuthorId();
+
     // 帖子种子数据
     const seedTitle = 'ByteDance Backend Developer First Round Interview Experience';
     const hasSeed = await this.postRepo.findOne({ where: { title: seedTitle } });
@@ -56,7 +75,7 @@ export class CommunityService implements OnModuleInit {
           title: 'ByteDance Backend Developer First Round Interview Experience',
           content: '<h3>Interview Overview</h3><p>Last week I had my first round interview for ByteDance backend development, lasting about <strong>50 minutes</strong>, mainly testing <em>fundamentals</em> and <em>algorithm skills</em>.</p><h3>Interview Questions</h3><ol><li>Self-introduction (3 minutes)</li><li>Deep dive into project experience, focusing on <strong>high-concurrency scenarios</strong></li><li>MySQL indexing: B+ tree vs B tree differences</li><li>Redis cache penetration, breakdown, and avalanche solutions</li><li>Algorithm: <strong>Binary Tree Level Order Traversal</strong> (LeetCode 102)</li></ol><h3>Tips</h3><blockquote>Preparation is key! I recommend finishing <strong>Hot 100</strong> problems and thoroughly understanding your resume projects.</blockquote><p>Good luck to everyone!</p>',
           categoryId: catMap['Interview Experience'],
-          userId: 1,
+          userId: seedUserId,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
         },
@@ -64,7 +83,7 @@ export class CommunityService implements OnModuleInit {
           title: 'Tencent 2025 Spring Written Test Questions & Solutions',
           content: '<h3>Test Info</h3><p>Tencent 2025 spring recruitment written test had <strong>5 programming problems</strong>, 120 minutes total. Moderate difficulty overall.</p><h3>Problem 1: String Processing</h3><p>Given a string s, find the length of the <strong>longest substring without repeating characters</strong>.</p><p><strong>Approach:</strong> Sliding window + hash map, O(n) time complexity.</p><h3>Problem 2: Dynamic Programming</h3><p>Given an array, find the <strong>maximum subarray sum</strong>. Classic Kadane\'s algorithm.</p><blockquote>Practice on LeetCode and Nowcoder. Speed and accuracy matter most in written tests.</blockquote>',
           categoryId: catMap['Written Test'],
-          userId: 1,
+          userId: seedUserId,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
         },
@@ -72,7 +91,7 @@ export class CommunityService implements OnModuleInit {
           title: 'How to Write a Great Resume as a Fresh Graduate?',
           content: '<h3>Core Resume Principles</h3><p>As a fresh graduate, your resume is your <strong>first impression</strong>. Here are my key takeaways:</p><ul><li><strong>Keep it concise</strong>: One page is ideal, never exceed two</li><li><strong>Quantify results</strong>: Use data, e.g., "improved performance by 30%", "grew users by 2000+"</li><li><strong>Highlight projects</strong>: Emphasize your role and contributions</li><li><strong>Match the tech stack</strong>: Tailor keywords to the target position</li></ul><h3>Common Mistakes</h3><p>Avoid large blocks of text, irrelevant experiences, and spelling/formatting errors.</p><p>Hope this helps! Feel free to discuss in the comments.</p>',
           categoryId: catMap['Job Hunting'],
-          userId: 1,
+          userId: seedUserId,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
         },
@@ -80,7 +99,7 @@ export class CommunityService implements OnModuleInit {
           title: 'My Honest Experience Interning at Alibaba for 3 Months',
           content: '<h3>Office Environment</h3><p>Alibaba\'s office is great - free <strong>meals + afternoon snacks</strong>, free gym access, spacious desks with MacBook Pros.</p><h3>Work</h3><p>My team worked on an internal system\'s frontend using <strong>React + TypeScript + Ant Design</strong>.</p><h3>Team Culture</h3><p>My mentor was very nice with weekly one-on-one sessions. The team regularly did <em>Code Reviews</em>, which was great for growth.</p><h3>Compensation</h3><p>Intern pay was above average in the industry. Full-time conversion salary is quite competitive.</p><blockquote>Overall: Great intern experience at Alibaba, highly recommended!</blockquote>',
           categoryId: catMap['Company Reviews'],
-          userId: 1,
+          userId: seedUserId,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
         },
@@ -88,7 +107,7 @@ export class CommunityService implements OnModuleInit {
           title: 'Essential TypeScript Tips for Frontend Developers',
           content: '<h3>Why Learn TypeScript?</h3><p>Almost all mainstream frontend projects use TypeScript. It helps <strong>reduce bugs</strong> and improve <strong>code maintainability</strong>.</p><h3>Practical Tips</h3><h4>1. Generics</h4><p>Generics make your functions and components more reusable and type-safe.</p><h4>2. Type Guards</h4><p>Use the <code>is</code> keyword to narrow types and avoid unnecessary type assertions.</p><h4>3. Utility Types</h4><p><code>Partial</code>, <code>Pick</code>, <code>Omit</code>, <code>Record</code> - these built-in utility types are extremely useful.</p><h4>4. Template Literal Types</h4><p>TypeScript 4.1+ supports template literal types for powerful string type constraints.</p><p>Mastering these will give you an edge in interviews and work!</p>',
           categoryId: catMap['Tech Sharing'],
-          userId: 1,
+          userId: seedUserId,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
         },
@@ -96,7 +115,7 @@ export class CommunityService implements OnModuleInit {
           title: 'Fall Recruitment Done - My Offer Comparison Framework',
           content: '<h3>The Dilemma of Choosing</h3><p>After receiving several offers during fall recruitment, I spent a long time deciding. Here are my comparison criteria:</p><ul><li><strong>Compensation</strong>: base salary + bonus + stock/options</li><li><strong>Technical Growth</strong>: team culture, mentor availability</li><li><strong>Business Outlook</strong>: whether the business line is core to the company</li><li><strong>Work-Life Balance</strong>: overtime expectations, flexible hours</li><li><strong>Location</strong>: cost of living, proximity to home</li></ul><p>I ultimately chose a company with great tech culture and promising business, even though the pay wasn\'t the highest.</p><p>Feel free to discuss in the comments!</p>',
           categoryId: catMap['Job Hunting'],
-          userId: 1,
+          userId: seedUserId,
           status: PostStatus.APPROVED,
           source: PostSource.PLATFORM,
         },
@@ -110,25 +129,25 @@ export class CommunityService implements OnModuleInit {
 
       const commentSeeds = [
         // ByteDance interview post comments
-        { postId: postIdMap['ByteDance Backend Developer First Round Interview Experience'], userId: 1, content: 'Thanks for sharing! Was there a time limit for the algorithm question?' },
-        { postId: postIdMap['ByteDance Backend Developer First Round Interview Experience'], userId: 1, content: 'What specific scenarios were asked about Redis?' },
-        { postId: postIdMap['ByteDance Backend Developer First Round Interview Experience'], userId: 1, content: 'I have my ByteDance interview next week, bookmarked!' },
+        { postId: postIdMap['ByteDance Backend Developer First Round Interview Experience'], userId: seedUserId, content: 'Thanks for sharing! Was there a time limit for the algorithm question?' },
+        { postId: postIdMap['ByteDance Backend Developer First Round Interview Experience'], userId: seedUserId, content: 'What specific scenarios were asked about Redis?' },
+        { postId: postIdMap['ByteDance Backend Developer First Round Interview Experience'], userId: seedUserId, content: 'I have my ByteDance interview next week, bookmarked!' },
         // Tencent test post comments
-        { postId: postIdMap['Tencent 2025 Spring Written Test Questions & Solutions'], userId: 1, content: 'Is the second problem basically LeetCode 53?' },
-        { postId: postIdMap['Tencent 2025 Spring Written Test Questions & Solutions'], userId: 1, content: 'I also got the sliding window problem, the two-pointer approach is easier to understand' },
+        { postId: postIdMap['Tencent 2025 Spring Written Test Questions & Solutions'], userId: seedUserId, content: 'Is the second problem basically LeetCode 53?' },
+        { postId: postIdMap['Tencent 2025 Spring Written Test Questions & Solutions'], userId: seedUserId, content: 'I also got the sliding window problem, the two-pointer approach is easier to understand' },
         // Resume post comments
-        { postId: postIdMap['How to Write a Great Resume as a Fresh Graduate?'], userId: 1, content: 'Quantifying results is so important, I never included numbers before' },
-        { postId: postIdMap['How to Write a Great Resume as a Fresh Graduate?'], userId: 1, content: 'How should I write project experience if I have no internship experience?' },
+        { postId: postIdMap['How to Write a Great Resume as a Fresh Graduate?'], userId: seedUserId, content: 'Quantifying results is so important, I never included numbers before' },
+        { postId: postIdMap['How to Write a Great Resume as a Fresh Graduate?'], userId: seedUserId, content: 'How should I write project experience if I have no internship experience?' },
         // Alibaba intern post comments
-        { postId: postIdMap['My Honest Experience Interning at Alibaba for 3 Months'], userId: 1, content: 'Is the conversion rate to full-time high?' },
-        { postId: postIdMap['My Honest Experience Interning at Alibaba for 3 Months'], userId: 1, content: 'What is the Code Review process like at Alibaba?' },
-        { postId: postIdMap['My Honest Experience Interning at Alibaba for 3 Months'], userId: 1, content: 'So jealous! I want to intern at Alibaba too' },
+        { postId: postIdMap['My Honest Experience Interning at Alibaba for 3 Months'], userId: seedUserId, content: 'Is the conversion rate to full-time high?' },
+        { postId: postIdMap['My Honest Experience Interning at Alibaba for 3 Months'], userId: seedUserId, content: 'What is the Code Review process like at Alibaba?' },
+        { postId: postIdMap['My Honest Experience Interning at Alibaba for 3 Months'], userId: seedUserId, content: 'So jealous! I want to intern at Alibaba too' },
         // TypeScript post comments
-        { postId: postIdMap['Essential TypeScript Tips for Frontend Developers'], userId: 1, content: 'The utility types section was very clear, bookmarked' },
-        { postId: postIdMap['Essential TypeScript Tips for Frontend Developers'], userId: 1, content: 'Could you explain the infer keyword? I still struggle with it' },
+        { postId: postIdMap['Essential TypeScript Tips for Frontend Developers'], userId: seedUserId, content: 'The utility types section was very clear, bookmarked' },
+        { postId: postIdMap['Essential TypeScript Tips for Frontend Developers'], userId: seedUserId, content: 'Could you explain the infer keyword? I still struggle with it' },
         // Offer comparison post comments
-        { postId: postIdMap['Fall Recruitment Done - My Offer Comparison Framework'], userId: 1, content: 'Location really matters, the cost of living difference is huge' },
-        { postId: postIdMap['Fall Recruitment Done - My Offer Comparison Framework'], userId: 1, content: 'Congrats on the offers! Can you share which company you chose?' },
+        { postId: postIdMap['Fall Recruitment Done - My Offer Comparison Framework'], userId: seedUserId, content: 'Location really matters, the cost of living difference is huge' },
+        { postId: postIdMap['Fall Recruitment Done - My Offer Comparison Framework'], userId: seedUserId, content: 'Congrats on the offers! Can you share which company you chose?' },
       ];
       await this.commentRepo.save(this.commentRepo.create(commentSeeds));
 
