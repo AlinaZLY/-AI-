@@ -1,0 +1,1268 @@
+[
+  {
+    "hash": "26a050846fdd2de371c11209680ed0288541414f",
+    "date": "2026-03-08T10:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "chore: 初始化NestJS项目脚手架"
+  },
+  {
+    "hash": "3fb7a986fede860fd53de82fe25799f6fdf541ec",
+    "date": "2026-03-08T11:02:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: TypeORM + MySQL数据库连接配置"
+  },
+  {
+    "hash": "66cd003814f7c7a6d1de8b3b1b7dc6d2dde23b1f",
+    "date": "2026-03-08T14:28:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Redis模块(ioredis连接+服务封装)"
+  },
+  {
+    "hash": "7edbe1e29c97eb5fb0c506c63b4768a5b520d82c",
+    "date": "2026-03-08T15:47:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 全局异常过滤器+响应拦截器"
+  },
+  {
+    "hash": "9ba895d66006aa1efb91662ef8cc07fadd2b0bcc",
+    "date": "2026-03-08T17:33:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 全局ValidationPipe(whitelist+transform)"
+  },
+  {
+    "hash": "b215e644d8fb6e8efd2eae5b9236348a9d3f87d0",
+    "date": "2026-03-09T09:22:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: User实体(username/password/role/avatar等字段)"
+  },
+  {
+    "hash": "ba568ebdc21115a3f0c58a3088a3a3b26a16067f",
+    "date": "2026-03-09T10:48:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 用户注册(bcrypt密码加密+唯一性校验)"
+  },
+  {
+    "hash": "67df95b7ebf29d66ea042280f1a6a8c485a45aa4",
+    "date": "2026-03-09T13:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: JWT鉴权(Passport+JwtStrategy+Guard)"
+  },
+  {
+    "hash": "1d0046548ab802d5fb2a68eb885b6e2c185a68f3",
+    "date": "2026-03-09T14:33:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 用户登录(验证码校验+Token签发)"
+  },
+  {
+    "hash": "4a91582f7b7498cdbd3e3763822fb4b2229518b2",
+    "date": "2026-03-09T15:50:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: svg-captcha图形验证码(Redis存储)"
+  },
+  {
+    "hash": "6e95347098d845569c7064ab092d29e8a4664f1f",
+    "date": "2026-03-09T16:27:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 验证码用后即删防止重放攻击"
+  },
+  {
+    "hash": "156d82cf3d655d5fe30e1aae1aaec63acfa9a216",
+    "date": "2026-03-09T17:45:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: RolesGuard角色权限守卫"
+  },
+  {
+    "hash": "1a942dd194f05e58119afa4b32910ecf66e10b23",
+    "date": "2026-03-09T20:10:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 个人资料CRUD+头像上传(sharp压缩)"
+  },
+  {
+    "hash": "89e3a06b0a09023f5f6dab9c9ff3630e2f68efed",
+    "date": "2026-03-09T21:35:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 管理员用户管理(CRUD+禁用)"
+  },
+  {
+    "hash": "bc957eb14d72d93b2d7967bac95ff1832526670a",
+    "date": "2026-03-10T09:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "merge: 基础架构+认证系统合入develop"
+  },
+  {
+    "hash": "6eec897656c796f64233f26e031bff75113163c5",
+    "date": "2026-03-10T09:30:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "chore: 从develop拉取基础架构"
+  },
+  {
+    "hash": "2fa96fd94eed202b52d394f6c652c1e9846af405",
+    "date": "2026-03-10T09:35:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "chore: 从develop拉取基础架构"
+  },
+  {
+    "hash": "6cba4970bd4e9bb5ff1e86ebc85b9e5b48e7a491",
+    "date": "2026-03-10T09:38:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "chore: 从develop拉取基础架构"
+  },
+  {
+    "hash": "e0f9a0a334ceae30046aa88a12b7edd7124de789",
+    "date": "2026-03-10T10:12:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: Resume实体设计(多版本+模板+JSON内容)"
+  },
+  {
+    "hash": "39829b6c4cacfb71eedb755e89c243c6f590c35f",
+    "date": "2026-03-10T10:45:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: Application实体(公司/岗位/状态/标签)"
+  },
+  {
+    "hash": "de6c7eb9e0b25cc11e93dde7a63a2002968434fc",
+    "date": "2026-03-10T11:08:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: QuestionBank和QuestionCategory实体"
+  },
+  {
+    "hash": "560f7469f65b049ae6011a75bae717c6bfa07de8",
+    "date": "2026-03-10T11:35:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Category实体(name/icon/color/sort)"
+  },
+  {
+    "hash": "f69cff3128ba11cd64154218aac77de01c1fc6bc",
+    "date": "2026-03-10T13:20:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: ResumeTemplate实体(html/css/category)"
+  },
+  {
+    "hash": "2b1498a0610017fb40d5454d2de8c60bee6e70ff",
+    "date": "2026-03-10T13:48:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: ApplicationStatusLog实体"
+  },
+  {
+    "hash": "d9919da1fd7c2e35f9c1e910aaa7f513a67fcf5c",
+    "date": "2026-03-10T14:15:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: Interview+InterviewQuestion实体"
+  },
+  {
+    "hash": "daba23e3d0377b09a24e723bedf9250246a63168",
+    "date": "2026-03-10T14:50:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Post实体(title/content/status/counts)"
+  },
+  {
+    "hash": "cabeaf84ddffdcf930a7a6f33ae9dd9f4d4dfb50",
+    "date": "2026-03-10T15:22:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历CRUD接口"
+  },
+  {
+    "hash": "6c1518805426dbf447b460b011ed086be6c809d8",
+    "date": "2026-03-10T15:55:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: ApplicationNote实体(备注)"
+  },
+  {
+    "hash": "8d784ebfaf2d4c637ce8dfb4a406438baffce1fd",
+    "date": "2026-03-10T16:18:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试分类管理(树形+封面图)"
+  },
+  {
+    "hash": "c0429bbdab69694eb6b14b47dd2d7f81209a597f",
+    "date": "2026-03-10T16:50:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Comment实体+CommentLike实体"
+  },
+  {
+    "hash": "ce7cc388da5fdaafaac3e9f99d3b7754cd951162",
+    "date": "2026-03-10T17:25:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 创建简历时自动设置默认"
+  },
+  {
+    "hash": "1b33beaf94f0f2e7abb103490bcf83b9aeeba25b",
+    "date": "2026-03-10T17:48:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递记录CRUD接口"
+  },
+  {
+    "hash": "195ab770c575cc589f7cc5b5702d6844a7fbf478",
+    "date": "2026-03-10T18:12:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试题库CRUD(分页+筛选)"
+  },
+  {
+    "hash": "989ee4b70facc09c6c55f4df0efbc84e15d1c112",
+    "date": "2026-03-10T19:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: PostLike+PostFavorite实体"
+  },
+  {
+    "hash": "8273e9c99c0edc714a4fdea77fdbcad2f9077981",
+    "date": "2026-03-11T08:42:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历模板CRUD接口"
+  },
+  {
+    "hash": "a41bd4ee15dd3526ba7c06a5f78d0d901684918c",
+    "date": "2026-03-11T09:15:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递状态流转(pending→笔试→面试→offer)"
+  },
+  {
+    "hash": "ee7cc82dfb6205ae5cc9c398b21af5e4393cd033",
+    "date": "2026-03-11T09:50:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 分类封面图上传"
+  },
+  {
+    "hash": "526f8643adf3db85654e0eb4c91a86910a5963d4",
+    "date": "2026-03-11T10:18:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 帖子发布/编辑/删除/搜索"
+  },
+  {
+    "hash": "660e468578837bf67069e84f8ae74704761f7366",
+    "date": "2026-03-11T10:45:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 10个内置简历模板种子数据"
+  },
+  {
+    "hash": "5f6020812093c66a2071bbb2e081f4af8546721c",
+    "date": "2026-03-11T11:12:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 状态变更自动记录日志"
+  },
+  {
+    "hash": "d8d708fe9a1a38bb839688c682630962ef7b9c0c",
+    "date": "2026-03-11T11:40:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 开始模拟面试(随机抽题)"
+  },
+  {
+    "hash": "67b5e7703c0bb9fc68c6fbf130070ced949b383f",
+    "date": "2026-03-11T13:10:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 评论发布/删除/列表"
+  },
+  {
+    "hash": "95a74bb7c709ee5009f1155635f499403a42044d",
+    "date": "2026-03-11T13:38:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 模板分类(通用/技术/设计/金融/运营/教育)"
+  },
+  {
+    "hash": "5e21571c4fba23abe5fbbf24e5411135622d32ac",
+    "date": "2026-03-11T14:05:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递备注CRUD"
+  },
+  {
+    "hash": "d019c5921f134aabe2ff28b697f9c1e55b10f9c9",
+    "date": "2026-03-11T14:32:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 答题接口+AI评分"
+  },
+  {
+    "hash": "5bbe2ad4e7946e4bdc311c464fb602c80128a8fd",
+    "date": "2026-03-11T15:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 帖子点赞/收藏(toggle)"
+  },
+  {
+    "hash": "8f787e5988628f899f358f04c06582f85bbd04f6",
+    "date": "2026-03-11T15:28:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: Word模板导入(mammoth .docx→HTML)"
+  },
+  {
+    "hash": "1c1a8627b5ccb1fcaad42229a145bf5d05467b99",
+    "date": "2026-03-11T15:55:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递多维筛选(status/tag/company/keyword)"
+  },
+  {
+    "hash": "986e9506bb11dae7571045c3f1bba354d76dfd46",
+    "date": "2026-03-11T16:22:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: AI评分(内容/逻辑/专业性多维度)"
+  },
+  {
+    "hash": "c322b9ce65a8a88df79cdc710b6e2b1cdcd89857",
+    "date": "2026-03-11T16:50:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 评论点赞功能"
+  },
+  {
+    "hash": "8801e5b2df95749068db02e581e01daa9585c8ec",
+    "date": "2026-03-11T17:18:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历AI分析(完整度+关键词)"
+  },
+  {
+    "hash": "9cca2e4d828f335867c7a5f2e318ca25dd63cac8",
+    "date": "2026-03-11T17:45:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递统计(按状态/标签/公司)"
+  },
+  {
+    "hash": "35d7b707cd05a0091244d79d05f4f4cbe045418f",
+    "date": "2026-03-11T18:12:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试改进建议+参考回答"
+  },
+  {
+    "hash": "b0c9bb47428c64de68149b10558ca64716a83ed6",
+    "date": "2026-03-12T09:05:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 帖子审核机制(approved/rejected/pending)"
+  },
+  {
+    "hash": "ed0bd795ecb5bd8f7254833ecdd9562324575369",
+    "date": "2026-03-12T09:32:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历AI优化接口(火山方舟对接)"
+  },
+  {
+    "hash": "0b63e6e7fea96e75d625263ca4601bd076e52e90",
+    "date": "2026-03-12T10:00:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试历史记录列表"
+  },
+  {
+    "hash": "c630256fdcf0b8de916d3d11cbf143ddf4dddfd9",
+    "date": "2026-03-12T10:25:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 面试日历接口(按日期范围查询)"
+  },
+  {
+    "hash": "2ca38d730c53780d836d50dee49c706626091331",
+    "date": "2026-03-12T10:52:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Notification实体+通知模块"
+  },
+  {
+    "hash": "828fb896d75391f50bce2e6488e1c8980b3684c0",
+    "date": "2026-03-12T11:18:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历渲染接口(模板+内容→HTML)"
+  },
+  {
+    "hash": "eeadf67ec6ff61493cf8a12920f5949bd23f369a",
+    "date": "2026-03-12T11:45:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 能力雷达图数据接口"
+  },
+  {
+    "hash": "03aad92a8b79580a4269f214e66a9c60a5e71baa",
+    "date": "2026-03-12T13:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 点赞/收藏/评论自动发送通知"
+  },
+  {
+    "hash": "4ed344b2ca59ddfedff9d857ee80e9bac5eeed03",
+    "date": "2026-03-12T13:42:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 语音识别集成(火山引擎ASR)"
+  },
+  {
+    "hash": "05bf5588c45f1434ce3af9fc4d74f61ebdb4083f",
+    "date": "2026-03-12T14:10:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 社区种子数据(分类+帖子+评论)"
+  },
+  {
+    "hash": "bf2306f77dab80b48e973ae3ae36f29055171345",
+    "date": "2026-03-12T14:38:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历复制+设为默认接口"
+  },
+  {
+    "hash": "3bf1c7b555f4c49f17acfab74fd4ac2e8e767304",
+    "date": "2026-03-12T15:05:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: Job实体+职位CRUD接口"
+  },
+  {
+    "hash": "56f81cf84ca408c918beff8613c98ab1a2b72c5e",
+    "date": "2026-03-12T15:35:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: Company实体+企业认证接口"
+  },
+  {
+    "hash": "8c3b1bdce353432dc42ce1a340032a7e9a8aa84b",
+    "date": "2026-03-12T16:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 通知发送失败添加日志(不静默吞噬)"
+  },
+  {
+    "hash": "99a9595fa2f0cea1c91531f2c8bac2b2e83a399f",
+    "date": "2026-03-12T16:28:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 简历模板CSS完整性修复"
+  },
+  {
+    "hash": "331e2aabbaab0eadbf7c8f2af4f90fea5642de12",
+    "date": "2026-03-12T16:55:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 企业认证审核状态管理"
+  },
+  {
+    "hash": "19854a803e07a96d522a4fd9e421009848d8c7d5",
+    "date": "2026-03-13T09:20:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: SystemSetting实体+系统设置CRUD"
+  },
+  {
+    "hash": "3697f399cc9f7067488c9970f33d7cb8b2db0251",
+    "date": "2026-03-13T09:48:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 数据字典模块(DictType+DictItem)"
+  },
+  {
+    "hash": "5447ba0bd9e427db45e8610b21341e3a88c9f8e9",
+    "date": "2026-03-13T10:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 仪表盘统计接口"
+  },
+  {
+    "hash": "47dfe9c8fdfd8a8171b4ea434d658503c8296f15",
+    "date": "2026-03-13T10:42:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: AI连接测试接口"
+  },
+  {
+    "hash": "7df7f695e17b64b73e4b9db7612533136fea9b26",
+    "date": "2026-03-13T11:10:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试管理员接口(列表+统计+删除)"
+  },
+  {
+    "hash": "e73954a7890d2ce39e824819a763673884fd7dee",
+    "date": "2026-03-13T11:38:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 职位管理员接口(列表+编辑+删除)"
+  },
+  {
+    "hash": "af4bbf1ce173c111c3114b1b751b9b2673c3851a",
+    "date": "2026-03-13T13:05:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: AiCallLog实体+调用日志记录"
+  },
+  {
+    "hash": "fc2f94e700b4441ddc5d236e177f4c2c0c65db75",
+    "date": "2026-03-13T13:35:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 静态文件服务(/uploads)"
+  },
+  {
+    "hash": "3dec5728d32d232a43bab3578793a5dab95a2ce0",
+    "date": "2026-03-13T14:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 帖子启用/禁用+来源标记"
+  },
+  {
+    "hash": "e874804e5e8381e71bea7e2b5cc7bd5ce910a3eb",
+    "date": "2026-03-13T14:28:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历管理员列表接口"
+  },
+  {
+    "hash": "2b157001bf476a63ab6e69cbce13f5e24b8a5433",
+    "date": "2026-03-14T09:30:00+08:00",
+    "author": "TJbubble",
+    "msg": "chore: 初始化Vue3+Vite客户端项目"
+  },
+  {
+    "hash": "ec8e82ae17d05523bb7bc0917ae7108658e75f77",
+    "date": "2026-03-14T09:55:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Tailwind CSS + 全局样式配置"
+  },
+  {
+    "hash": "2414bbd19ad9e1c2079a0aa2c3bcda8c97a30060",
+    "date": "2026-03-14T10:22:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Vue Router + 路由配置"
+  },
+  {
+    "hash": "d3b23fbe1f44c6fa6bff543ac69c2bc9df42d52c",
+    "date": "2026-03-14T10:48:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Pinia状态管理(userStore)"
+  },
+  {
+    "hash": "b540842994e1c56b303b147a716cb42f6084fbe2",
+    "date": "2026-03-14T11:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Axios请求封装(拦截器+Token)"
+  },
+  {
+    "hash": "4ece4e9deccac8afbfeb730801a1f8bb1ff51e2a",
+    "date": "2026-03-14T11:42:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Toast提示组件(SVG图标)"
+  },
+  {
+    "hash": "b4f5e47f319862ad1d191beff49908c99294b4b5",
+    "date": "2026-03-14T13:10:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: LoginPrompt登录提示组件"
+  },
+  {
+    "hash": "55ca89dd0097fdfd63784d11b2142efe31e9364c",
+    "date": "2026-03-14T13:38:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历API封装(resume.ts)"
+  },
+  {
+    "hash": "ba8adec4ceeb8d1af0c745f728d89a8947bace50",
+    "date": "2026-03-14T14:00:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递API封装(application.ts)"
+  },
+  {
+    "hash": "19b1870ad2cc396d1b8ed7f82859582788ae00c7",
+    "date": "2026-03-14T14:22:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试API封装(interview.ts)"
+  },
+  {
+    "hash": "b34dfb63d31c26b8f2da5e38abb79c52581cb8b5",
+    "date": "2026-03-14T14:48:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 社区API封装(community.ts)"
+  },
+  {
+    "hash": "948eb770e2a489171792f694ef0ff21842d6caf2",
+    "date": "2026-03-14T15:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 登录页面(验证码+图标+测试账号)"
+  },
+  {
+    "hash": "fdd233cf630b71e0488c70d900987286c14324d7",
+    "date": "2026-03-14T15:42:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 注册页面(身份选择+邮箱后缀)"
+  },
+  {
+    "hash": "33813b56b2529edabd05abf1c7278de864236cd3",
+    "date": "2026-03-14T16:10:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 主布局(导航+通知铃铛+响应式)"
+  },
+  {
+    "hash": "f655c2c083eee59c6b021983e12217dd447f4dea",
+    "date": "2026-03-15T09:08:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 社区页面(帖子列表+分类+发帖)"
+  },
+  {
+    "hash": "98f4dea64c7a86f0fda553f72e1faf5150fe1afd",
+    "date": "2026-03-15T09:35:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历模板浏览页(分类+搜索+预览)"
+  },
+  {
+    "hash": "e00b86c961bf0ed2e7fecc827bd9eaa796fbc101",
+    "date": "2026-03-15T10:02:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递追踪页面(统计卡片+筛选栏)"
+  },
+  {
+    "hash": "3ef463495a59364115dbeb39e3886fc2b852e214",
+    "date": "2026-03-15T10:30:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 模拟面试页面(记录列表+开始按钮)"
+  },
+  {
+    "hash": "c2201cbbd661fbe353043ecd3573093726542f48",
+    "date": "2026-03-15T11:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 帖子详情页(DOMPurify+评论区)"
+  },
+  {
+    "hash": "6694b3085ab194c99ff262927e214cacf9f6d989",
+    "date": "2026-03-15T11:28:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 模板详情弹窗+预览效果"
+  },
+  {
+    "hash": "8efa195f8cbd8c34f6bb41b4fab55811d749e680",
+    "date": "2026-03-15T13:05:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递创建/编辑弹窗"
+  },
+  {
+    "hash": "a9568d830335918c1dffcf50c23aa12e4d7a6eda",
+    "date": "2026-03-15T13:32:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试答题页面(题目+输入+提交)"
+  },
+  {
+    "hash": "0587b7b29d2ee3daea30d03fb1b7cefd2f51228e",
+    "date": "2026-03-15T14:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 评论发布+评论点赞按钮"
+  },
+  {
+    "hash": "9d4c50981fdc61a8853b267e80f66337d50e2a5c",
+    "date": "2026-03-15T14:28:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 使用模板创建简历(跳转编辑)"
+  },
+  {
+    "hash": "922dba83853bafbd2892afb846d961951f9031aa",
+    "date": "2026-03-15T14:55:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递状态更新+日志查看"
+  },
+  {
+    "hash": "50bdc54d031f5408ab34451b58603fd1b4e7ce85",
+    "date": "2026-03-15T15:22:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试详情(题目+答案+评分)"
+  },
+  {
+    "hash": "42edab40490bd9e69a2bee4d9905ba995f33ed29",
+    "date": "2026-03-15T15:50:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 帖子点赞/收藏交互"
+  },
+  {
+    "hash": "ebd19f15bf08b7dbaf261b6a456519c413c14645",
+    "date": "2026-03-15T16:18:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 我的简历页面(卡片+CRUD)"
+  },
+  {
+    "hash": "b95891ceffabde1a4b94fc6830bfc5205e4f4518",
+    "date": "2026-03-15T16:45:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递备注(添加/删除)"
+  },
+  {
+    "hash": "f504bdd61a66149421da2dc644d1fb5d1e695e0c",
+    "date": "2026-03-15T17:12:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试分类选择(卡片+封面图)"
+  },
+  {
+    "hash": "4624504d77a8186f3a498e1be0337c3dcd79fca7",
+    "date": "2026-03-16T10:05:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历编辑页(左右分栏+实时预览)"
+  },
+  {
+    "hash": "fede72b842539013098402eac50c93f6a10fa118",
+    "date": "2026-03-16T10:32:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 职位浏览页(Boss风格筛选)"
+  },
+  {
+    "hash": "de82deabc4b3d995d2955beebd96f588bc47f66c",
+    "date": "2026-03-16T11:00:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试三步向导(选简历→选分类→开始)"
+  },
+  {
+    "hash": "f6d3ffaccb2ef4ad934908d149c8950931dde0a1",
+    "date": "2026-03-16T11:28:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 个人资料页(编辑+头像+密码)"
+  },
+  {
+    "hash": "71a10f6adda9b3840ecda08c098c47dd6dfbfa4b",
+    "date": "2026-03-16T13:05:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历AI分析弹窗+AI生成面板"
+  },
+  {
+    "hash": "a2f3ef3814ebf49118d31e2da73d57e3ed62cf53",
+    "date": "2026-03-16T13:33:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 职位卡片/列表视图切换+无限滚动"
+  },
+  {
+    "hash": "1c05ddefae3c02213b343de1beaf046bb7992c78",
+    "date": "2026-03-16T14:00:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 能力雷达图(SVG多边形渲染)"
+  },
+  {
+    "hash": "b8294edfe64d0d0bb613f046e2f22f6d5ae4cce8",
+    "date": "2026-03-16T14:28:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 通知页面(类型筛选+标记已读)"
+  },
+  {
+    "hash": "d471509bbc7fd5c93216e591b03ca219a82b932c",
+    "date": "2026-03-16T14:55:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 用户中心(左侧菜单+右侧内容)"
+  },
+  {
+    "hash": "5a57a6ec928ca2ffeb36d7c604e0cfa1c9472118",
+    "date": "2026-03-16T15:22:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历AI润色按钮"
+  },
+  {
+    "hash": "716aaf57ec14e6ebb941990666e66a65188cf831",
+    "date": "2026-03-16T15:50:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递日历视图(月历+事件)"
+  },
+  {
+    "hash": "0eb3b5eecc1011d34c8f61c418d8395d175448e9",
+    "date": "2026-03-16T16:18:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "fix: 面试未登录提示优化"
+  },
+  {
+    "hash": "cb2081ad0c3f26249189e54cb5dd1ffdd4e203e1",
+    "date": "2026-03-16T16:45:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 我的帖子/我的收藏标签页"
+  },
+  {
+    "hash": "1f1482d74d82a34080326e1cad1d4e8802fa9b47",
+    "date": "2026-03-16T17:12:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 社区图片上传+第三方URL"
+  },
+  {
+    "hash": "7f10a41f1f8c7a8b4df96bb0211e3a0ed2067736",
+    "date": "2026-03-16T17:40:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 企业认证页面"
+  },
+  {
+    "hash": "bf01fd323fe6295529542114da7206e35cb55297",
+    "date": "2026-03-16T18:05:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 首页门户风格(Hero+职位+社区)"
+  },
+  {
+    "hash": "7827e349921455e4b7deb1e216cd56ae891b8ef2",
+    "date": "2026-03-16T18:32:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 关于页面+底部四栏导航"
+  },
+  {
+    "hash": "bf7f88583f6d073e90c774f866653d49c7951691",
+    "date": "2026-03-17T08:50:00+08:00",
+    "author": "TJbubble",
+    "msg": "chore: 初始化Vue3+Ant Design管理后台"
+  },
+  {
+    "hash": "76f8707d737869de88edd668983c0ff143eacc21",
+    "date": "2026-03-17T09:18:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 后台登录页(品牌+测试账号)"
+  },
+  {
+    "hash": "eda8c8e23b84bd955b47e3ef152741d44d49cac4",
+    "date": "2026-03-17T09:45:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: BasicLayout(侧边栏+路由守卫)"
+  },
+  {
+    "hash": "833e5d3ad1af8ee10ded1c36505e6ff2fe14b0de",
+    "date": "2026-03-17T10:12:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 仪表盘(统计+趋势图)"
+  },
+  {
+    "hash": "fa346ca5e4bdd632d32490401f207d65a34abcc0",
+    "date": "2026-03-17T10:38:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 用户管理(表格+CRUD)"
+  },
+  {
+    "hash": "424565d0dbe2a8c54eace96821604b2cd60c3368",
+    "date": "2026-03-17T11:05:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 社区帖子管理(审核+富文本编辑)"
+  },
+  {
+    "hash": "42db79e0277f1a83ec422a7399e684ac5ec8eca4",
+    "date": "2026-03-17T11:32:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 评论管理+分类管理"
+  },
+  {
+    "hash": "6655b64179c94a81dd4fde9c4573031f1de794f9",
+    "date": "2026-03-17T13:10:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历模板管理(可视化+代码编辑)"
+  },
+  {
+    "hash": "8af6e5f460313c5d3844f62677e4668f60d8d8e3",
+    "date": "2026-03-17T13:38:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 模板分类管理"
+  },
+  {
+    "hash": "bdebd2472506e306102a507a202d915f8a6b1d5c",
+    "date": "2026-03-17T14:05:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历管理(用户分组树+预览)"
+  },
+  {
+    "hash": "f7889c97f65a501806bd9d869edaa90d2ee32cd6",
+    "date": "2026-03-17T14:32:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 投递管理(管理员视图)"
+  },
+  {
+    "hash": "8fedce74c82a65726b3b68260162bad2b152eb30",
+    "date": "2026-03-17T15:00:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 职位管理(表格+卡片切换)"
+  },
+  {
+    "hash": "ccbfaf9f3f7d1630c3faca312774d594c160c0d4",
+    "date": "2026-03-17T15:28:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 企业管理页面"
+  },
+  {
+    "hash": "0b33448d2ce0eb73fd6828ad07f248f5f8180af6",
+    "date": "2026-03-17T15:55:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试题库管理(CRUD+类型统计)"
+  },
+  {
+    "hash": "20af2f804fcf5ca989dbeb64c0fabfe050914cbf",
+    "date": "2026-03-17T16:22:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试分类管理(封面上传)"
+  },
+  {
+    "hash": "fddb2c2ecd1c239d1b49bce2e87dea7773f52107",
+    "date": "2026-03-17T16:50:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试记录管理"
+  },
+  {
+    "hash": "e27dc8c47785df08988e339d49112b7508e93557",
+    "date": "2026-03-17T17:18:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 企业审核页面(表格+详情弹窗)"
+  },
+  {
+    "hash": "04036ff79ab3d9fb14e3420321a90c016bd6702b",
+    "date": "2026-03-17T17:45:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 系统设置+数据字典+AI配置"
+  },
+  {
+    "hash": "defadadd8f81e93cd4f117295a7aabeddfd116b4",
+    "date": "2026-03-17T18:10:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 消息通知管理"
+  },
+  {
+    "hash": "614d255bcdb5de07949820d95da9ac69df2e2a8c",
+    "date": "2026-03-18T09:10:00+08:00",
+    "author": "TJbubble",
+    "msg": "merge: 合入社区+用户模块"
+  },
+  {
+    "hash": "0154105f04540cf5cbd904987027da4197c841ed",
+    "date": "2026-03-18T09:45:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "merge: 合入简历AI模块"
+  },
+  {
+    "hash": "24ee00da95c656db3484f13f496c4d1edfabdf23",
+    "date": "2026-03-18T10:15:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "merge: 合入投递+职位模块"
+  },
+  {
+    "hash": "247143c8b2f7301207b46b4358bec437d0535da5",
+    "date": "2026-03-18T10:42:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "merge: 合入智能面试模块"
+  },
+  {
+    "hash": "57d5b969fc691e3ac38dd406bad62248e976ab84",
+    "date": "2026-03-18T11:20:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 管理端简历API路径修复(item前缀)"
+  },
+  {
+    "hash": "830153d89ef741b6b916eb0cb4d7e74441e9116c",
+    "date": "2026-03-18T11:48:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 简历渲染接口路径"
+  },
+  {
+    "hash": "658be186e2a6ebad9c854a342c86875accb41cb4",
+    "date": "2026-03-18T13:10:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "fix: 投递管理新增管理员API"
+  },
+  {
+    "hash": "24a048867cd4aabc11c70d0a58a48789628305b0",
+    "date": "2026-03-18T13:38:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "fix: 面试DTO添加categoryId/resumeId"
+  },
+  {
+    "hash": "e129d3e1ce42199505bf866c7eb3a096de3680c0",
+    "date": "2026-03-18T14:05:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: MySQL NULLS LAST兼容"
+  },
+  {
+    "hash": "b20e93e9b864f1e76851cbc89805ffe376e4107e",
+    "date": "2026-03-18T14:32:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 开放重定向漏洞"
+  },
+  {
+    "hash": "63da1c55e9dcc0fdb685dac37566384bc6b767a2",
+    "date": "2026-03-18T15:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: XSS防护"
+  },
+  {
+    "hash": "6a02361f87a07b64017606f1cc84571db81c0375",
+    "date": "2026-03-18T15:28:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 路由守卫(requireAuth)"
+  },
+  {
+    "hash": "950c2ee185bd90c6b90df797168b070d4fff8621",
+    "date": "2026-03-18T15:55:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 文件上传null检查"
+  },
+  {
+    "hash": "fa2d0e8b9c6f9b4ddd12ed810ea46776ff14e09e",
+    "date": "2026-03-18T16:22:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "fix: 公司状态DTO验证"
+  },
+  {
+    "hash": "82f15594eab324cbdf85f9554e88d5fa015ed55d",
+    "date": "2026-03-18T16:50:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "fix: 面试按分类筛选题目"
+  },
+  {
+    "hash": "6fd5c101a3e56c6357dceb2237bc672075a51eab",
+    "date": "2026-03-18T17:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 职位浏览量并发竞争"
+  },
+  {
+    "hash": "451e1f85eaa13b7f180ff2a36367c8b5b0f3499b",
+    "date": "2026-03-19T09:08:00+08:00",
+    "author": "TJbubble",
+    "msg": "merge: fix/integration合入develop"
+  },
+  {
+    "hash": "f3ce51a45c955897ef48aa54da3e088fc3ce11fc",
+    "date": "2026-03-19T09:35:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 全局自定义确认框组件"
+  },
+  {
+    "hash": "7e9a486cf8cb8b8169968f39e3e02e2c954e32d1",
+    "date": "2026-03-19T10:02:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: Toast SVG图标升级"
+  },
+  {
+    "hash": "766d1d8ca1cc33be9d9b02372177a36676db14ff",
+    "date": "2026-03-19T10:30:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 注册欢迎消息(系统自动发送)"
+  },
+  {
+    "hash": "ed56595d394a2155328196fbd6161ab05945d9ea",
+    "date": "2026-03-19T10:58:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 公告系统(发送+目标选择)"
+  },
+  {
+    "hash": "3002075404ce56bd7ae8b3f713b5429bc70d61f0",
+    "date": "2026-03-19T11:25:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 通知错误添加日志"
+  },
+  {
+    "hash": "16e549736505be2bb0bd2a90ca7f0dffc5a751f3",
+    "date": "2026-03-19T11:52:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "fix: 职位发布者头像显示"
+  },
+  {
+    "hash": "28ab28965d6c7035eb8d8fb8899ad761e5092f03",
+    "date": "2026-03-19T13:18:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "fix: 面试题目类型统计修复"
+  },
+  {
+    "hash": "42a42b91967551ddfd23f8c8ec0dca134d78428b",
+    "date": "2026-03-19T13:45:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: CORS环境变量化"
+  },
+  {
+    "hash": "5b5ed5ccc33352108abe8f0fb67291f7bf4db157",
+    "date": "2026-03-19T14:12:00+08:00",
+    "author": "TJbubble",
+    "msg": "style: 校园主题元素注入"
+  },
+  {
+    "hash": "c5d95b029d4f402078018c8bb872502af170736f",
+    "date": "2026-03-19T14:40:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 简历预览缩放调整"
+  },
+  {
+    "hash": "d8c3fe6ae912ea1734553fdaa4622f8599ea62b7",
+    "date": "2026-03-19T15:08:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "fix: 投递日历事件渲染"
+  },
+  {
+    "hash": "f21d9f14a32cf060f73677c5832b5da1d3257ed3",
+    "date": "2026-03-20T09:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 公告富文本编辑(wangeditor)"
+  },
+  {
+    "hash": "29b1fdef751378d579f0e638cb2a2489e7d7688a",
+    "date": "2026-03-20T09:42:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 用户搜索头像显示"
+  },
+  {
+    "hash": "0e0e174e4b86ce0c479f7fc2c6fa9180f560597a",
+    "date": "2026-03-20T10:10:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 简历编辑AI生成面板优化"
+  },
+  {
+    "hash": "e57520b568055643ae2eccadbacb9e211eaf3744",
+    "date": "2026-03-20T10:38:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 职位筛选扩展(31种岗位+可收起)"
+  },
+  {
+    "hash": "110f8ed142606840a37e0cf9f8950de43d06d879",
+    "date": "2026-03-20T11:05:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 面试三步向导优化"
+  },
+  {
+    "hash": "0a041f3a385360d1c3a7755690bb742e381af4f7",
+    "date": "2026-03-20T11:32:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 社区图片种子数据"
+  },
+  {
+    "hash": "b4b7dd998f537b0c30817c218f74228449234c75",
+    "date": "2026-03-20T13:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 移除未使用导入"
+  },
+  {
+    "hash": "582c96595bfca5f3853fb6cef3968c90264cb070",
+    "date": "2026-03-20T13:28:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 简历模板名称显示修复"
+  },
+  {
+    "hash": "1642041e474c600d90101d1536cab75d305af759",
+    "date": "2026-03-20T13:55:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "fix: 投递状态标签颜色"
+  },
+  {
+    "hash": "f5d271a8063d5f6f971add29cee4488735653a75",
+    "date": "2026-03-20T14:22:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "fix: 面试评分显示优化"
+  },
+  {
+    "hash": "cba05ca71c92e3b138ad7b9f1fe20aa8e4ff0105",
+    "date": "2026-03-21T09:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 头像上传后即时刷新"
+  },
+  {
+    "hash": "8886922f3328904deacafd8fe2d9ad73940c65b6",
+    "date": "2026-03-21T09:28:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 简历编辑实时预览优化"
+  },
+  {
+    "hash": "518851a6704b7282119f03b9a06371a53a4d2733",
+    "date": "2026-03-21T09:55:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "fix: 职位卡片投递按钮样式"
+  },
+  {
+    "hash": "0e43a2dc787835b472ec616b9c3222326193a2f9",
+    "date": "2026-03-21T10:22:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "fix: 面试分类图标显示"
+  },
+  {
+    "hash": "c87638f3979295cf818f22071bec463957a24879",
+    "date": "2026-03-21T10:50:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix: 注册表单布局优化"
+  },
+  {
+    "hash": "2eeaa53beec879feb314131d9867ed01f9682ae8",
+    "date": "2026-03-21T11:18:00+08:00",
+    "author": "TJbubble",
+    "msg": "chore: 代码清理+lint修复"
+  },
+  {
+    "hash": "056ed44d0e17114086aa63897d97a46375bb165c",
+    "date": "2026-03-21T14:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "docs: 更新项目文档"
+  },
+  {
+    "hash": "158633c8395106901a166ee4e67b5b6a0d2d08cf",
+    "date": "2026-03-22T10:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "release: v1.0.0 - 基于AI的校园招聘服务平台正式版"
+  },
+  {
+    "hash": "34bcd1557edef5987a166a7af4df7dee9ef19001",
+    "date": "2026-03-24T09:30:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 服务端核心架构升级(模块注册/异常过滤/拦截器/种子数据)"
+  },
+  {
+    "hash": "78f72606e6dd2e1f6f3987ce43c976087890edd2",
+    "date": "2026-03-25T10:00:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 客户端核心架构升级(路由/布局/样式/请求工具)"
+  },
+  {
+    "hash": "21b53db1d8ea0f9aea4b314cd100fc45f6271965",
+    "date": "2026-03-25T10:28:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 管理后台核心架构升级(路由/布局/状态/请求)"
+  },
+  {
+    "hash": "56b17fc4f9838c762e2d7f001d50ae5c0f261d76",
+    "date": "2026-03-27T09:30:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat(chat): 新增即时通讯模块(WebSocket+会话+消息)"
+  },
+  {
+    "hash": "f815fa60c70cfca126439cee4f03df7914cea75c",
+    "date": "2026-03-27T10:00:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat(chat): 客户端聊天界面+API接入"
+  },
+  {
+    "hash": "2e1b71f22595fb873ae05de2885531a37c5f3cd1",
+    "date": "2026-03-29T10:15:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "fix(interview): AI评分优化+题库英文化+DTO校验+控制器升级"
+  },
+  {
+    "hash": "162c32e1f73a904562e22c6438db92545078e4c8",
+    "date": "2026-03-31T09:30:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix(community): 安全加固(RolesGuard+计数器防负数+播种优化)"
+  },
+  {
+    "hash": "17538b0719eb7e81f88db9fe53a972e63550b156",
+    "date": "2026-03-31T10:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "fix(auth): 注册邮箱唯一性校验+DTO增强+单元测试"
+  },
+  {
+    "hash": "ad987b04057a2a5ff9c8c467ad96a9a9c44fb16d",
+    "date": "2026-04-02T10:00:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "fix(application): 状态流转校验+WRITTEN_TEST+DTO增强"
+  },
+  {
+    "hash": "b0a40fadc8005ad3876c86a0a031c09aa996fcb8",
+    "date": "2026-04-02T10:28:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "fix: 简历/企业/职位模块业务逻辑修复与DTO增强"
+  },
+  {
+    "hash": "b5d47aaab83b33a3e4b24e93023235721ad48919",
+    "date": "2026-04-04T10:15:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat(system): AI运行时服务+公告记录+字典播种优化"
+  },
+  {
+    "hash": "b38f2946c674370379c776ad3a6f46cacb62a517",
+    "date": "2026-04-05T09:30:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "fix(user+notification): 用户DTO增强+通知实体与服务优化"
+  },
+  {
+    "hash": "e4d736545be47886382bc2822082ffd3b81d49af",
+    "date": "2026-04-05T10:00:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat(i18n): 服务端国际化框架(后端消息翻译)"
+  },
+  {
+    "hash": "ff8e53e3db387246a2c823c701642c2db5fc161c",
+    "date": "2026-04-07T10:00:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat(i18n): 客户端+管理端国际化框架搭建(词条/切换组件)"
+  },
+  {
+    "hash": "a742011d43af0c3b7e05731b47bcb644efb429c9",
+    "date": "2026-04-07T10:28:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 客户端职位/企业/首页视图升级与国际化"
+  },
+  {
+    "hash": "081cadb5302d3aa06842bf684432b7e0e8ac4c07",
+    "date": "2026-04-09T09:30:00+08:00",
+    "author": "siyuanWang348",
+    "msg": "feat: 客户端简历/面试/投递视图升级+API优化"
+  },
+  {
+    "hash": "834d9d74def911cdf52183f63c1b14b91980c3aa",
+    "date": "2026-04-09T10:00:00+08:00",
+    "author": "AlinaZLY",
+    "msg": "feat: 客户端认证/社区/个人中心/通知视图国际化"
+  },
+  {
+    "hash": "e540bb1c529d1692d0d2d3fd241e8be609455a4b",
+    "date": "2026-04-10T10:15:00+08:00",
+    "author": "JunyiZ-hub",
+    "msg": "feat: 管理后台核心管理视图升级(仪表盘/投递/企业/社区/审核)"
+  },
+  {
+    "hash": "55cdfb5f7bfa2742676cfa634b1e93fe72d2d412",
+    "date": "2026-04-10T10:45:00+08:00",
+    "author": "TJbubble",
+    "msg": "feat: 管理后台系统设置/模板/i18n管理视图"
+  },
+  {
+    "hash": "6bcf5064eb3341b6461402189f6ce9b11b9c6fca",
+    "date": "2026-04-11T09:30:00+08:00",
+    "author": "TJbubble",
+    "msg": "chore: 清理废弃审计文档+更新gitignore"
+  }
+]
