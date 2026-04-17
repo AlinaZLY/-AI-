@@ -19,11 +19,16 @@ import { CompanyModule } from './modules/company/company.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { RedisModule } from './common/redis/redis.module';
 import { MockDataSeed } from './common/seed/mock-data.seed';
+import { PrivateUploadController } from './common/controllers/private-upload.controller';
 import { databaseConfig } from './config/database.config';
 import { redisConfig } from './config/redis.config';
 import { User } from './modules/user/entities/user.entity';
 import { Company } from './modules/company/entities/company.entity';
 import { Job } from './modules/job/entities/job.entity';
+import { Resume } from './modules/resume/entities/resume.entity';
+import { Application } from './modules/application/entities/application.entity';
+import { Interview } from './modules/interview/entities/interview.entity';
+import { InterviewQuestion } from './modules/interview/entities/interview-question.entity';
 
 @Module({
   imports: [
@@ -66,8 +71,9 @@ import { Job } from './modules/job/entities/job.entity';
     JobModule,          // 职位管理模块
     CompanyModule,      // 企业管理模块
     ChatModule,         // 聊天通讯模块
-    TypeOrmModule.forFeature([User, Company, Job]),
+    TypeOrmModule.forFeature([User, Company, Job, Resume, Application, Interview, InterviewQuestion]),
   ],
+  controllers: [PrivateUploadController],
   providers: [MockDataSeed],
 })
 export class AppModule {}

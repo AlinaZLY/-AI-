@@ -19,14 +19,15 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '10mb' }));
   app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
-  // 确保上传目录存在
-  const uploadsDir = join(process.cwd(), 'uploads', 'avatars');
-  if (!existsSync(uploadsDir)) {
-    mkdirSync(uploadsDir, { recursive: true });
+  // 仅公开展示类资源；证照、简历、语音等敏感文件通过受控接口访问。
+  const publicUploadDirs = ['avatars', 'icons', 'posts', 'logos'];
+  for (const dir of publicUploadDirs) {
+    const uploadDir = join(process.cwd(), 'uploads', dir);
+    if (!existsSync(uploadDir)) {
+      mkdirSync(uploadDir, { recursive: true });
+    }
+    app.useStaticAssets(uploadDir, { prefix: `/uploads/${dir}` });
   }
-
-  // 静态文件服务 — 头像等上传文件可通过 /uploads/ 访问
-  app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads' });
 
   // 所有接口统一添加 /api 前缀
   app.setGlobalPrefix('api');

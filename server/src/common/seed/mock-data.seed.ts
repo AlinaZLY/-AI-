@@ -74,17 +74,13 @@ export class MockDataSeed implements OnModuleInit {
       }));
     }
 
-    // Force re-seed: clear old Chinese data
+    // 仅在初次启动（无任何企业/职位数据）时填充示例数据，避免破坏运行时业务数据。
     const [jobCount, companyCount] = await Promise.all([
       this.jobRepo.count(),
       this.companyRepo.count(),
     ]);
     if (jobCount > 0 || companyCount > 0) {
-      await this.jobRepo.query('DELETE FROM `messages`');
-      await this.jobRepo.query('DELETE FROM `conversations`');
-      await this.jobRepo.createQueryBuilder().delete().from(Job).execute();
-      await this.companyRepo.createQueryBuilder().delete().from(Company).execute();
-      console.log('Cleared old jobs/companies for English re-seed');
+      return;
     }
 
     const hashedPwd = await bcrypt.hash('123456', 10);
