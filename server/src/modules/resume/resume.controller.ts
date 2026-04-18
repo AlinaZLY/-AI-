@@ -95,8 +95,9 @@ export class ResumeController {
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: join(process.cwd(), 'uploads', 'resumes'),
-      filename: (_req, file, cb) => {
-        const uniqueName = `tpl-${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
+      filename: (req, file, cb) => {
+        const userId = (req as any).user?.id || 'admin';
+        const uniqueName = `tpl-u${userId}-${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
         cb(null, uniqueName);
       },
     }),
@@ -143,14 +144,21 @@ export class ResumeController {
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: join(process.cwd(), 'uploads', 'resumes'),
-      filename: (_req, file, cb) => {
-        const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
+      filename: (req, file, cb) => {
+        const userId = (req as any).user?.id || 'unknown';
+        const uniqueName = `resume-u${userId}-${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
         cb(null, uniqueName);
       },
     }),
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-      if (/\.(pdf|doc|docx)$/i.test(file.originalname)) {
+      const allowedExt = /\.(pdf|doc|docx)$/i.test(file.originalname);
+      const allowedMime = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ].includes(file.mimetype);
+      if (allowedExt && allowedMime) {
         cb(null, true);
       } else {
         cb(new Error('仅支持 PDF/DOC/DOCX 格式'), false);
@@ -161,12 +169,23 @@ export class ResumeController {
     @Param('id', ParseIntPipe) id: number,
     @Request() req,
     @UploadedFile() file: Express.Multer.File,
+    @Query('locale') localeQuery?: string,
+    @Body('locale') localeBody?: string,
   ) {
+    const locale = localeQuery || localeBody;
+    console.log('[Upload] id=', id, 'userId=', req.user?.id, 'file=', file?.originalname, 'locale=', locale);
     if (!file) {
       throw new BadRequestException('请上传文件');
     }
-    const filePath = `/uploads/resumes/${file.filename}`;
-    return this.resumeService.saveFile(id, req.user.id, filePath);
+    const filePath = `/api/private-uploads/resumes/${file.filename}`;
+    try {
+      const result = await this.resumeService.saveFile(id, req.user.id, filePath, file.path, locale);
+      console.log('[Upload] success, resumeId=', result?.id);
+      return result;
+    } catch (err) {
+      console.error('[Upload] ERROR:', err?.message || err);
+      throw err;
+    }
   }
 
   @Post('item/:id/analyze')
@@ -191,8 +210,8 @@ export class ResumeController {
 
   @Get('item/:id/render')
   @UseGuards(JwtAuthGuard)
-  render(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    return this.resumeService.renderResume(id, req.user.id);
+  render(@Param('id', ParseIntPipe) id: number, @Request() req, @Query('locale') locale?: string) {
+    return this.resumeService.renderResume(id, req.user.id, locale);
   }
 
   @Get(':id')

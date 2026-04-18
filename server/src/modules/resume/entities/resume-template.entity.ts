@@ -29,7 +29,7 @@ export class ResumeTemplate {
   @Column({ length: 200, nullable: true, comment: '模板描述' })
   description: string;
 
-  @Column({ length: 30, default: '通用', comment: '模板分类' })
+  @Column({ length: 30, default: 'General', comment: '模板分类' })
   category: string;
 
   @Column({ default: true, comment: '是否为系统内置模板' })

@@ -20,7 +20,7 @@ export class Resume {
   @Column({ length: 100, comment: '简历标题' })
   title: string;
 
-  @Column({ length: 50, nullable: true, comment: '目标岗位' })
+  @Column({ length: 255, nullable: true, comment: '目标岗位' })
   targetPosition: string;
 
   @Column({ default: 1, comment: '版本号' })
@@ -37,6 +37,9 @@ export class Resume {
 
   @Column({ default: false, comment: '是否为默认简历' })
   isDefault: boolean;
+
+  @Column({ default: true, comment: '是否为草稿' })
+  isDraft: boolean;
 
   @Column({ nullable: true, comment: 'AI 分析结果(JSON)' })
   analysisResult: string;

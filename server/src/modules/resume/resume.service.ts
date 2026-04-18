@@ -1,14 +1,19 @@
 import { Injectable, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { escapeLike } from '../../common/utils/query.util';
 import { ConfigService } from '@nestjs/config';
 import * as mammoth from 'mammoth';
+import * as fs from 'fs';
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { PDFParse } = require('pdf-parse');
 import { Resume } from './entities/resume.entity';
 import { ResumeTemplate } from './entities/resume-template.entity';
 import { Job } from '../job/entities/job.entity';
 import { CreateResumeDto } from './dto/create-resume.dto';
 import { UpdateResumeDto } from './dto/update-resume.dto';
 import { AiRuntimeService } from '../system/ai-runtime.service';
+import { getResumeTemplateSeedData } from './resume-templates';
 
 @Injectable()
 export class ResumeService implements OnModuleInit {
@@ -21,50 +26,18 @@ export class ResumeService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Force re-seed: clear old Chinese templates
-    const existingCount = await this.templateRepo.count();
-    if (existingCount > 0) {
-      await this.templateRepo.clear();
-      console.log('Cleared old resume templates for English re-seed');
-    }
+    await this.resumeRepo
+      .createQueryBuilder()
+      .update()
+      .set({ isDraft: false })
+      .where('isDraft = :draft AND content IS NOT NULL', { draft: true })
+      .execute()
+      .catch(() => {});
 
-    const count = await this.templateRepo.count();
-    if (count < 10) {
-      const seeds = this.getTemplateSeedData();
-      const existingNames = (await this.templateRepo.find({ select: ['name'] })).map(t => t.name);
-      const newSeeds = seeds.filter(s => !existingNames.includes(s.name));
-      if (newSeeds.length > 0) {
-        await this.templateRepo.save(this.templateRepo.create(newSeeds));
-        console.log(`简历模板种子数据已补充 (新增 ${newSeeds.length} 个模板)`);
-      }
-    }
-  }
-
-  private getTemplateSeedData() {
-    const baseHtml = this.getDefaultTemplateHtml();
-    const baseCss = this.getDefaultTemplateCss();
-
-    const leftBarHtml = `<div class="resume two-col"><div class="sidebar"><div class="avatar-wrap"><img class="avatar-img" src="{{avatar}}" alt="Avatar" /></div><div class="sidebar-section"><h3>Contact</h3><p>{{phone}}</p><p>{{email}}</p></div><div class="sidebar-section"><h3>Education</h3><p>{{school}}</p><p>{{major}}</p><p>{{graduationYear}}</p></div><div class="sidebar-section"><h3>Skills</h3><div class="skills">{{skills}}</div></div></div><div class="main"><div class="section"><h2>About Me</h2><p>{{selfIntro}}</p></div><div class="section"><h2>Work Experience</h2>{{experience}}</div><div class="section"><h2>Projects</h2>{{projects}}</div><div class="section"><h2>Awards & Certificates</h2>{{awards}}</div><div class="section"><h2>Activities</h2>{{activities}}</div></div></div>`;
-    const leftBarCss = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Microsoft YaHei',sans-serif;color:#333;background:#fff}.two-col{display:flex;min-height:100vh}.sidebar{width:240px;background:COLOR;color:#fff;padding:30px 20px;flex-shrink:0}.avatar-wrap{text-align:center;margin-bottom:20px}.avatar-img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.3)}.sidebar-section{margin-bottom:20px}.sidebar-section h3{font-size:14px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.3)}.sidebar-section p{font-size:13px;margin-bottom:4px;opacity:0.9}.sidebar .skills{display:flex;flex-wrap:wrap;gap:6px}.sidebar .skill-tag{background:rgba(255,255,255,0.2);color:#fff;padding:2px 8px;border-radius:3px;font-size:12px}.main{flex:1;padding:30px}.section{margin-bottom:20px}.section h2{font-size:18px;color:COLOR;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid COLOR}.section p{line-height:1.8;font-size:14px}.item{margin-bottom:10px;font-size:14px;line-height:1.6}.item strong{color:#333}.item .time{color:#999;font-size:13px;float:right}.item p{color:#666;margin-top:4px}@media print{body{padding:0}@page{margin:10mm}}`;
-
-    const topBannerHtml = `<div class="resume"><div class="banner"><h1>{{name}}</h1><div class="contact-row"><span>{{phone}}</span><span>{{email}}</span><span>{{school}} · {{major}}</span></div></div><div class="body"><div class="section"><h2>About Me</h2><p>{{selfIntro}}</p></div><div class="section"><h2>Skills</h2><div class="skills">{{skills}}</div></div><div class="grid"><div class="section"><h2>Education</h2>{{education}}</div><div class="section"><h2>Work Experience</h2>{{experience}}</div></div><div class="section"><h2>Projects</h2>{{projects}}</div><div class="grid"><div class="section"><h2>Awards & Certificates</h2>{{awards}}</div><div class="section"><h2>Activities</h2>{{activities}}</div></div></div></div>`;
-    const topBannerCss = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Microsoft YaHei',sans-serif;color:#333;background:#fff}.banner{background:linear-gradient(135deg,COLOR,COLORdd);color:#fff;padding:40px;text-align:center}.banner h1{font-size:32px;margin-bottom:10px;letter-spacing:4px}.contact-row{display:flex;justify-content:center;gap:20px;font-size:14px;opacity:0.9}.body{padding:30px 40px}.section{margin-bottom:20px}.section h2{font-size:16px;color:COLOR;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #eee}.section p{line-height:1.8;font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.item{margin-bottom:10px;font-size:14px;line-height:1.6}.item strong{color:#333}.item .time{color:#999;font-size:13px;float:right}.item p{color:#666;margin-top:4px}.skills{display:flex;flex-wrap:wrap;gap:8px}.skill-tag{background:COLOR10;color:COLOR;padding:3px 12px;border-radius:20px;font-size:13px;border:1px solid COLOR30}@media print{.banner{padding:24px}body{padding:0}@page{margin:10mm}}`;
-
-    const timelineHtml = `<div class="resume"><div class="header"><h1>{{name}}</h1><div class="contact">{{phone}} · {{email}} · {{school}} {{major}} {{graduationYear}}</div></div><div class="section"><h2>About Me</h2><p>{{selfIntro}}</p></div><div class="section"><h2>Education</h2><div class="timeline">{{education}}</div></div><div class="section"><h2>Work Experience</h2><div class="timeline">{{experience}}</div></div><div class="section"><h2>Projects</h2><div class="timeline">{{projects}}</div></div><div class="section"><h2>Awards & Certificates</h2><div class="timeline">{{awards}}</div></div><div class="section"><h2>Activities</h2><div class="timeline">{{activities}}</div></div><div class="section"><h2>Skills</h2><div class="skills">{{skills}}</div></div></div>`;
-    const timelineCss = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Microsoft YaHei',sans-serif;color:#333;background:#fff;padding:40px}.resume{max-width:800px;margin:0 auto}.header{margin-bottom:24px;padding-bottom:16px;border-bottom:3px solid COLOR}.header h1{font-size:30px;color:COLOR;margin-bottom:6px}.contact{font-size:14px;color:#666}.section{margin-bottom:22px}.section h2{font-size:16px;color:COLOR;margin-bottom:12px;display:flex;align-items:center;gap:8px}.section h2::before{content:'';width:4px;height:16px;background:COLOR;border-radius:2px}.section p{line-height:1.8;font-size:14px}.timeline{border-left:2px solid COLOR30;padding-left:16px}.item{margin-bottom:12px;position:relative;font-size:14px;line-height:1.6}.item::before{content:'';position:absolute;left:-21px;top:6px;width:10px;height:10px;background:COLOR;border-radius:50%}.item strong{color:#333}.item .time{color:#999;font-size:13px;float:right}.item p{color:#666;margin-top:4px}.skills{display:flex;flex-wrap:wrap;gap:8px}.skill-tag{background:COLOR10;color:COLOR;padding:3px 12px;border-radius:4px;font-size:13px}@media print{body{padding:20px}@page{margin:15mm}}`;
-
-    return [
-      { name: 'Clean Standard', description: 'A clean template suitable for most positions, blue theme', category: 'General', htmlContent: baseHtml, cssContent: baseCss, sort: 1 },
-      { name: 'Deep Blue Pro', description: 'Deep blue theme, highlights technical skills', category: 'Tech', htmlContent: baseHtml, cssContent: baseCss.replace(/#1677ff/g, '#2f54eb'), sort: 2 },
-      { name: 'Elegant Purple', description: 'Purple theme, ideal for design and product roles', category: 'Design', htmlContent: baseHtml, cssContent: baseCss.replace(/#1677ff/g, '#722ed1'), sort: 3 },
-      { name: 'Classic Sidebar', description: 'Two-column layout with dark sidebar', category: 'General', htmlContent: leftBarHtml, cssContent: leftBarCss.replace(/COLOR/g, '#2f3542'), sort: 4 },
-      { name: 'Blue Sidebar', description: 'Blue sidebar, fresh and modern', category: 'Tech', htmlContent: leftBarHtml, cssContent: leftBarCss.replace(/COLOR/g, '#0984e3'), sort: 5 },
-      { name: 'Green Sidebar', description: 'Dark green sidebar, professional and elegant', category: 'Finance', htmlContent: leftBarHtml, cssContent: leftBarCss.replace(/COLOR/g, '#00695c'), sort: 6 },
-      { name: 'Top Banner', description: 'Gradient top banner with two-column content', category: 'General', htmlContent: topBannerHtml, cssContent: topBannerCss.replace(/COLOR/g, '#1677ff'), sort: 7 },
-      { name: 'Warm Banner', description: 'Orange-red banner, ideal for marketing roles', category: 'Marketing', htmlContent: topBannerHtml, cssContent: topBannerCss.replace(/COLOR/g, '#e17055'), sort: 8 },
-      { name: 'Timeline', description: 'Left timeline layout, emphasizes experience', category: 'General', htmlContent: timelineHtml, cssContent: timelineCss.replace(/COLOR/g, '#1677ff'), sort: 9 },
-      { name: 'Burgundy Timeline', description: 'Burgundy timeline, suitable for liberal arts positions', category: 'Education', htmlContent: timelineHtml, cssContent: timelineCss.replace(/COLOR/g, '#a0522d'), sort: 10 },
-    ];
+    await this.templateRepo.clear();
+    const seeds = getResumeTemplateSeedData();
+    await this.templateRepo.save(this.templateRepo.create(seeds));
+    console.log(`简历模板已重新初始化 (${seeds.length} 个模板)`);
   }
 
   async findAllAdmin(page = 1, pageSize = 10, keyword?: string, userId?: number) {
@@ -79,7 +52,7 @@ export class ResumeService implements OnModuleInit {
     if (keyword) {
       qb.andWhere(
         '(resume.title LIKE :kw OR user.username LIKE :kw OR user.nickname LIKE :kw)',
-        { kw: `%${keyword}%` },
+        { kw: `%${escapeLike(keyword)}%` },
       );
     }
 
@@ -97,6 +70,7 @@ export class ResumeService implements OnModuleInit {
       ...dto,
       userId,
       isDefault: existingCount === 0,
+      isDraft: true,
       content: dto.content || this.getDefaultContent(),
     });
     return this.resumeRepo.save(resume);
@@ -106,7 +80,7 @@ export class ResumeService implements OnModuleInit {
     return this.resumeRepo.find({
       where: { userId },
       order: { isDefault: 'DESC', updatedAt: 'DESC' },
-      select: ['id', 'title', 'targetPosition', 'version', 'templateId', 'isDefault', 'filePath', 'createdAt', 'updatedAt'],
+      select: ['id', 'title', 'targetPosition', 'version', 'templateId', 'isDefault', 'isDraft', 'filePath', 'createdAt', 'updatedAt'],
     });
   }
 
@@ -120,6 +94,7 @@ export class ResumeService implements OnModuleInit {
     const resume = await this.resumeRepo.findOne({ where: { id, userId } });
     if (!resume) throw new NotFoundException('简历不存在');
     Object.assign(resume, dto);
+    if (resume.isDraft) resume.isDraft = false;
     return this.resumeRepo.save(resume);
   }
 
@@ -135,7 +110,7 @@ export class ResumeService implements OnModuleInit {
 
     const copy = this.resumeRepo.create({
       userId,
-      title: `${source.title} (副本)`,
+      title: `${source.title} (Copy)`,
       targetPosition: source.targetPosition,
       templateId: source.templateId,
       content: source.content,
@@ -153,11 +128,179 @@ export class ResumeService implements OnModuleInit {
     return { message: '已设为默认简历' };
   }
 
-  async saveFile(id: number, userId: number, filePath: string) {
+  async saveFile(id: number, userId: number, filePath: string, diskPath?: string, locale?: string) {
     const resume = await this.resumeRepo.findOne({ where: { id, userId } });
     if (!resume) throw new NotFoundException('简历不存在');
     resume.filePath = filePath;
+
+    // Extract text content from the uploaded file
+    if (diskPath) {
+      try {
+        let text = '';
+        const ext = diskPath.split('.').pop()?.toLowerCase();
+        if (ext === 'pdf') {
+          const buf = fs.readFileSync(diskPath);
+          const parser = new PDFParse({ data: buf, verbosity: 0 });
+          await parser.load();
+          const result = await parser.getText();
+          text = result.text || '';
+        } else if (ext === 'docx') {
+          const result = await mammoth.extractRawText({ path: diskPath });
+          text = result.value || '';
+        }
+        if (text.trim()) {
+          const parsed = await this.aiParseResumeText(text, locale);
+          resume.content = { ...(resume.content || this.getDefaultContent()), ...parsed };
+        }
+      } catch (e) {
+        console.warn('Resume file text extraction failed:', e?.message || e);
+      }
+    }
+
     return this.resumeRepo.save(resume);
+  }
+
+  private async aiParseResumeText(text: string, locale?: string): Promise<Record<string, any>> {
+    // Truncate very long texts to stay within token limits
+    const truncated = text.length > 6000 ? text.slice(0, 6000) : text;
+
+    const configured = await this.aiRuntimeService.isConfigured();
+    if (!configured) {
+      return this.regexParseResumeText(text);
+    }
+
+    try {
+      const aiResult = await this.aiRuntimeService.chatJson<{
+        basicInfo?: { name?: string; phone?: string; email?: string; school?: string; major?: string; graduationYear?: string };
+        education?: Array<{ school: string; major: string; startDate: string; endDate: string }>;
+        experience?: Array<{ company: string; position: string; startDate: string; endDate: string; description: string }>;
+        projects?: Array<{ name: string; startDate: string; endDate: string; description: string }>;
+        awards?: Array<{ name: string; date: string; description: string }>;
+        activities?: Array<{ organization: string; role: string; startDate: string; endDate: string; description: string }>;
+        skills?: string[];
+        selfIntro?: string;
+        jobIntention?: { targetPosition: string; expectedSalary: string; preferredCity: string; workType: string };
+      }>({
+        scene: 'resume_parse',
+        maxTokens: 3000,
+        systemPrompt: (locale?.startsWith('en') ? [
+          'You are a resume parsing expert. Extract structured information from the resume text provided by the user. Output strict JSON only, no markdown.',
+          'JSON structure:',
+          '{',
+          '  "basicInfo": {"name":"","phone":"","email":"","school":"","major":"","graduationYear":"e.g. 2026"},',
+          '  "education": [{"school":"","major":"","startDate":"e.g. 2022.09","endDate":"e.g. 2026.06"}],',
+          '  "experience": [{"company":"","position":"","startDate":"e.g. 2025.06","endDate":"e.g. 2025.09","description":""}],',
+          '  "projects": [{"name":"","startDate":"","endDate":"","description":""}],',
+          '  "awards": [{"name":"","date":"e.g. 2025.06","description":""}],',
+          '  "activities": [{"organization":"","role":"","startDate":"","endDate":"","description":""}],',
+          '  "skills": ["skill1","skill2"],',
+          '  "selfIntro": "",',
+          '  "jobIntention": {"targetPosition":"","expectedSalary":"","preferredCity":"","workType":""}',
+          '}',
+          'Requirements:',
+          '1. Extract strictly from the original text. Do NOT invent information. Leave empty strings or empty arrays for missing fields.',
+          '2. Dates should use YYYY.MM format (e.g. 2025.06). Year-only is fine as YYYY.',
+          '3. Keep original descriptions in full, do not abbreviate.',
+          '4. Split skills into individual items (e.g. ["Java","Spring Boot","MySQL"]).',
+          '5. All output values MUST be in English. Translate Chinese content to English.',
+        ] : [
+          '你是一名简历解析专家。请从用户提供的简历原文中提取结构化信息，输出严格 JSON，不要输出 markdown。',
+          'JSON 结构如下：',
+          '{',
+          '  "basicInfo": {"name":"姓名","phone":"手机号","email":"邮箱","school":"学校","major":"专业","graduationYear":"毕业年份如2026"},',
+          '  "education": [{"school":"学校名","major":"专业","startDate":"如 2022.09","endDate":"如 2026.06"}],',
+          '  "experience": [{"company":"公司名","position":"岗位","startDate":"如 2025.06","endDate":"如 2025.09","description":"工作描述"}],',
+          '  "projects": [{"name":"项目名","startDate":"","endDate":"","description":"项目描述"}],',
+          '  "awards": [{"name":"奖项/证书名","date":"如 2025.06","description":"说明"}],',
+          '  "activities": [{"organization":"组织名","role":"职务","startDate":"","endDate":"","description":"描述"}],',
+          '  "skills": ["技能1","技能2"],',
+          '  "selfIntro": "个人简介/自我评价",',
+          '  "jobIntention": {"targetPosition":"目标岗位","expectedSalary":"","preferredCity":"","workType":""}',
+          '}',
+          '要求：',
+          '1. 严格从原文提取，不要编造不存在的信息，提取不到的字段留空字符串或空数组',
+          '2. 日期统一格式为 YYYY.MM（如 2025.06），仅有年份则写 YYYY',
+          '3. description 字段保留原文描述，不要缩写或省略',
+          '4. skills 拆分为独立技能词（如 ["Java","Spring Boot","MySQL"]），不要合并',
+          '5. 所有输出字段值必须使用中文。如果简历原文是英文，请翻译为中文输出。',
+        ]).join('\n'),
+        userPrompt: truncated,
+      });
+
+      // Merge AI result with default structure
+      const content = this.getDefaultContent();
+      if (aiResult.basicInfo) {
+        content.basicInfo = { ...content.basicInfo, ...aiResult.basicInfo };
+      }
+      if (Array.isArray(aiResult.education) && aiResult.education.length) {
+        content.education = aiResult.education;
+      }
+      if (Array.isArray(aiResult.experience) && aiResult.experience.length) {
+        content.experience = aiResult.experience;
+      }
+      if (Array.isArray(aiResult.projects) && aiResult.projects.length) {
+        content.projects = aiResult.projects;
+      }
+      if (Array.isArray(aiResult.awards) && aiResult.awards.length) {
+        content.awards = aiResult.awards;
+      }
+      if (Array.isArray(aiResult.activities) && aiResult.activities.length) {
+        content.activities = aiResult.activities;
+      }
+      if (Array.isArray(aiResult.skills) && aiResult.skills.length) {
+        content.skills = aiResult.skills;
+      }
+      if (aiResult.selfIntro) content.selfIntro = aiResult.selfIntro;
+      if (aiResult.jobIntention) {
+        content.jobIntention = { ...(content.jobIntention || {}), ...aiResult.jobIntention };
+      }
+      return content;
+    } catch (e) {
+      console.warn('AI resume parsing failed, falling back to regex:', e?.message || e);
+      return this.regexParseResumeText(text);
+    }
+  }
+
+  private regexParseResumeText(text: string): Record<string, any> {
+    const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+    const content: Record<string, any> = this.getDefaultContent();
+
+    const phoneMatch = text.match(/(1[3-9]\d{9})/) || text.match(/(\+?\d{2,3}[\s-]?\d{3,4}[\s-]?\d{4})/);
+    if (phoneMatch) content.basicInfo.phone = phoneMatch[1];
+    const emailMatch = text.match(/([\w.+-]+@[\w-]+\.[\w.]+)/);
+    if (emailMatch) content.basicInfo.email = emailMatch[1];
+
+    for (const line of lines.slice(0, 5)) {
+      const clean = line.replace(/[\s|·•\-—]/g, '').trim();
+      if (clean.length >= 2 && clean.length <= 8 && !/[\d@]/.test(clean)
+        && !/^(education|experience|skills|projects|awards|contact|summary|objective|about|work|personal|self|profile)/i.test(clean)
+        && !/^(教育|经历|技能|项目|奖|联系|个人|自我|工作|实习|荣誉|证书|活动)/i.test(clean)) {
+        content.basicInfo.name = clean;
+        break;
+      }
+    }
+
+    const skillPats = [/(?:skills?|技能|技术栈|专业技能)[：:\s]*([^\n]+)/i, /(?:熟[悉练]|掌握)[：:\s]*([^\n]+)/i];
+    for (const pat of skillPats) {
+      const m = text.match(pat);
+      if (m) content.skills.push(...m[1].split(/[,，、;；|/]/).map(s => s.trim()).filter(s => s && s.length < 30));
+    }
+    content.skills = [...new Set(content.skills)];
+
+    const eduPat = /(?:university|college|学院|大学|School of)/gi;
+    for (const line of lines) {
+      if (eduPat.test(line)) {
+        const y = line.match(/(20\d{2})/);
+        content.education.push({ school: line.replace(/\d{4}[\s\-~至]+\d{4}/, '').trim().slice(0, 60), major: '', startDate: y?.[1] || '', endDate: '' });
+        if (content.education.length >= 3) break;
+      }
+    }
+
+    if (!content.selfIntro && !content.skills.length && !content.education.length) {
+      content.selfIntro = lines.slice(0, 30).join('\n').slice(0, 1000);
+    }
+
+    return content;
   }
 
   async getTemplates(page = 1, pageSize = 20, category?: string, keyword?: string) {
@@ -167,7 +310,7 @@ export class ResumeService implements OnModuleInit {
       qb.andWhere('tpl.category = :category', { category });
     }
     if (keyword) {
-      qb.andWhere('(tpl.name LIKE :kw OR tpl.description LIKE :kw)', { kw: `%${keyword}%` });
+      qb.andWhere('(tpl.name LIKE :kw OR tpl.description LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
     }
 
     qb.orderBy('tpl.sort', 'ASC')
@@ -266,7 +409,6 @@ export class ResumeService implements OnModuleInit {
   }
 
   async optimize(id: number, userId: number, body?: Record<string, any>) {
-    console.log('[optimize] body received:', JSON.stringify(body));
     const resume = await this.resumeRepo.findOne({ where: { id, userId } });
     if (!resume) throw new NotFoundException('简历不存在');
 
@@ -344,6 +486,7 @@ export class ResumeService implements OnModuleInit {
     try {
       const aiResult = await this.aiRuntimeService.chatJson<{
         selfIntro?: string;
+        skills?: string[];
         education?: Array<{ school: string; major: string; startDate: string; endDate: string }>;
         experience?: Array<{ company: string; position: string; startDate: string; endDate: string; description: string }>;
         projects?: Array<{ name: string; startDate: string; endDate: string; description: string }>;
@@ -361,6 +504,7 @@ export class ResumeService implements OnModuleInit {
           'JSON 结构如下：',
           '{',
           '  "selfIntro": "150-200字的自我介绍，突出专业能力和求职意向",',
+          '  "skills": ["技能1","技能2","技能3",...],',
           '  "education": [{"school":"学校名","major":"专业","startDate":"如 2023.09","endDate":"如 2027.06"}],',
           '  "experience": [{"company":"公司名","position":"实习岗位","startDate":"如 2025.06","endDate":"如 2025.09","description":"工作内容描述，包含量化成果，100-150字"}],',
           '  "projects": [{"name":"项目名称","startDate":"如 2025.03","endDate":"如 2025.06","description":"项目描述，技术栈+个人职责+成果，150-200字"}],',
@@ -375,6 +519,7 @@ export class ResumeService implements OnModuleInit {
           '4. education 里使用用户提供的真实学校和专业信息',
           '5. 内容要真实可信，符合应届生水平，不要过度夸大',
           '6. awards 和 activities 各生成 1-2 条',
+          '7. skills 字段：保留用户已有的技能，并根据目标岗位和专业额外推荐 5-8 个相关技能（编程语言、框架、工具、软技能等），总计 8-15 个',
         ].join('\n'),
         userPrompt: JSON.stringify({
           basicInfo: {
@@ -391,7 +536,12 @@ export class ResumeService implements OnModuleInit {
       // 合并生成的内容到简历
       const updatedContent = { ...(resume.content || this.getDefaultContent()) };
       updatedContent.basicInfo = { ...updatedContent.basicInfo, ...basicInfo };
-      if (Array.isArray(skills) && skills.length) updatedContent.skills = skills;
+      if (Array.isArray(aiResult.skills) && aiResult.skills.length) {
+        const merged = new Set([...(Array.isArray(skills) ? skills : []), ...aiResult.skills]);
+        updatedContent.skills = Array.from(merged).filter(Boolean);
+      } else if (Array.isArray(skills) && skills.length) {
+        updatedContent.skills = skills;
+      }
 
       if (aiResult.selfIntro) updatedContent.selfIntro = aiResult.selfIntro;
       if (Array.isArray(aiResult.education) && aiResult.education.length) {
@@ -541,7 +691,7 @@ export class ResumeService implements OnModuleInit {
     return tpl;
   }
 
-  async renderResume(id: number, userId: number) {
+  async renderResume(id: number, userId: number, locale?: string) {
     const resume = await this.resumeRepo.findOne({ where: { id, userId } });
     if (!resume) throw new NotFoundException('简历不存在');
 
@@ -549,10 +699,10 @@ export class ResumeService implements OnModuleInit {
     const template = await this.templateRepo.findOne({ where: { id: templateId } });
 
     const content = resume.content || this.getDefaultContent();
-    const htmlTemplate = template?.htmlContent || this.getDefaultTemplateHtml();
-    const css = template?.cssContent || this.getDefaultTemplateCss();
+    const htmlTemplate = template?.htmlContent || '<div class="resume"><h1>{{name}}</h1></div>';
+    const css = template?.cssContent || '';
 
-    const renderedHtml = this.injectContentIntoTemplate(htmlTemplate, content, css);
+    const renderedHtml = this.injectContentIntoTemplate(htmlTemplate, content, css, locale);
     return { html: renderedHtml };
   }
 
@@ -564,7 +714,7 @@ export class ResumeService implements OnModuleInit {
       name,
       description: `从 Word 文档导入`,
       htmlContent: `<div class="resume">${htmlContent}</div>`,
-      cssContent: this.getDefaultTemplateCss(),
+      cssContent: '*{margin:0;padding:0;box-sizing:border-box}body{font-family:sans-serif;color:#333;padding:40px}.resume{max-width:800px;margin:0 auto}',
       isSystem: false,
     });
 
@@ -575,12 +725,37 @@ export class ResumeService implements OnModuleInit {
     return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  private buildAvatarDataUri(name: string): string {
+    const ch = (name || '').trim().charAt(0) || '?';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="125"><rect width="100" height="125" fill="#2563eb" rx="8"/><text x="50" y="72" font-size="40" fill="#fff" text-anchor="middle" font-family="sans-serif">${ch}</text></svg>`;
+    return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+  }
+
+  private sectionLabels(locale?: string): Record<string, string> {
+    const isChinese = !locale || !locale.startsWith('en');
+    return isChinese
+      ? {
+          'About Me': '自我介绍', 'Education': '教育经历',
+          'Work Experience': '实习/工作经历', 'Projects': '项目经验',
+          'Awards & Certificates': '证书/荣誉奖项',
+          'Activities': '校园活动/社会实践', 'Skills': '技能', 'Contact': '联系方式',
+        }
+      : {
+          'About Me': 'Self Introduction', 'Education': 'Education',
+          'Work Experience': 'Work Experience', 'Projects': 'Projects',
+          'Awards & Certificates': 'Awards & Certificates',
+          'Activities': 'Activities', 'Skills': 'Skills', 'Contact': 'Contact',
+        };
+  }
+
   private injectContentIntoTemplate(
     html: string,
     content: Record<string, any>,
     css: string,
+    locale?: string,
   ): string {
     const basic = content.basicInfo || {};
+    const job = content.jobIntention || {};
     const skills = Array.isArray(content.skills) ? content.skills : [];
     const education = Array.isArray(content.education) ? content.education : [];
     const experience = Array.isArray(content.experience) ? content.experience : [];
@@ -590,14 +765,21 @@ export class ResumeService implements OnModuleInit {
     const esc = (s: string) => this.escapeHtml(s);
 
     const avatarUrl = basic.avatar || content.avatar || '';
+    const avatarSrc = avatarUrl
+      ? esc(avatarUrl)
+      : this.buildAvatarDataUri(basic.name || '');
     let result = html
-      .replace(/\{\{avatar\}\}/g, avatarUrl ? esc(avatarUrl) : '')
+      .replace(/\{\{avatar\}\}/g, avatarSrc)
       .replace(/\{\{name\}\}/g, esc(basic.name || ''))
       .replace(/\{\{phone\}\}/g, esc(basic.phone || ''))
       .replace(/\{\{email\}\}/g, esc(basic.email || ''))
       .replace(/\{\{school\}\}/g, esc(basic.school || ''))
       .replace(/\{\{major\}\}/g, esc(basic.major || ''))
       .replace(/\{\{graduationYear\}\}/g, esc(basic.graduationYear || ''))
+      .replace(/\{\{targetPosition\}\}/g, esc(job.targetPosition || ''))
+      .replace(/\{\{expectedSalary\}\}/g, esc(job.expectedSalary || ''))
+      .replace(/\{\{preferredCity\}\}/g, esc(job.preferredCity || ''))
+      .replace(/\{\{workType\}\}/g, esc(job.workType || ''))
       .replace(/\{\{selfIntro\}\}/g, esc(content.selfIntro || ''))
       .replace(/\{\{skills\}\}/g, skills.map((s: string) => `<span class="skill-tag">${esc(s)}</span>`).join(' '))
       .replace(/\{\{education\}\}/g, education.map((e: any) =>
@@ -616,42 +798,15 @@ export class ResumeService implements OnModuleInit {
         `<div class="item"><strong>${esc(a.organization || '')}</strong> - ${esc(a.role || '')} <span class="time">${esc(a.startDate || '')} ~ ${esc(a.endDate || '')}</span>${a.description ? `<p>${esc(a.description)}</p>` : ''}</div>`,
       ).join(''));
 
+    const labels = this.sectionLabels(locale);
+    for (const [en, label] of Object.entries(labels)) {
+      const escaped = en.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c));
+      result = result
+        .replace(new RegExp(`<h2>${escaped}</h2>`, 'g'), `<h2>${label}</h2>`)
+        .replace(new RegExp(`<h3>${escaped}</h3>`, 'g'), `<h3>${label}</h3>`);
+    }
+
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body>${result}</body></html>`;
   }
 
-  private getDefaultTemplateHtml(): string {
-    return `<div class="resume">
-  <div class="header">
-    <h1>{{name}}</h1>
-    <div class="contact">{{phone}} | {{email}}</div>
-    <div class="contact">{{school}} · {{major}} · {{graduationYear}}</div>
-  </div>
-  <div class="section"><h2>About Me</h2><p>{{selfIntro}}</p></div>
-  <div class="section"><h2>Education</h2>{{education}}</div>
-  <div class="section"><h2>Work Experience</h2>{{experience}}</div>
-  <div class="section"><h2>Projects</h2>{{projects}}</div>
-  <div class="section"><h2>Awards & Certificates</h2>{{awards}}</div>
-  <div class="section"><h2>Activities</h2>{{activities}}</div>
-  <div class="section"><h2>Skills</h2><div class="skills">{{skills}}</div></div>
-</div>`;
-  }
-
-  private getDefaultTemplateCss(): string {
-    return `*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Microsoft YaHei',sans-serif;color:#333;background:#fff;padding:40px}
-.resume{max-width:800px;margin:0 auto}
-.header{text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1677ff}
-.header h1{font-size:28px;color:#1677ff;margin-bottom:8px}
-.contact{font-size:14px;color:#666;margin-bottom:4px}
-.section{margin-bottom:20px}
-.section h2{font-size:16px;color:#1677ff;border-bottom:1px solid #e8e8e8;padding-bottom:6px;margin-bottom:12px}
-.section p{line-height:1.8;font-size:14px}
-.item{margin-bottom:10px;font-size:14px;line-height:1.6}
-.item strong{color:#333}
-.item .time{color:#999;font-size:13px;float:right}
-.item p{color:#666;margin-top:4px}
-.skills{display:flex;flex-wrap:wrap;gap:8px}
-.skill-tag{background:#f0f5ff;color:#1677ff;padding:2px 10px;border-radius:4px;font-size:13px;border:1px solid #d6e4ff}
-@media print{body{padding:20px}@page{margin:15mm}}`;
-  }
 }

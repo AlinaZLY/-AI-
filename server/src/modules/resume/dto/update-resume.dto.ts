@@ -8,7 +8,7 @@ export class UpdateResumeDto {
 
   @IsOptional()
   @IsString()
-  @Length(0, 50)
+  @Length(0, 255)
   targetPosition?: string;
 
   @IsOptional()
