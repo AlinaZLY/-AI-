@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import { escapeLike } from '../../common/utils/query.util';
 import { Application, ApplicationStatus, ApplicationTag } from './entities/application.entity';
 import { ApplicationStatusLog } from './entities/application-status-log.entity';
 import { ApplicationNote } from './entities/application-note.entity';
 import { Resume } from '../resume/entities/resume.entity';
-import { Job } from '../job/entities/job.entity';
+import { Job, JobStatus } from '../job/entities/job.entity';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { AdminCreateApplicationDto } from './dto/admin-create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -41,7 +43,7 @@ export class ApplicationService {
       .addSelect(['user.id', 'user.username', 'user.nickname', 'user.avatar']);
 
     if (keyword) {
-      qb.andWhere('(app.company LIKE :kw OR app.position LIKE :kw OR user.username LIKE :kw OR user.nickname LIKE :kw)', { kw: `%${keyword}%` });
+      qb.andWhere('(app.company LIKE :kw OR app.position LIKE :kw OR user.username LIKE :kw OR user.nickname LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
     }
     if (status) qb.andWhere('app.status = :status', { status });
     if (tag) qb.andWhere('app.tag = :tag', { tag });
@@ -51,16 +53,180 @@ export class ApplicationService {
     return { list, total, page: +page, pageSize: +pageSize };
   }
 
+  async getStatsAdmin() {
+    const total = await this.appRepo.count();
+
+    const byStatus = await this.appRepo
+      .createQueryBuilder('app')
+      .select('app.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('app.status')
+      .getRawMany();
+
+    const byTag = await this.appRepo
+      .createQueryBuilder('app')
+      .select('app.tag', 'tag')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('app.tag')
+      .getRawMany();
+
+    const byCompany = await this.appRepo
+      .createQueryBuilder('app')
+      .select('app.company', 'company')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('app.company')
+      .orderBy('count', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    return { total, byStatus, byTag, byCompany };
+  }
+
+  async findOneAdmin(id: number) {
+    const app = await this.appRepo.findOne({
+      where: { id },
+      relations: ['user', 'statusLogs', 'notes'],
+    });
+    if (!app) throw new NotFoundException('投递记录不存在');
+
+    if (app.statusLogs) {
+      app.statusLogs.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    }
+    if (app.notes) {
+      app.notes.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+    }
+
+    const [withStage] = await this.attachStageMeta([app]);
+    const [withResume] = await this.attachResumeSummary([withStage]);
+    return withResume;
+  }
+
+  async createAdmin(dto: AdminCreateApplicationDto) {
+    const { userId, ...payload } = dto;
+    return this.create(userId, payload as CreateApplicationDto);
+  }
+
+  async updateAdmin(id: number, dto: UpdateApplicationDto) {
+    const app = await this.appRepo.findOne({ where: { id } });
+    if (!app) throw new NotFoundException('投递记录不存在');
+    if (dto.resumeId) {
+      const resume = await this.resumeRepo.findOne({ where: { id: dto.resumeId } });
+      if (!resume || resume.userId !== app.userId) {
+        throw new ForbiddenException('无权使用此简历');
+      }
+    }
+    Object.assign(app, dto);
+    return this.appRepo.save(app);
+  }
+
+  async removeAdmin(id: number) {
+    const app = await this.appRepo.findOne({ where: { id } });
+    if (!app) throw new NotFoundException('投递记录不存在');
+    const jobId = app.jobId;
+    await this.appRepo.remove(app);
+    if (jobId) {
+      const job = await this.jobRepo.findOne({ where: { id: jobId } });
+      if (job && job.applicationCount > 0) {
+        job.applicationCount -= 1;
+        await this.jobRepo.save(job);
+      }
+    }
+  }
+
+  async updateStatusAdmin(id: number, dto: UpdateStatusDto) {
+    const app = await this.appRepo.findOne({ where: { id } });
+    if (!app) throw new NotFoundException('投递记录不存在');
+
+    const fromStatus = app.status;
+    app.status = dto.status;
+    if (dto.nextDate !== undefined) {
+      app.nextDate = dto.nextDate ? new Date(dto.nextDate) : null as any;
+    }
+
+    if (dto.status === ApplicationStatus.OFFER) {
+      app.tag = ApplicationTag.PASSED;
+    } else if (dto.status === ApplicationStatus.REJECTED) {
+      app.tag = ApplicationTag.FAILED;
+    } else {
+      app.tag = ApplicationTag.IN_PROGRESS;
+    }
+
+    await this.appRepo.save(app);
+
+    await this.logRepo.save(
+      this.logRepo.create({
+        applicationId: id,
+        fromStatus,
+        toStatus: dto.status,
+        note: dto.note || '管理员更新了投递进度',
+      }),
+    );
+
+    await this.sendCompanyStatusNotification(app, dto.status, dto.nextDate, dto.note);
+    return app;
+  }
+
+  async getStatusLogsAdmin(id: number) {
+    const app = await this.appRepo.findOne({ where: { id } });
+    if (!app) throw new NotFoundException('投递记录不存在');
+
+    return this.logRepo.find({
+      where: { applicationId: id },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async addNoteAdmin(id: number, dto: CreateNoteDto) {
+    const app = await this.appRepo.findOne({ where: { id } });
+    if (!app) throw new NotFoundException('投递记录不存在');
+
+    const note = this.noteRepo.create({ ...dto, applicationId: id });
+    return this.noteRepo.save(note);
+  }
+
+  async getNotesAdmin(id: number) {
+    const app = await this.appRepo.findOne({ where: { id } });
+    if (!app) throw new NotFoundException('投递记录不存在');
+
+    return this.noteRepo.find({
+      where: { applicationId: id },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async deleteNoteAdmin(noteId: number) {
+    const note = await this.noteRepo.findOne({ where: { id: noteId } });
+    if (!note) throw new NotFoundException('备注不存在');
+    await this.noteRepo.remove(note);
+  }
+
   async create(userId: number, dto: CreateApplicationDto) {
-    if (dto.jobId && (!dto.company || !dto.position)) {
-      const job = await this.jobRepo.findOne({ where: { id: dto.jobId } });
-      if (job) {
-        if (!dto.company) dto.company = job.companyName || '未知公司';
-        if (!dto.position) dto.position = job.title;
-        if (!dto.location) dto.location = job.location;
-        if (!dto.salaryRange && job.salaryMin && job.salaryMax) {
-          dto.salaryRange = `${job.salaryMin}-${job.salaryMax}K`;
+    let job: Job | null = null;
+    if (dto.jobId) {
+      job = await this.jobRepo.findOne({ where: { id: dto.jobId } });
+      if (!job) throw new NotFoundException('职位不存在');
+      if (job.status !== JobStatus.OPEN) {
+        throw new ForbiddenException('职位未开放，暂不能投递');
+      }
+      if (job.deadline) {
+        const deadline = new Date(job.deadline);
+        deadline.setHours(23, 59, 59, 999);
+        if (deadline.getTime() < Date.now()) {
+          throw new ForbiddenException('职位已截止，无法投递');
         }
+      }
+      if (job.userId === userId) {
+        throw new ForbiddenException('不能投递自己发布的职位');
+      }
+      if (!dto.company) dto.company = job.companyName || '未知公司';
+      if (!dto.position) dto.position = job.title;
+      if (!dto.location) dto.location = job.location;
+      if (!dto.salaryRange && job.salaryMin && job.salaryMax) {
+        dto.salaryRange = `${job.salaryMin}-${job.salaryMax}K`;
       }
     }
     if (!dto.company) throw new ForbiddenException('公司名称不能为空');
@@ -89,6 +255,21 @@ export class ApplicationService {
 
     if (saved.jobId) {
       await this.jobRepo.increment({ id: saved.jobId }, 'applicationCount', 1);
+
+      const targetJob = job || await this.jobRepo.findOne({ where: { id: saved.jobId } });
+      if (targetJob?.userId) {
+        await this.notificationService.create({
+          type: NotificationType.SYSTEM,
+          userId: targetJob.userId,
+          fromUserId: userId,
+          content: `收到新投递：「${saved.company} - ${saved.position}」`,
+          meta: {
+            path: '/applications',
+            applicationId: saved.id,
+            jobId: saved.jobId,
+          },
+        });
+      }
     }
 
     await this.logRepo.save(
@@ -112,7 +293,7 @@ export class ApplicationService {
 
     if (keyword) {
       qb.andWhere('(app.company LIKE :kw OR app.position LIKE :kw)', {
-        kw: `%${keyword}%`,
+        kw: `%${escapeLike(keyword)}%`,
       });
     }
     if (status) {
@@ -122,7 +303,7 @@ export class ApplicationService {
       qb.andWhere('app.tag = :tag', { tag });
     }
     if (company) {
-      qb.andWhere('app.company LIKE :company', { company: `%${company}%` });
+      qb.andWhere('app.company LIKE :company', { company: `%${escapeLike(company)}%` });
     }
     if (startDate) {
       qb.andWhere('app.createdAt >= :startDate', { startDate });
@@ -204,6 +385,8 @@ export class ApplicationService {
       app.tag = ApplicationTag.PASSED;
     } else if (dto.status === ApplicationStatus.REJECTED) {
       app.tag = ApplicationTag.FAILED;
+    } else {
+      app.tag = ApplicationTag.IN_PROGRESS;
     }
 
     await this.appRepo.save(app);
@@ -229,7 +412,7 @@ export class ApplicationService {
       .where('job.userId = :userId', { userId });
 
     if (keyword) {
-      qb.andWhere('(app.company LIKE :kw OR app.position LIKE :kw OR user.username LIKE :kw OR user.nickname LIKE :kw)', { kw: `%${keyword}%` });
+      qb.andWhere('(app.company LIKE :kw OR app.position LIKE :kw OR user.username LIKE :kw OR user.nickname LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
     }
     if (status) qb.andWhere('app.status = :status', { status });
     if (tag) qb.andWhere('app.tag = :tag', { tag });
@@ -539,6 +722,32 @@ export class ApplicationService {
       .getRawMany();
 
     return { total, byStatus, byTag, byCompany };
+  }
+
+  async getDashboard(userId: number) {
+    const stats = await this.getStats(userId);
+
+    const trend = await this.appRepo
+      .createQueryBuilder('app')
+      .select("DATE_FORMAT(app.createdAt, '%Y-%m-%d')", 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where('app.userId = :userId', { userId })
+      .andWhere('app.createdAt >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)')
+      .groupBy('date')
+      .orderBy('date', 'ASC')
+      .getRawMany();
+
+    const upcoming = await this.appRepo
+      .createQueryBuilder('app')
+      .where('app.userId = :userId', { userId })
+      .andWhere('app.nextDate IS NOT NULL')
+      .andWhere('app.nextDate >= CURDATE()')
+      .andWhere('app.tag = :tag', { tag: ApplicationTag.IN_PROGRESS })
+      .orderBy('app.nextDate', 'ASC')
+      .take(10)
+      .getMany();
+
+    return { ...stats, trend, upcoming };
   }
 
   private async attachStageMeta<T extends Application>(applications: T[]) {

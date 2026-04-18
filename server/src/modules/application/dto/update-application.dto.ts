@@ -1,4 +1,4 @@
-import { IsString, Length, IsOptional, IsEnum, IsDateString } from 'class-validator';
+import { IsString, Length, IsOptional, IsEnum, IsDateString, IsNumber } from 'class-validator';
 import { ApplicationTag } from '../entities/application.entity';
 
 export class UpdateApplicationDto {
@@ -11,6 +11,10 @@ export class UpdateApplicationDto {
   @IsString()
   @Length(1, 100)
   position?: string;
+
+  @IsOptional()
+  @IsNumber()
+  resumeId?: number;
 
   @IsOptional()
   @IsString()

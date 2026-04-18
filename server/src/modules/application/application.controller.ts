@@ -17,6 +17,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../user/entities/user.entity';
 import { ApplicationService } from './application.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
+import { AdminCreateApplicationDto } from './dto/admin-create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -27,6 +28,13 @@ import { ApplicationActionDto } from './dto/application-action.dto';
 @UseGuards(JwtAuthGuard)
 export class ApplicationController {
   constructor(private readonly applicationService: ApplicationService) {}
+
+  @Get('admin/stats')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getStatsAdmin() {
+    return this.applicationService.getStatsAdmin();
+  }
 
   @Get('admin')
   @UseGuards(RolesGuard)
@@ -39,6 +47,78 @@ export class ApplicationController {
     @Query('tag') tag?: string,
   ) {
     return this.applicationService.findAllAdmin(page || 1, pageSize || 10, keyword, status, tag);
+  }
+
+  @Get('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  findOneAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.applicationService.findOneAdmin(id);
+  }
+
+  @Post('admin')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createAdmin(@Body() dto: AdminCreateApplicationDto) {
+    return this.applicationService.createAdmin(dto);
+  }
+
+  @Put('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateApplicationDto,
+  ) {
+    return this.applicationService.updateAdmin(id, dto);
+  }
+
+  @Delete('admin/notes/:noteId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteNoteAdmin(@Param('noteId', ParseIntPipe) noteId: number) {
+    return this.applicationService.deleteNoteAdmin(noteId);
+  }
+
+  @Delete('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  removeAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.applicationService.removeAdmin(id);
+  }
+
+  @Put('admin/:id/status')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateStatusAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateStatusDto,
+  ) {
+    return this.applicationService.updateStatusAdmin(id, dto);
+  }
+
+  @Get('admin/:id/logs')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getStatusLogsAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.applicationService.getStatusLogsAdmin(id);
+  }
+
+  @Post('admin/:id/notes')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  addNoteAdmin(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CreateNoteDto,
+  ) {
+    return this.applicationService.addNoteAdmin(id, dto);
+  }
+
+  @Get('admin/:id/notes')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getNotesAdmin(@Param('id', ParseIntPipe) id: number) {
+    return this.applicationService.getNotesAdmin(id);
   }
 
   @Get('company')
@@ -114,6 +194,13 @@ export class ApplicationController {
   @Roles(UserRole.STUDENT)
   getStats(@Request() req) {
     return this.applicationService.getStats(req.user.id);
+  }
+
+  @Get('dashboard')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.STUDENT)
+  getDashboard(@Request() req) {
+    return this.applicationService.getDashboard(req.user.id);
   }
 
   @Post(':id/check-in')
