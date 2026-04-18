@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { escapeLike } from '../../common/utils/query.util';
 import { Job, JobStatus } from './entities/job.entity';
 import { JobFavorite } from './entities/job-favorite.entity';
 import { UserRole } from '../user/entities/user.entity';
@@ -8,6 +9,7 @@ import { CreateJobDto } from './dto/create-job.dto';
 import { UpdateJobDto } from './dto/update-job.dto';
 import { QueryJobDto } from './dto/query-job.dto';
 import { CompanyService } from '../company/company.service';
+import { Application } from '../application/entities/application.entity';
 
 @Injectable()
 export class JobService {
@@ -16,6 +18,8 @@ export class JobService {
     private jobRepo: Repository<Job>,
     @InjectRepository(JobFavorite)
     private jobFavRepo: Repository<JobFavorite>,
+    @InjectRepository(Application)
+    private appRepo: Repository<Application>,
     private companyService: CompanyService,
   ) {}
 
@@ -42,6 +46,7 @@ export class JobService {
   }
 
   async create(userId: number, dto: CreateJobDto, userRole?: string) {
+    const payload = { ...dto };
     if (userRole !== UserRole.ADMIN) {
       const company = await this.companyService.findByUserId(userId);
       if (!company) {
@@ -50,8 +55,11 @@ export class JobService {
       if (!company.isVerified) {
         throw new ForbiddenException('企业认证审核中或未通过，暂时无法发布职位');
       }
+      payload.companyId = company.id;
+      payload.companyName = company.name;
+      if (!payload.location) payload.location = company.city;
     }
-    const job = this.jobRepo.create({ ...dto, userId });
+    const job = this.jobRepo.create({ ...payload, userId });
     return this.jobRepo.save(job);
   }
 
@@ -62,10 +70,10 @@ export class JobService {
       .addSelect(['user.id', 'user.username', 'user.nickname', 'user.avatar']);
 
     if (keyword) {
-      qb.andWhere('(job.title LIKE :kw OR job.companyName LIKE :kw OR job.description LIKE :kw)', { kw: `%${keyword}%` });
+      qb.andWhere('(job.title LIKE :kw OR job.companyName LIKE :kw OR job.description LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
     }
     if (location) {
-      qb.andWhere('job.location LIKE :loc', { loc: `%${location}%` });
+      qb.andWhere('job.location LIKE :loc', { loc: `%${escapeLike(location)}%` });
     }
     if (positionType) {
       qb.andWhere('job.positionType = :pt', { pt: positionType });
@@ -111,7 +119,7 @@ export class JobService {
       .leftJoinAndSelect('job.user', 'user');
 
     if (keyword) {
-      qb.andWhere('(job.title LIKE :kw OR job.companyName LIKE :kw)', { kw: `%${keyword}%` });
+      qb.andWhere('(job.title LIKE :kw OR job.companyName LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
     }
     if (status) {
       qb.andWhere('job.status = :st', { st: status });
@@ -142,7 +150,16 @@ export class JobService {
     if (!isAdmin && job.userId !== userId) {
       throw new ForbiddenException('无权操作此职位');
     }
-    Object.assign(job, dto);
+    const payload = { ...dto };
+    if (!isAdmin) {
+      const company = await this.companyService.findByUserId(userId);
+      if (!company || !company.isVerified) {
+        throw new ForbiddenException('企业认证审核中或未通过，暂时无法管理职位');
+      }
+      payload.companyId = company.id;
+      payload.companyName = company.name;
+    }
+    Object.assign(job, payload);
     return this.jobRepo.save(job);
   }
 
@@ -151,6 +168,10 @@ export class JobService {
     if (!job) throw new NotFoundException('职位不存在');
     if (!isAdmin && job.userId !== userId) {
       throw new ForbiddenException('无权操作此职位');
+    }
+    const applicationCount = await this.appRepo.count({ where: { jobId: id } });
+    if (applicationCount > 0) {
+      throw new BadRequestException('已有投递记录的职位不能删除，请先关闭职位');
     }
     await this.jobRepo.remove(job);
     return { message: '删除成功' };
