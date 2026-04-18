@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { escapeLike } from '../../common/utils/query.util';
 import { Company, CompanyStatus } from './entities/company.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
@@ -69,13 +70,13 @@ export class CompanyService {
     const qb = this.companyRepo.createQueryBuilder('c');
 
     if (keyword) {
-      qb.andWhere('(c.name LIKE :kw OR c.description LIKE :kw)', { kw: `%${keyword}%` });
+      qb.andWhere('(c.name LIKE :kw OR c.description LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
     }
     if (industry) {
       qb.andWhere('c.industry = :ind', { ind: industry });
     }
     if (city) {
-      qb.andWhere('c.city LIKE :city', { city: `%${city}%` });
+      qb.andWhere('c.city LIKE :city', { city: `%${escapeLike(city)}%` });
     }
     qb.andWhere('c.status = :st', { st: CompanyStatus.APPROVED });
 
@@ -96,7 +97,7 @@ export class CompanyService {
     const qb = this.companyRepo.createQueryBuilder('c')
       .leftJoinAndSelect('c.user', 'user');
     if (keyword) {
-      qb.andWhere('(c.name LIKE :kw OR c.industry LIKE :kw)', { kw: `%${keyword}%` });
+      qb.andWhere('(c.name LIKE :kw OR c.industry LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
     }
     if (status) {
       qb.andWhere('c.status = :st', { st: status });
@@ -167,6 +168,13 @@ export class CompanyService {
       company.isVerified = false;
     }
     const saved = await this.companyRepo.save(company);
+
+    if (previousStatus === CompanyStatus.APPROVED && status !== CompanyStatus.APPROVED) {
+      await this.jobRepo.update(
+        { userId: company.userId, status: JobStatus.OPEN },
+        { status: JobStatus.PAUSED },
+      );
+    }
 
     if (previousStatus !== status) {
       await this.notificationService.create({

@@ -36,6 +36,8 @@ export class AuthService {
    */
   async register(registerDto: RegisterDto) {
     const { username, password, enterpriseInfo, ...rest } = registerDto;
+    const { role, ...profile } = rest;
+    const normalizedRole = role === UserRole.ENTERPRISE ? UserRole.ENTERPRISE : UserRole.STUDENT;
 
     // 检查用户名是否已存在
     const existingUser = await this.userRepository.findOne({
@@ -61,13 +63,14 @@ export class AuthService {
     const user = this.userRepository.create({
       username,
       password: hashedPassword,
-      ...rest,
+      ...profile,
+      role: normalizedRole,
     });
     await this.userRepository.save(user);
 
     // 企业用户注册时同步创建企业认证记录（pending 状态）
     let companyRecord: Company | null = null;
-    if (rest.role === UserRole.ENTERPRISE && enterpriseInfo?.name) {
+    if (normalizedRole === UserRole.ENTERPRISE && enterpriseInfo?.name) {
       const company = this.companyRepository.create({
         userId: user.id,
         name: enterpriseInfo.name,
@@ -100,16 +103,18 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { username, password, captcha, captchaKey, platform } = loginDto;
 
-    // 校验验证码
-    const cachedCaptcha = await this.redisService.get(`captcha:${captchaKey}`);
-    if (!cachedCaptcha) {
-      throw new BadRequestException('验证码已过期，请刷新');
+    const quickDemoEnabled = process.env.NODE_ENV !== 'production' && process.env.QUICK_DEMO_LOGIN_ENABLED === 'true';
+    const isQuickDemo = quickDemoEnabled && captcha === '__quick_demo__' && ['student', 'enterprise'].includes(username);
+    if (!isQuickDemo) {
+      const cachedCaptcha = await this.redisService.get(`captcha:${captchaKey}`);
+      if (!cachedCaptcha) {
+        throw new BadRequestException('验证码已过期，请刷新');
+      }
+      if (cachedCaptcha.toLowerCase() !== captcha.toLowerCase()) {
+        throw new BadRequestException('验证码错误');
+      }
+      await this.redisService.del(`captcha:${captchaKey}`);
     }
-    if (cachedCaptcha.toLowerCase() !== captcha.toLowerCase()) {
-      throw new BadRequestException('验证码错误');
-    }
-    // 验证码使用后立即删除，防止重复使用
-    await this.redisService.del(`captcha:${captchaKey}`);
 
     // 查找用户（包含密码字段）
     const user = await this.userRepository.findOne({

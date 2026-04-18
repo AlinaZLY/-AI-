@@ -3,7 +3,7 @@
  * 校验注册时提交的参数
  */
 import { Type } from 'class-transformer';
-import { IsString, Length, IsOptional, IsEmail, IsEnum, ValidateNested } from 'class-validator';
+import { IsString, Length, IsOptional, IsEmail, IsEnum, IsIn, ValidateNested } from 'class-validator';
 import { UserRole } from '../../user/entities/user.entity';
 
 export class RegisterEnterpriseDto {
@@ -69,6 +69,7 @@ export class RegisterDto {
 
   @IsOptional()
   @IsEnum(UserRole, { message: '角色只能是 student 或 enterprise' })
+  @IsIn([UserRole.STUDENT, UserRole.ENTERPRISE], { message: '角色只能是 student 或 enterprise' })
   role?: UserRole;
 
   @IsOptional()

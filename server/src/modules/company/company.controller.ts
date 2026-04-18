@@ -69,17 +69,21 @@ export class CompanyController {
   }
 
   @Post('upload-cert')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: join(process.cwd(), 'uploads', 'certs'),
-      filename: (_req, file, cb) => {
-        const uniqueName = `cert-${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
+      filename: (req, file, cb) => {
+        const userId = (req as any).user?.id || 'unknown';
+        const uniqueName = `cert-u${userId}-${Date.now()}-${Math.round(Math.random() * 1e9)}${extname(file.originalname)}`;
         cb(null, uniqueName);
       },
     }),
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (_req, file, cb) => {
-      if (/\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(file.originalname)) {
+      const allowedExt = /\.(jpg|jpeg|png|gif|webp|pdf)$/i.test(file.originalname);
+      const allowedMime = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'].includes(file.mimetype);
+      if (allowedExt && allowedMime) {
         cb(null, true);
       } else {
         cb(new Error('仅支持 jpg/png/gif/webp/pdf 格式'), false);
@@ -88,7 +92,7 @@ export class CompanyController {
   }))
   uploadCert(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new BadRequestException('请上传文件');
-    return { url: `/uploads/certs/${file.filename}` };
+    return { url: `/api/private-uploads/certs/${file.filename}`, path: `/uploads/certs/${file.filename}` };
   }
 
   @Put('admin/:id/status')
