@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { escapeLike } from '../../common/utils/query.util';
 import { Interview, InterviewStatus } from './entities/interview.entity';
 import { InterviewQuestion } from './entities/interview-question.entity';
 import { QuestionBank, QuestionDifficulty, QuestionSource, QuestionReviewStatus } from './entities/question-bank.entity';
 import { QuestionCategory } from './entities/question-category.entity';
+import { PracticeRecord } from './entities/practice-record.entity';
 import { Resume } from '../resume/entities/resume.entity';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { StartInterviewDto } from './dto/start-interview.dto';
@@ -19,47 +21,41 @@ export class InterviewService implements OnModuleInit {
     @InjectRepository(InterviewQuestion) private iqRepo: Repository<InterviewQuestion>,
     @InjectRepository(QuestionBank) private qbRepo: Repository<QuestionBank>,
     @InjectRepository(QuestionCategory) private qcRepo: Repository<QuestionCategory>,
+    @InjectRepository(PracticeRecord) private practiceRepo: Repository<PracticeRecord>,
     @InjectRepository(Resume) private resumeRepo: Repository<Resume>,
     private readonly aiRuntimeService: AiRuntimeService,
   ) {}
 
   async onModuleInit() {
-    // Force re-seed: clear old data and re-populate with English seed data
-    const existingQ = await this.qbRepo.count();
-    if (existingQ > 0) {
-      await this.qbRepo.clear();
-      await this.qcRepo.clear();
-      console.log(`Cleared ${existingQ} old questions for English re-seed`);
-    }
-
+    // 仅在题库为空时种子化，避免每次启动都清空运行时数据。
     const catCount = await this.qcRepo.count();
     if (catCount === 0) {
-      const tech = await this.qcRepo.save(this.qcRepo.create({ name: 'Technical Interview', type: 'type', description: 'Technical interview questions', sort: 1 }));
+      const tech = await this.qcRepo.save(this.qcRepo.create({ name: '技术面试', type: 'type', description: '技术类面试题目', sort: 1 }));
       await this.qcRepo.save(this.qcRepo.create([
-        { name: 'Data Structures & Algorithms', parentId: tech.id, type: 'type', sort: 1 },
-        { name: 'Computer Networks', parentId: tech.id, type: 'type', sort: 2 },
-        { name: 'Operating Systems', parentId: tech.id, type: 'type', sort: 3 },
-        { name: 'Database', parentId: tech.id, type: 'type', sort: 4 },
-        { name: 'System Design', parentId: tech.id, type: 'type', sort: 5 },
+        { name: '数据结构与算法', parentId: tech.id, type: 'type', sort: 1 },
+        { name: '计算机网络', parentId: tech.id, type: 'type', sort: 2 },
+        { name: '操作系统', parentId: tech.id, type: 'type', sort: 3 },
+        { name: '数据库', parentId: tech.id, type: 'type', sort: 4 },
+        { name: '系统设计', parentId: tech.id, type: 'type', sort: 5 },
       ]));
 
-      const behavior = await this.qcRepo.save(this.qcRepo.create({ name: 'Behavioral Interview', type: 'type', description: 'Behavioral and situational questions', sort: 2 }));
+      const behavior = await this.qcRepo.save(this.qcRepo.create({ name: '行为面试', type: 'type', description: '行为与情景类面试题目', sort: 2 }));
       await this.qcRepo.save(this.qcRepo.create([
-        { name: 'Self Introduction', parentId: behavior.id, type: 'type', sort: 1 },
-        { name: 'STAR Method', parentId: behavior.id, type: 'type', sort: 2 },
-        { name: 'Career Planning', parentId: behavior.id, type: 'type', sort: 3 },
-        { name: 'Scenario Simulation', parentId: behavior.id, type: 'type', sort: 4 },
+        { name: '自我介绍', parentId: behavior.id, type: 'type', sort: 1 },
+        { name: 'STAR 法则', parentId: behavior.id, type: 'type', sort: 2 },
+        { name: '职业规划', parentId: behavior.id, type: 'type', sort: 3 },
+        { name: '情景模拟', parentId: behavior.id, type: 'type', sort: 4 },
       ]));
 
-      const company = await this.qcRepo.save(this.qcRepo.create({ name: 'Company Topics', type: 'company', description: 'Interview questions by company', sort: 3 }));
+      const company = await this.qcRepo.save(this.qcRepo.create({ name: '企业专题', type: 'company', description: '按企业分类的面试题', sort: 3 }));
       await this.qcRepo.save(this.qcRepo.create([
-        { name: 'P&G Eight Questions', parentId: company.id, type: 'company', sort: 1 },
-        { name: 'ByteDance', parentId: company.id, type: 'company', sort: 2 },
-        { name: 'Tencent', parentId: company.id, type: 'company', sort: 3 },
-        { name: 'Alibaba', parentId: company.id, type: 'company', sort: 4 },
+        { name: '宝洁八大问', parentId: company.id, type: 'company', sort: 1 },
+        { name: '字节跳动', parentId: company.id, type: 'company', sort: 2 },
+        { name: '腾讯', parentId: company.id, type: 'company', sort: 3 },
+        { name: '阿里巴巴', parentId: company.id, type: 'company', sort: 4 },
       ]));
 
-      await this.qcRepo.save(this.qcRepo.create({ name: 'Project Experience', type: 'type', description: 'Project deep-dive questions', sort: 4 }));
+      await this.qcRepo.save(this.qcRepo.create({ name: '项目经验', type: 'type', description: '项目深度提问', sort: 4 }));
     }
 
     const qCount = await this.qbRepo.count();
@@ -76,7 +72,7 @@ export class InterviewService implements OnModuleInit {
         .map((sq) => ({
           question: sq.question,
           referenceAnswer: sq.referenceAnswer,
-          categoryId: catMap[sq.categoryName] || catMap['Behavioral Interview'],
+          categoryId: catMap[sq.categoryName] || catMap['行为面试'],
           difficulty: sq.difficulty,
           source: QuestionSource.SYSTEM,
           company: sq.company,
@@ -166,7 +162,7 @@ export class InterviewService implements OnModuleInit {
     if (difficulty) qb.andWhere('q.difficulty = :difficulty', { difficulty });
     if (source) qb.andWhere('q.source = :source', { source });
     if (questionType) qb.andWhere('q.questionType = :questionType', { questionType });
-    if (keyword) qb.andWhere('(q.question LIKE :kw OR q.company LIKE :kw)', { kw: `%${keyword}%` });
+    if (keyword) qb.andWhere('(q.question LIKE :kw OR q.company LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
 
     qb.orderBy('q.frequency', 'DESC').addOrderBy('q.id', 'DESC')
       .skip((page - 1) * pageSize).take(pageSize);
@@ -236,7 +232,14 @@ export class InterviewService implements OnModuleInit {
 
   // ==================== 模拟面试 ====================
 
-  async startInterview(userId: number, dto: StartInterviewDto) {
+  /** 题量边界，避免前端传入异常值。 */
+  private clampTargetQuestionCount(input?: number): number {
+    const n = Number(input);
+    if (!Number.isFinite(n)) return 5;
+    return Math.min(15, Math.max(1, Math.round(n)));
+  }
+
+  async startInterview(userId: number, dto: StartInterviewDto, locale: string = 'zh-CN') {
     let resumeContent: Record<string, any> | null = null;
     if (dto.resumeId) {
       const resume = await this.resumeRepo.findOne({ where: { id: dto.resumeId } });
@@ -245,130 +248,130 @@ export class InterviewService implements OnModuleInit {
       }
       resumeContent = resume.content as Record<string, any> || null;
     }
-    const totalCount = dto.questionCount || 5;
-    const strategy: Record<string, any> = { bankCount: 0, jdCustomCount: 0, resumeFollowupCount: 0 };
 
-    // ========== 基础层：从题库按分类/难度筛题 ==========
-    const bankCount = Math.max(2, totalCount - 2); // 留 2 个位置给增强层
-    let bankQuestions: QuestionBank[] = [];
-
-    const qb = this.qbRepo.createQueryBuilder('q');
-    if (dto.categoryId != null) {
-      const catIds = await this.collectDescendantCategoryIds(dto.categoryId);
-      if (catIds.length > 0) {
-        qb.andWhere('q.categoryId IN (:...catIds)', { catIds });
-      }
-    }
-    // 如果有 JD，优先选与 JD 相关的题
-    if (dto.jobDescription) {
-      const jdKeywords = dto.jobDescription
-        .replace(/[^\w\u4e00-\u9fff]/g, ' ')
-        .split(/\s+/)
-        .filter(w => w.length > 2)
-        .slice(0, 10);
-      if (jdKeywords.length > 0) {
-        const conditions = jdKeywords.map((_, i) => `q.question LIKE :kw${i}`).join(' OR ');
-        const params: Record<string, string> = {};
-        jdKeywords.forEach((kw, i) => { params[`kw${i}`] = `%${kw}%`; });
-        qb.addOrderBy(`CASE WHEN (${conditions}) THEN 0 ELSE 1 END`, 'ASC');
-        qb.setParameters(params);
-      }
-    }
-    qb.addOrderBy('RAND()').take(bankCount);
-    bankQuestions = await qb.getMany();
-
-    // fallback: if not enough, fill with random
-    if (bankQuestions.length < bankCount) {
-      const existingIds = bankQuestions.map(q => q.id);
-      const fallbackQb = this.qbRepo.createQueryBuilder('q');
-      if (existingIds.length > 0) {
-        fallbackQb.where('q.id NOT IN (:...existingIds)', { existingIds });
-      }
-      fallbackQb.orderBy('RAND()').take(bankCount - bankQuestions.length);
-      const fallback = await fallbackQb.getMany();
-      bankQuestions.push(...fallback);
-    }
-    strategy.bankCount = bankQuestions.length;
-
-    // ========== 增强层：JD 定制题 + 简历追问题 ==========
-    const enhancedQuestions: { question: string; source: string; referenceAnswer?: string }[] = [];
-
-    if (dto.jobDescription && await this.aiRuntimeService.isConfigured()) {
-      try {
-        const jdResult = await this.aiRuntimeService.chatJson<{ questions?: { question: string; referenceAnswer?: string }[] }>({
-          scene: 'interview_generate',
-          maxTokens: 800,
-          temperature: 0.7,
-          systemPrompt: '你是一名专业面试官。根据岗位描述生成 1-2 道针对性面试题。输出 JSON：{"questions":[{"question":"...","referenceAnswer":"..."}]}',
-          userPrompt: `岗位描述：${dto.jobDescription.slice(0, 1500)}`,
-        });
-        if (Array.isArray(jdResult.questions)) {
-          for (const q of jdResult.questions.slice(0, 2)) {
-            enhancedQuestions.push({ question: q.question, source: 'jd_custom', referenceAnswer: q.referenceAnswer });
-          }
+    // 解析所选分类的层级名称，作为 AI 出题依据或题库兜底条件。
+    let categoryName: string | undefined;
+    let categoryPath: string | undefined;
+    if (dto.categoryId) {
+      const cat = await this.qcRepo.findOne({ where: { id: dto.categoryId } });
+      if (cat) {
+        categoryName = cat.name;
+        if (cat.parentId) {
+          const parent = await this.qcRepo.findOne({ where: { id: cat.parentId } });
+          categoryPath = parent ? `${parent.name} / ${cat.name}` : cat.name;
+        } else {
+          categoryPath = cat.name;
         }
-      } catch { /* AI unavailable, skip */ }
+      }
     }
-    strategy.jdCustomCount = enhancedQuestions.length;
 
-    if (resumeContent && await this.aiRuntimeService.isConfigured() && enhancedQuestions.length < 2) {
-      try {
-        const skills = Array.isArray(resumeContent.skills) ? resumeContent.skills.join(', ') : '';
-        const projects = Array.isArray(resumeContent.projects)
-          ? resumeContent.projects.map((p: any) => p.name || p.description || '').join('; ')
-          : '';
-        const resumeResult = await this.aiRuntimeService.chatJson<{ questions?: { question: string; referenceAnswer?: string }[] }>({
-          scene: 'interview_generate',
-          maxTokens: 800,
-          temperature: 0.7,
-          systemPrompt: '你是一名专业面试官。根据候选人简历技能和项目经历生成 1 道追问题。输出 JSON：{"questions":[{"question":"...","referenceAnswer":"..."}]}',
-          userPrompt: `技能：${skills}\n项目经历：${projects}`,
-        });
-        if (Array.isArray(resumeResult.questions)) {
-          for (const q of resumeResult.questions.slice(0, 1)) {
-            enhancedQuestions.push({ question: q.question, source: 'resume_followup', referenceAnswer: q.referenceAnswer });
-          }
-        }
-      } catch { /* AI unavailable, skip */ }
-    }
-    strategy.resumeFollowupCount = enhancedQuestions.filter(q => q.source === 'resume_followup').length;
-
-    // ========== 组装面试记录 ==========
-    const allQuestionItems: { question: string; questionType: string; referenceAnswer?: string; questionSource: string }[] = [];
-    for (const q of bankQuestions) {
-      allQuestionItems.push({ question: q.question, questionType: q.positionType || 'general', referenceAnswer: q.referenceAnswer, questionSource: 'bank' });
-    }
-    for (const q of enhancedQuestions) {
-      allQuestionItems.push({ question: q.question, questionType: 'custom', referenceAnswer: q.referenceAnswer, questionSource: q.source });
-    }
+    const targetCount = this.clampTargetQuestionCount(dto.questionCount);
+    const isEn = this.isEnglishLocale(locale);
 
     const interview = this.interviewRepo.create({
       userId,
       jobTitle: dto.jobTitle,
       jobDescription: dto.jobDescription,
       resumeId: dto.resumeId,
-      questionCount: allQuestionItems.length,
-      questionStrategy: strategy,
+      questionCount: targetCount,
+      questionStrategy: {
+        mode: 'conversational',
+        categoryId: dto.categoryId,
+        categoryName,
+        categoryPath,
+        targetCount,
+        locale,
+      },
     });
     const saved = await this.interviewRepo.save(interview);
 
-    const iqEntities = allQuestionItems.map((q, i) =>
-      this.iqRepo.create({
-        interviewId: saved.id,
-        orderIndex: i + 1,
-        question: q.question,
-        questionType: q.questionType,
-        referenceAnswer: q.referenceAnswer,
-        questionSource: q.questionSource,
-      }),
-    );
-    await this.iqRepo.save(iqEntities);
+    const introText = isEn
+      ? `Hello! I'm your AI interviewer today. Welcome to this ${dto.jobTitle || 'mock interview'} session. Before we dive into the questions, could you please introduce yourself? Tell me about your background, skills, and what you're looking for.`
+      : `你好！我是你今天的 AI 面试官，欢迎参加本次${dto.jobTitle ? `「${dto.jobTitle}」` : ''}模拟面试。在进入正式问题之前，请先做个自我介绍，简单谈谈你的背景、技能以及本次面试的期望。`;
 
-    for (const q of bankQuestions) {
-      await this.qbRepo.increment({ id: q.id }, 'frequency', 1);
-    }
+    const introQ = this.iqRepo.create({
+      interviewId: saved.id,
+      orderIndex: 1,
+      question: introText,
+      questionType: 'introduction',
+      questionSource: 'system',
+    });
+    await this.iqRepo.save(introQ);
 
     return this.getInterviewDetail(saved.id, userId);
+  }
+
+  /** 当 AI 不可用时，从题库根据分类兜底取一道未问过的题。 */
+  private async pickQuestionFromBank(interview: Interview, askedTexts: Set<string>): Promise<string | null> {
+    const strategy = (interview.questionStrategy || {}) as Record<string, any>;
+    const categoryId = strategy.categoryId as number | undefined;
+    if (!categoryId) return null;
+    const catIds = await this.collectDescendantCategoryIds(categoryId);
+    if (!catIds.length) return null;
+    const candidates = await this.qbRepo.createQueryBuilder('q')
+      .where('q.categoryId IN (:...catIds)', { catIds })
+      .andWhere('q.reviewStatus = :st OR q.source = :sys', { st: QuestionReviewStatus.APPROVED, sys: QuestionSource.SYSTEM })
+      .orderBy('RAND()')
+      .limit(20)
+      .getMany();
+    for (const q of candidates) {
+      if (!askedTexts.has(q.question)) return q.question;
+    }
+    return null;
+  }
+
+  private async generateNextQuestion(interview: Interview, allQs: InterviewQuestion[]): Promise<{ text: string; source: string } | null> {
+    const askedTexts = new Set(allQs.map(q => q.question));
+    const strategy = (interview.questionStrategy || {}) as Record<string, any>;
+    const categoryHint = strategy.categoryPath || strategy.categoryName || '';
+
+    if (!await this.aiRuntimeService.isConfigured()) {
+      const fallback = await this.pickQuestionFromBank(interview, askedTexts);
+      return fallback ? { text: fallback, source: 'bank' } : null;
+    }
+
+    let resumeSummary = '';
+    if (interview.resumeId) {
+      const resume = await this.resumeRepo.findOne({ where: { id: interview.resumeId }, select: ['content'] });
+      if (resume?.content) {
+        const c = resume.content as Record<string, any>;
+        const skills = Array.isArray(c.skills) ? c.skills.join(', ') : '';
+        const projects = Array.isArray(c.projects)
+          ? c.projects.map((p: any) => `${p.name || ''}: ${(p.description || '').slice(0, 100)}`).join('; ')
+          : '';
+        const edu = Array.isArray(c.education)
+          ? c.education.map((e: any) => `${e.school || ''} ${e.major || ''}`).join(', ')
+          : '';
+        resumeSummary = `Resume - Skills: ${skills}. Education: ${edu}. Projects: ${projects}.`;
+      }
+    }
+
+    const history = allQs
+      .filter(q => q.isAnswered)
+      .map(q => `Interviewer: ${q.question}\nCandidate: ${q.answer}`)
+      .join('\n---\n');
+
+    const targetCount = this.clampTargetQuestionCount(strategy.targetCount ?? interview.questionCount);
+    const remaining = Math.max(0, targetCount - allQs.length);
+    const interviewLocale = (strategy.locale as string) || 'zh-CN';
+    const isEn = this.isEnglishLocale(interviewLocale);
+
+    try {
+      const result = await this.aiRuntimeService.chatJson<{ question?: string; comment?: string }>({
+        scene: 'interview_generate',
+        maxTokens: 600,
+        temperature: 0.8,
+        systemPrompt: isEn
+          ? `You are a professional interviewer conducting a ${interview.jobTitle || 'mock'} interview${categoryHint ? ` focused on ${categoryHint}` : ''}. Based on the candidate's resume, the job description, and the conversation history, generate the NEXT interview question IN ENGLISH. Briefly comment on the previous answer (1 sentence) and then ask ONE new question, combined naturally. Output strict JSON: {"question":"<comment + next question>"}. The interview targets ${targetCount} questions in total; about ${remaining} remain. If no further question is needed, output {"question":""}. NEVER repeat questions already asked.`
+          : `你是一名专业面试官，正在进行${interview.jobTitle ? `「${interview.jobTitle}」` : ''}面试${categoryHint ? `，侧重${categoryHint}` : ''}。请根据候选人的简历、岗位 JD 和对话历史，生成下一道面试题。先用一句话点评上一个回答，再提出一个新问题，自然拼接。输出严格 JSON：{"question":"<点评 + 下一个问题>"}。面试预计共 ${targetCount} 题，还剩 ${remaining} 题。若不需要再问，输出 {"question":""}。所有问题必须中文，不要重复已问过的题。`,
+        userPrompt: `Focus area: ${categoryHint || 'general'}\n${resumeSummary ? resumeSummary + '\n\n' : ''}Job: ${interview.jobTitle || 'General'}\nJob Description: ${(interview.jobDescription || '').slice(0, 1200)}\n\nConversation:\n${history}`,
+      });
+      const text = result.question?.trim();
+      if (text && !askedTexts.has(text)) return { text, source: 'ai_followup' };
+    } catch { /* fall through to bank */ }
+
+    const fallback = await this.pickQuestionFromBank(interview, askedTexts);
+    return fallback ? { text: fallback, source: 'bank' } : null;
   }
 
   async getInterviews(userId: number, page = 1, pageSize = 10) {
@@ -381,11 +384,33 @@ export class InterviewService implements OnModuleInit {
     return { list, total, page: +page, pageSize: +pageSize };
   }
 
+  /** 用户侧面试总览：直接基于全表聚合，不依赖分页列表。 */
+  async getUserInterviewOverview(userId: number) {
+    const [total, completed, inProgress, abandoned, avgRow] = await Promise.all([
+      this.interviewRepo.count({ where: { userId } }),
+      this.interviewRepo.count({ where: { userId, status: InterviewStatus.COMPLETED } }),
+      this.interviewRepo.count({ where: { userId, status: InterviewStatus.IN_PROGRESS } }),
+      this.interviewRepo.count({ where: { userId, status: InterviewStatus.ABANDONED } }),
+      this.interviewRepo
+        .createQueryBuilder('i')
+        .select('AVG(i.totalScore)', 'avg')
+        .where('i.userId = :userId AND i.status = :st AND i.totalScore > 0', { userId, st: InterviewStatus.COMPLETED })
+        .getRawOne<{ avg: string | null }>(),
+    ]);
+    return {
+      total,
+      completed,
+      inProgress,
+      abandoned,
+      avgScore: Math.round(Number(avgRow?.avg) || 0),
+    };
+  }
+
   async getAllInterviewsAdmin(page = 1, pageSize = 10, keyword?: string, status?: string) {
     const qb = this.interviewRepo.createQueryBuilder('i')
       .leftJoinAndSelect('i.user', 'user');
     if (keyword) {
-      qb.andWhere('(i.jobTitle LIKE :kw OR user.username LIKE :kw OR user.nickname LIKE :kw)', { kw: `%${keyword}%` });
+      qb.andWhere('(i.jobTitle LIKE :kw OR user.username LIKE :kw OR user.nickname LIKE :kw)', { kw: `%${escapeLike(keyword)}%` });
     }
     if (status) {
       qb.andWhere('i.status = :st', { st: status });
@@ -406,7 +431,16 @@ export class InterviewService implements OnModuleInit {
     if (interview.questions) {
       interview.questions.sort((a, b) => a.orderIndex - b.orderIndex);
     }
-    return interview;
+
+    let resume: Pick<Resume, 'id' | 'title' | 'targetPosition' | 'content'> | null = null;
+    if (interview.resumeId) {
+      resume = await this.resumeRepo.findOne({
+        where: { id: interview.resumeId },
+        select: ['id', 'title', 'targetPosition', 'content'],
+      });
+    }
+
+    return { ...interview, resume };
   }
 
   async deleteInterviewAdmin(id: number) {
@@ -437,19 +471,40 @@ export class InterviewService implements OnModuleInit {
     if (interview.questions) {
       interview.questions.sort((a, b) => a.orderIndex - b.orderIndex);
     }
-    return interview;
+
+    let resume: any = null;
+    if (interview.resumeId) {
+      resume = await this.resumeRepo.findOne({
+        where: { id: interview.resumeId },
+        select: ['id', 'title', 'targetPosition', 'content'],
+      });
+    }
+
+    return { ...interview, resume };
   }
 
-  async submitAnswer(interviewId: number, questionId: number, userId: number, dto: SubmitAnswerDto) {
+  async submitAnswer(interviewId: number, questionId: number, userId: number, dto: SubmitAnswerDto, locale: string = 'zh-CN') {
     const interview = await this.interviewRepo.findOne({ where: { id: interviewId, userId } });
     if (!interview) throw new NotFoundException('面试记录不存在');
+    if (interview.status === InterviewStatus.COMPLETED) {
+      throw new ForbiddenException('该面试已结束，无法继续作答');
+    }
+    if (interview.status === InterviewStatus.ABANDONED) {
+      throw new ForbiddenException('该面试已放弃，无法继续作答');
+    }
 
     const question = await this.iqRepo.findOne({ where: { id: questionId, interviewId } });
     if (!question) throw new NotFoundException('题目不存在');
+    if (question.isAnswered) {
+      throw new ForbiddenException('该题目已作答，请勿重复提交');
+    }
 
-    const { score, dimensionScores, feedback } = await this.evaluateAnswer(dto.answer, question.question, question.referenceAnswer);
+    const { score, dimensionScores, feedback } = await this.evaluateAnswer(dto.answer, question.question, question.referenceAnswer, locale);
 
     question.answer = dto.answer;
+    question.answerType = dto.answerType || 'text';
+    if (dto.voiceUrl) question.voiceUrl = dto.voiceUrl;
+    if (dto.voiceDuration) question.voiceDuration = dto.voiceDuration;
     question.score = score;
     question.dimensionScores = dimensionScores;
     question.feedback = feedback;
@@ -458,17 +513,57 @@ export class InterviewService implements OnModuleInit {
 
     interview.answeredCount = await this.iqRepo.count({ where: { interviewId, isAnswered: true } });
 
-    if (interview.answeredCount >= interview.questionCount) {
+    const strategy = (interview.questionStrategy || {}) as Record<string, any>;
+    const targetCount = this.clampTargetQuestionCount(strategy.targetCount ?? interview.questionCount);
+
+    let followUp: { id: number; question: string; orderIndex: number } | null = null;
+
+    const unanswered = await this.iqRepo.count({ where: { interviewId, isAnswered: false } });
+    const allQsBeforeFollowUp = await this.iqRepo.find({ where: { interviewId }, order: { orderIndex: 'ASC' } });
+    if (unanswered === 0 && allQsBeforeFollowUp.length < targetCount) {
+      const next = await this.generateNextQuestion(interview, allQsBeforeFollowUp);
+      if (next) {
+        const nextOrder = allQsBeforeFollowUp.length + 1;
+        const newQ = this.iqRepo.create({
+          interviewId,
+          orderIndex: nextOrder,
+          question: next.text,
+          questionType: 'followup',
+          questionSource: next.source,
+        });
+        const savedQ = await this.iqRepo.save(newQ);
+        followUp = { id: savedQ.id, question: savedQ.question, orderIndex: savedQ.orderIndex };
+      }
+    }
+
+    if (unanswered === 0 && !followUp) {
       interview.status = InterviewStatus.COMPLETED;
       const allQuestions = await this.iqRepo.find({ where: { interviewId } });
       const totalScore = allQuestions.reduce((sum, q) => sum + q.score, 0);
       interview.totalScore = Math.round(totalScore / allQuestions.length);
       interview.dimensionScores = this.aggregateDimensionScores(allQuestions);
-      interview.overallFeedback = this.generateOverallFeedback(interview.totalScore, interview.dimensionScores);
+      interview.overallFeedback = this.generateOverallFeedback(interview.totalScore, interview.dimensionScores, locale);
     }
 
     await this.interviewRepo.save(interview);
-    return question;
+    return { ...question, followUp };
+  }
+
+  async endInterview(interviewId: number, userId: number, locale: string = 'zh-CN') {
+    const interview = await this.interviewRepo.findOne({ where: { id: interviewId, userId } });
+    if (!interview) throw new NotFoundException('面试记录不存在');
+    if (interview.status === InterviewStatus.COMPLETED) return interview;
+
+    interview.status = InterviewStatus.COMPLETED;
+    const allQuestions = await this.iqRepo.find({ where: { interviewId } });
+    const answered = allQuestions.filter(q => q.isAnswered);
+    if (answered.length > 0) {
+      const totalScore = answered.reduce((sum, q) => sum + q.score, 0);
+      interview.totalScore = Math.round(totalScore / answered.length);
+      interview.dimensionScores = this.aggregateDimensionScores(answered);
+      interview.overallFeedback = this.generateOverallFeedback(interview.totalScore, interview.dimensionScores, locale);
+    }
+    return this.interviewRepo.save(interview);
   }
 
   async deleteInterview(id: number, userId: number) {
@@ -525,11 +620,32 @@ export class InterviewService implements OnModuleInit {
     return { dimensions, scores: avg, interviewCount: interviews.length };
   }
 
-  private async evaluateAnswer(answer: string, question: string, referenceAnswer?: string): Promise<{
+  /** 识别是否为英文 locale（默认中文）。 */
+  private isEnglishLocale(locale?: string): boolean {
+    if (!locale) return false;
+    const lc = locale.toLowerCase();
+    return lc.startsWith('en');
+  }
+
+  /** 中英文维度名映射，仅用于展示。 */
+  private localizeDimensionName(name: string, locale?: string): string {
+    if (!this.isEnglishLocale(locale)) return name;
+    const map: Record<string, string> = {
+      '内容完整性': 'Completeness',
+      '逻辑性': 'Logic',
+      '专业性': 'Professionalism',
+      '表达能力': 'Expression',
+      '创新思维': 'Innovation',
+    };
+    return map[name] || name;
+  }
+
+  private async evaluateAnswer(answer: string, question: string, referenceAnswer?: string, locale: string = 'zh-CN'): Promise<{
     score: number;
     dimensionScores: Record<string, number>;
     feedback: string;
   }> {
+    const isEn = this.isEnglishLocale(locale);
     if (await this.aiRuntimeService.isConfigured()) {
       try {
         const aiResult = await this.aiRuntimeService.chatJson<{
@@ -540,13 +656,22 @@ export class InterviewService implements OnModuleInit {
           scene: 'interview_score',
           maxTokens: 1200,
           temperature: 0.2,
-          systemPrompt: [
-            '你是一名严格但专业的校园面试官。',
-            '请根据题目、参考答案和候选人回答进行评分。',
-            '输出 JSON，不要输出 markdown。',
-            'JSON 格式必须为：{"score":86,"dimensionScores":{"内容完整性":80,"逻辑性":88,"专业性":90,"表达能力":84,"创新思维":78},"feedback":"三段以内中文反馈"}',
-            '所有分数取 0-100 的整数。',
-          ].join('\n'),
+          systemPrompt: isEn
+            ? [
+                'You are a strict but professional campus interviewer.',
+                'Grade the candidate answer based on the question and reference answer.',
+                'Output JSON only, no markdown.',
+                'JSON shape MUST be: {"score":86,"dimensionScores":{"内容完整性":80,"逻辑性":88,"专业性":90,"表达能力":84,"创新思维":78},"feedback":"At most three short paragraphs of feedback IN ENGLISH."}',
+                'Keep the dimension keys in Chinese exactly as shown (used as storage keys), but ALL feedback prose MUST be in English.',
+                'All scores are integers in 0-100.',
+              ].join('\n')
+            : [
+                '你是一名严格但专业的校园面试官。',
+                '请根据题目、参考答案和候选人回答进行评分。',
+                '输出 JSON，不要输出 markdown。',
+                'JSON 格式必须为：{"score":86,"dimensionScores":{"内容完整性":80,"逻辑性":88,"专业性":90,"表达能力":84,"创新思维":78},"feedback":"三段以内中文反馈"}',
+                '所有分数取 0-100 的整数。',
+              ].join('\n'),
           userPrompt: JSON.stringify({
             question,
             referenceAnswer: referenceAnswer || '',
@@ -564,7 +689,7 @@ export class InterviewService implements OnModuleInit {
           return {
             score,
             dimensionScores,
-            feedback: aiResult.feedback.trim() || 'AI 已完成评分',
+            feedback: aiResult.feedback.trim() || (isEn ? 'AI grading completed.' : 'AI 已完成评分'),
           };
         }
       } catch {
@@ -572,14 +697,15 @@ export class InterviewService implements OnModuleInit {
       }
     }
 
-    return this.evaluateAnswerRuleBased(answer, referenceAnswer);
+    return this.evaluateAnswerRuleBased(answer, referenceAnswer, locale);
   }
 
-  private evaluateAnswerRuleBased(answer: string, referenceAnswer?: string): {
+  private evaluateAnswerRuleBased(answer: string, referenceAnswer?: string, locale: string = 'zh-CN'): {
     score: number;
     dimensionScores: Record<string, number>;
     feedback: string;
   } {
+    const isEn = this.isEnglishLocale(locale);
     const answerLen = answer.length;
 
     const completeness = Math.min(100, Math.round(answerLen / 3));
@@ -600,13 +726,23 @@ export class InterviewService implements OnModuleInit {
     const score = Math.round(Object.values(dimensionScores).reduce((a, b) => a + b, 0) / 5);
 
     const suggestions: string[] = [];
-    if (completeness < 60) suggestions.push('回答内容不够充实，建议补充更多细节和具体案例');
-    if (logic < 60) suggestions.push('建议使用 STAR 法则（情境-任务-行动-结果）组织回答');
-    if (professionalism < 60) suggestions.push('可以加入更多专业术语和技术细节来体现专业度');
-    if (expression < 60) suggestions.push('表达可以更加流畅，建议多练习口语表达');
-    if (suggestions.length === 0) suggestions.push('回答较为完整，继续保持！可以尝试加入更多量化数据来增强说服力');
+    if (isEn) {
+      if (completeness < 60) suggestions.push('The answer is not detailed enough. Add more concrete examples and specifics.');
+      if (logic < 60) suggestions.push('Consider using the STAR framework (Situation-Task-Action-Result) to organize your answer.');
+      if (professionalism < 60) suggestions.push('Include more domain terms and technical detail to demonstrate expertise.');
+      if (expression < 60) suggestions.push('Make your phrasing smoother and practice spoken delivery.');
+      if (suggestions.length === 0) suggestions.push('Solid answer overall. Try adding more quantitative data to strengthen impact.');
+    } else {
+      if (completeness < 60) suggestions.push('回答内容不够充实，建议补充更多细节和具体案例');
+      if (logic < 60) suggestions.push('建议使用 STAR 法则（情境-任务-行动-结果）组织回答');
+      if (professionalism < 60) suggestions.push('可以加入更多专业术语和技术细节来体现专业度');
+      if (expression < 60) suggestions.push('表达可以更加流畅，建议多练习口语表达');
+      if (suggestions.length === 0) suggestions.push('回答较为完整，继续保持！可以尝试加入更多量化数据来增强说服力');
+    }
 
-    const feedback = `评分：${score}/100\n\n${suggestions.join('\n\n')}${referenceAnswer ? '\n\n参考答案：' + referenceAnswer : ''}`;
+    const refLabel = isEn ? 'Reference answer:' : '参考答案：';
+    const scoreLabel = isEn ? 'Score' : '评分';
+    const feedback = `${scoreLabel}：${score}/100\n\n${suggestions.join('\n\n')}${referenceAnswer ? '\n\n' + refLabel + referenceAnswer : ''}`;
 
     return { score, dimensionScores, feedback };
   }
@@ -645,15 +781,130 @@ export class InterviewService implements OnModuleInit {
     return Math.max(0, Math.min(100, safe));
   }
 
-  private generateOverallFeedback(score: number, dimensions: Record<string, number>): string {
-    let level = '需要加强';
-    if (score >= 80) level = '表现优秀';
-    else if (score >= 60) level = '表现良好';
-    else if (score >= 40) level = '有待提高';
+  private generateOverallFeedback(score: number, dimensions: Record<string, number>, locale: string = 'zh-CN'): string {
+    const isEn = this.isEnglishLocale(locale);
+    let level: string;
+    if (isEn) {
+      level = 'Needs improvement';
+      if (score >= 80) level = 'Excellent';
+      else if (score >= 60) level = 'Good';
+      else if (score >= 40) level = 'Fair';
+    } else {
+      level = '需要加强';
+      if (score >= 80) level = '表现优秀';
+      else if (score >= 60) level = '表现良好';
+      else if (score >= 40) level = '有待提高';
+    }
 
     const strongest = Object.entries(dimensions).sort((a, b) => b[1] - a[1])[0];
     const weakest = Object.entries(dimensions).sort((a, b) => a[1] - b[1])[0];
 
-    return `总体评价：${level}（${score}分）\n\n优势维度：${strongest[0]}（${strongest[1]}分）\n待提高维度：${weakest[0]}（${weakest[1]}分）\n\n建议持续练习，重点提升${weakest[0]}方面的表现。`;
+    const strongestName = this.localizeDimensionName(strongest[0], locale);
+    const weakestName = this.localizeDimensionName(weakest[0], locale);
+
+    if (isEn) {
+      return `Overall: ${level} (${score} pts)\n\nStrongest dimension: ${strongestName} (${strongest[1]} pts)\nWeakest dimension: ${weakestName} (${weakest[1]} pts)\n\nKeep practicing, focus on improving ${weakestName}.`;
+    }
+    return `总体评价：${level}（${score}分）\n\n优势维度：${strongestName}（${strongest[1]}分）\n待提高维度：${weakestName}（${weakest[1]}分）\n\n建议持续练习，重点提升${weakestName}方面的表现。`;
+  }
+
+  // ==================== 题库练习 ====================
+
+  async practiceQuestion(questionId: number, answer: string, userId: number, locale: string = 'zh-CN') {
+    const question = await this.qbRepo.findOne({ where: { id: questionId } });
+    if (!question) throw new NotFoundException('题目不存在');
+
+    const isEn = this.isEnglishLocale(locale);
+    let score: number;
+    let dimensionScores: Record<string, number>;
+    let feedback: string;
+    let isCorrect: boolean | null = null;
+
+    if (question.questionType === 'choice' || question.questionType === 'judgment') {
+      const correctOption = question.options?.find(o => o.isCorrect);
+      isCorrect = correctOption ? answer === correctOption.value : false;
+      score = isCorrect ? 100 : 0;
+      dimensionScores = { accuracy: score };
+      if (isCorrect) {
+        feedback = isEn ? 'Correct! Well done.' : '回答正确，做得好！';
+      } else {
+        const correct = correctOption?.label || question.referenceAnswer;
+        feedback = isEn ? `Incorrect. The correct answer is: ${correct}` : `回答错误。正确答案是：${correct}`;
+      }
+    } else {
+      const result = await this.evaluateAnswer(answer, question.question, question.referenceAnswer, locale);
+      score = result.score;
+      dimensionScores = result.dimensionScores;
+      feedback = result.feedback;
+    }
+
+    const record = this.practiceRepo.create({
+      userId, questionId, answer, score, dimensionScores, feedback,
+    });
+    await this.practiceRepo.save(record);
+
+    return { id: record.id, score, dimensionScores, feedback, isCorrect };
+  }
+
+  async getPracticeHistory(userId: number, page = 1, pageSize = 20) {
+    const [list, total] = await this.practiceRepo.findAndCount({
+      where: { userId },
+      relations: ['question'],
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+    return { list, total };
+  }
+
+  async getPracticeStats(userId: number) {
+    const records = await this.practiceRepo.find({ where: { userId } });
+    const totalPracticed = records.length;
+    const uniqueQuestions = new Set(records.map(r => r.questionId)).size;
+    const avgScore = totalPracticed > 0
+      ? Math.round(records.reduce((s, r) => s + r.score, 0) / totalPracticed)
+      : 0;
+    const bestScore = totalPracticed > 0 ? Math.max(...records.map(r => r.score)) : 0;
+    return { totalPracticed, uniqueQuestions, avgScore, bestScore };
+  }
+
+  async getPracticeRecordsAdmin(page = 1, pageSize = 20, keyword?: string) {
+    const qb = this.practiceRepo.createQueryBuilder('pr')
+      .leftJoinAndSelect('pr.user', 'user')
+      .leftJoinAndSelect('pr.question', 'question')
+      .orderBy('pr.createdAt', 'DESC');
+    if (keyword?.trim()) {
+      qb.andWhere(
+        '(user.username LIKE :kw OR user.nickname LIKE :kw OR question.question LIKE :kw)',
+        { kw: `%${keyword.trim()}%` },
+      );
+    }
+    const [list, total] = await qb
+      .skip((page - 1) * pageSize)
+      .take(pageSize)
+      .getManyAndCount();
+    return { list, total };
+  }
+
+  async getPracticeStatsAdmin() {
+    const total = await this.practiceRepo.count();
+    const users = await this.practiceRepo
+      .createQueryBuilder('pr')
+      .select('COUNT(DISTINCT pr.userId)', 'count')
+      .getRawOne();
+    const avgResult = await this.practiceRepo
+      .createQueryBuilder('pr')
+      .select('AVG(pr.score)', 'avg')
+      .getRawOne();
+    return {
+      totalRecords: total,
+      totalUsers: parseInt(users?.count || '0', 10),
+      avgScore: Math.round(parseFloat(avgResult?.avg || '0')),
+    };
+  }
+
+  async deletePracticeRecord(id: number) {
+    await this.practiceRepo.delete(id);
+    return { success: true };
   }
 }

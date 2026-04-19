@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Put, Delete, Body, Param, Query,
-  UseGuards, Request, ParseIntPipe, UseInterceptors, UploadedFile,
+  UseGuards, Request, ParseIntPipe, UseInterceptors, UploadedFile, Headers,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -122,6 +122,60 @@ export class InterviewController {
     return this.interviewService.deleteQuestion(id);
   }
 
+  // ==================== 题库练习答题 ====================
+
+  @Post('questions/:id/practice')
+  @UseGuards(JwtAuthGuard)
+  practiceQuestion(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('answer') answer: string,
+    @Request() req,
+    @Headers('x-locale') xLocale?: string,
+    @Headers('accept-language') acceptLanguage?: string,
+  ) {
+    const locale = xLocale || acceptLanguage || 'zh-CN';
+    return this.interviewService.practiceQuestion(id, answer, req.user.id, locale);
+  }
+
+  @Get('practice/history')
+  @UseGuards(JwtAuthGuard)
+  getPracticeHistory(@Request() req, @Query('page') page?: number, @Query('pageSize') pageSize?: number) {
+    return this.interviewService.getPracticeHistory(req.user.id, page || 1, pageSize || 20);
+  }
+
+  @Get('practice/stats')
+  @UseGuards(JwtAuthGuard)
+  getPracticeStats(@Request() req) {
+    return this.interviewService.getPracticeStats(req.user.id);
+  }
+
+  // ==================== 管理端练习记录 ====================
+
+  @Get('practice/admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getPracticeRecordsAdmin(
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('keyword') keyword?: string,
+  ) {
+    return this.interviewService.getPracticeRecordsAdmin(page || 1, pageSize || 20, keyword);
+  }
+
+  @Get('practice/admin/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getPracticeStatsAdmin() {
+    return this.interviewService.getPracticeStatsAdmin();
+  }
+
+  @Delete('practice/admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deletePracticeRecord(@Param('id', ParseIntPipe) id: number) {
+    return this.interviewService.deletePracticeRecord(id);
+  }
+
   // ==================== 用户投稿题目 ====================
 
   @Post('questions/submit')
@@ -189,14 +243,26 @@ export class InterviewController {
 
   @Post('start')
   @UseGuards(JwtAuthGuard)
-  startInterview(@Request() req, @Body() dto: StartInterviewDto) {
-    return this.interviewService.startInterview(req.user.id, dto);
+  startInterview(
+    @Request() req,
+    @Body() dto: StartInterviewDto,
+    @Headers('x-locale') xLocale?: string,
+    @Headers('accept-language') acceptLanguage?: string,
+  ) {
+    const locale = xLocale || acceptLanguage || 'zh-CN';
+    return this.interviewService.startInterview(req.user.id, dto, locale);
   }
 
   @Get('list')
   @UseGuards(JwtAuthGuard)
   getInterviews(@Request() req, @Query('page') page?: number, @Query('pageSize') pageSize?: number) {
     return this.interviewService.getInterviews(req.user.id, page || 1, pageSize || 10);
+  }
+
+  @Get('overview')
+  @UseGuards(JwtAuthGuard)
+  getUserOverview(@Request() req) {
+    return this.interviewService.getUserInterviewOverview(req.user.id);
   }
 
   @Get('radar')
@@ -218,8 +284,23 @@ export class InterviewController {
     @Param('questionId', ParseIntPipe) questionId: number,
     @Request() req,
     @Body() dto: SubmitAnswerDto,
+    @Headers('x-locale') xLocale?: string,
+    @Headers('accept-language') acceptLanguage?: string,
   ) {
-    return this.interviewService.submitAnswer(id, questionId, req.user.id, dto);
+    const locale = xLocale || acceptLanguage || 'zh-CN';
+    return this.interviewService.submitAnswer(id, questionId, req.user.id, dto, locale);
+  }
+
+  @Post(':id/end')
+  @UseGuards(JwtAuthGuard)
+  endInterview(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+    @Headers('x-locale') xLocale?: string,
+    @Headers('accept-language') acceptLanguage?: string,
+  ) {
+    const locale = xLocale || acceptLanguage || 'zh-CN';
+    return this.interviewService.endInterview(id, req.user.id, locale);
   }
 
   @Delete(':id')

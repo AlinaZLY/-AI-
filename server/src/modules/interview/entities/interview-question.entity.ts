@@ -39,6 +39,15 @@ export class InterviewQuestion {
   @Column({ type: 'text', nullable: true, comment: '参考答案' })
   referenceAnswer: string;
 
+  @Column({ length: 10, default: 'text', comment: '回答类型(text/voice)' })
+  answerType: string;
+
+  @Column({ length: 500, nullable: true, comment: '语音文件路径' })
+  voiceUrl: string;
+
+  @Column({ default: 0, comment: '语音时长(秒)' })
+  voiceDuration: number;
+
   @Column({ default: false, comment: '是否已回答' })
   isAnswered: boolean;
 

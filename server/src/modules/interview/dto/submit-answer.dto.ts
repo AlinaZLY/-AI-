@@ -1,4 +1,4 @@
-import { IsString, IsOptional, Length } from 'class-validator';
+import { IsString, IsOptional, IsNumber, Length } from 'class-validator';
 
 export class SubmitAnswerDto {
   @IsString()
@@ -8,4 +8,12 @@ export class SubmitAnswerDto {
   @IsOptional()
   @IsString()
   answerType?: 'text' | 'voice';
+
+  @IsOptional()
+  @IsString()
+  voiceUrl?: string;
+
+  @IsOptional()
+  @IsNumber()
+  voiceDuration?: number;
 }
