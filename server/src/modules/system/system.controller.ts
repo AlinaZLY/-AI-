@@ -2,7 +2,7 @@
  * 系统设置控制器
  * 管理平台全局配置（网站名称等），需要管理员权限
  */
-import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, ParseIntPipe, OnModuleInit, UploadedFile, UseInterceptors, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards, ParseIntPipe, OnModuleInit, UploadedFile, UseInterceptors, Request, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { join } from 'path';
@@ -84,6 +84,13 @@ export class SystemController implements OnModuleInit {
     return { success: true, data: logs };
   }
 
+  /** POST /api/system/ai/translate - AI 翻译（自动检测中英互译） */
+  @Post('ai/translate')
+  @UseGuards(JwtAuthGuard)
+  async translateText(@Body() body: { text: string; targetLang?: string }) {
+    return this.systemService.translateText(body.text, body.targetLang);
+  }
+
   /** POST /api/system/speech/health-check - 语音服务健康检查 */
   @Post('speech/health-check')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -119,14 +126,24 @@ export class SystemController implements OnModuleInit {
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: speechDir,
-      filename: (_, file, cb) => cb(null, `speech_${Date.now()}_${Math.random().toString(36).slice(2)}${file.originalname?.match(/\.[^.]+$/)?.[0] || '.mp3'}`),
+      filename: (req, file, cb) => {
+        const userId = (req as any).user?.id || 'unknown';
+        cb(null, `speech_u${userId}_${Date.now()}_${Math.random().toString(36).slice(2)}${file.originalname?.match(/\.[^.]+$/)?.[0] || '.mp3'}`);
+      },
     }),
     limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
+    fileFilter: (_, file, cb) => {
+      const allowedExt = /\.(webm|wav|mp3|ogg|m4a|opus)$/i.test(file.originalname || '');
+      const allowedMime = file.mimetype.startsWith('audio/') || file.mimetype === 'video/webm';
+      if (allowedExt && allowedMime) cb(null, true);
+      else cb(new Error('仅支持音频文件'), false);
+    },
   }))
   async speechUpload(@UploadedFile() file: Express.Multer.File, @Query('baseUrl') baseUrl?: string) {
-    if (!file) return { success: false, message: '请上传音频文件' };
+    if (!file) throw new BadRequestException('请上传音频文件');
     const path = `/uploads/speech/${file.filename}`;
-    const url = baseUrl ? `${baseUrl.replace(/\/$/, '')}${path}` : path;
+    const privateUrl = `/api/private-uploads/speech/${file.filename}`;
+    const url = baseUrl ? `${baseUrl.replace(/\/$/, '')}${privateUrl}` : privateUrl;
     return { success: true, url, path };
   }
 

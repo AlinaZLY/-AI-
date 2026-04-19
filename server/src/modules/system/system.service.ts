@@ -295,6 +295,29 @@ export class SystemService {
     }
   }
 
+  async translateText(text: string, targetLang?: string): Promise<{ text: string }> {
+    const settings = await this.getAllSettings();
+    const apiKey = settings['ark_api_key'] || this.configService.get('ARK_API_KEY');
+    const baseUrl = settings['ark_base_url'] || 'https://ark.cn-beijing.volces.com/api/v3';
+    const modelId = settings['ark_model_id'] || this.configService.get('ARK_MODEL_ID');
+    if (!apiKey || !modelId) return { text: '' };
+
+    const isChinese = /[\u4e00-\u9fff]/.test(text);
+    const lang = targetLang || (isChinese ? 'English' : '中文');
+    const prompt = `Translate the following text to ${lang}. Only return the translation, nothing else:\n\n${text}`;
+
+    try {
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ model: modelId, messages: [{ role: 'user', content: prompt }], max_tokens: 2000 }),
+      });
+      if (!response.ok) return { text: '' };
+      const data = await response.json() as any;
+      return { text: data?.choices?.[0]?.message?.content?.trim() || '' };
+    } catch { return { text: '' }; }
+  }
+
   async queryBilling(month?: string) {
     const settings = await this.getAllSettings();
     const ak = settings['volc_access_key_id'] || this.configService.get('VOLC_ACCESS_KEY_ID');
@@ -400,18 +423,44 @@ export class SystemService {
     if (voiceProvider === 'disabled') {
       return { success: false, message: '语音服务未启用，请在后台 AI 配置中开启' };
     }
-    const appKey = settings['voice_app_id'] || '';
-    const accessKey = settings['voice_api_key'] || '';
-    if (!appKey || !accessKey) {
-      return { success: false, message: '语音服务未配置，请在 AI 配置-配置 KEY 中填写语音 App ID 和 API Key' };
+    const apiKey = settings['voice_api_key'] || settings['voice_app_id'] || '';
+    if (!apiKey) {
+      return { success: false, message: '语音服务未配置，请在 AI 配置-配置 KEY 中填写语音 API Key' };
     }
+
+    const fs = require('fs');
+    const path = require('path');
+
+    const privateSpeechMatch = audioUrl.match(/^\/api\/private-uploads\/speech\/([^/?#]+)/);
+    const normalizedAudioUrl = privateSpeechMatch ? `/uploads/speech/${privateSpeechMatch[1]}` : audioUrl;
+    const isLocalPath = normalizedAudioUrl.startsWith('/uploads/') || normalizedAudioUrl.startsWith('uploads/');
+    let audioData: { format: string; url?: string; data?: string } | null = null;
+
+    if (isLocalPath) {
+      const filePath = path.join(process.cwd(), normalizedAudioUrl);
+      if (!fs.existsSync(filePath)) {
+        return { success: false, message: '音频文件不存在' };
+      }
+      const fileBuffer = fs.readFileSync(filePath);
+      const base64Data = fileBuffer.toString('base64');
+      const ext = path.extname(filePath).replace('.', '').toLowerCase();
+      const formatMap: Record<string, string> = { webm: 'opus', mp3: 'mp3', wav: 'wav', ogg: 'ogg', m4a: 'm4a', opus: 'opus' };
+      audioData = {
+        format: formatMap[ext] || options?.format || 'wav',
+        data: base64Data,
+      };
+    } else {
+      const ext = normalizedAudioUrl.split('.').pop()?.toLowerCase() || '';
+      audioData = {
+        format: options?.format || ext || 'mp3',
+        url: normalizedAudioUrl,
+      };
+    }
+
     const taskId = crypto.randomUUID();
-    const body = {
+    const body: any = {
       user: { uid: `user_${Date.now()}` },
-      audio: {
-        format: options?.format || 'mp3',
-        url: audioUrl,
-      },
+      audio: audioData,
       request: {
         model_name: 'bigmodel',
         enable_itn: true,
@@ -419,14 +468,13 @@ export class SystemService {
       },
     };
     if (options?.language) {
-      (body as any).audio.language = options.language;
+      body.audio.language = options.language;
     }
     const res = await fetch('https://openspeech.bytedance.com/api/v3/auc/bigmodel/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-App-Key': appKey,
-        'X-Api-Access-Key': accessKey,
+        'x-api-key': apiKey,
         'X-Api-Resource-Id': 'volc.seedasr.auc',
         'X-Api-Request-Id': taskId,
         'X-Api-Sequence': '-1',
@@ -448,17 +496,15 @@ export class SystemService {
     if (voiceProvider === 'disabled') {
       return { success: false, message: '语音服务未启用' };
     }
-    const appKey = settings['voice_app_id'] || '';
-    const accessKey = settings['voice_api_key'] || '';
-    if (!appKey || !accessKey) {
+    const apiKey = settings['voice_api_key'] || settings['voice_app_id'] || '';
+    if (!apiKey) {
       return { success: false, message: '语音服务未配置' };
     }
     const res = await fetch('https://openspeech.bytedance.com/api/v3/auc/bigmodel/query', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Api-App-Key': appKey,
-        'X-Api-Access-Key': accessKey,
+        'x-api-key': apiKey,
         'X-Api-Resource-Id': 'volc.seedasr.auc',
         'X-Api-Request-Id': taskId,
         'X-Api-Sequence': '-1',
@@ -466,6 +512,7 @@ export class SystemService {
       body: '{}',
     });
     const statusCode = res.headers.get('X-Api-Status-Code');
+    const apiMessage = res.headers.get('X-Api-Message') || '';
     const data = await res.json().catch(() => ({}));
     if (statusCode === '20000000' && data.result?.text) {
       return { success: true, text: data.result.text, result: data };
@@ -473,7 +520,7 @@ export class SystemService {
     if (statusCode === '20000000' && !data.result?.text) {
       return { success: false, message: '识别中，请稍后查询', status: 'processing' };
     }
-    return { success: false, message: (data as any)?.message || '查询失败' };
+    return { success: false, message: (data as any)?.message || apiMessage || `查询失败(${statusCode})` };
   }
 
   /** 火山引擎语音识别 - 一站式识别（提交+轮询） */
@@ -497,19 +544,16 @@ export class SystemService {
     if (provider === 'disabled') {
       return { success: false, enabled: false, message: '语音服务未启用' };
     }
-    const appKey = settings['voice_app_id'] || '';
-    const accessKey = settings['voice_api_key'] || '';
-    if (!appKey || !accessKey) {
-      return { success: false, enabled: true, message: '语音密钥未配置（缺少 App ID 或 API Key）' };
+    const apiKey = settings['voice_api_key'] || settings['voice_app_id'] || '';
+    if (!apiKey) {
+      return { success: false, enabled: true, message: '语音密钥未配置（缺少 API Key）' };
     }
-    // 做一次轻量级 API 调用验证密钥有效性
     try {
       const res = await fetch('https://openspeech.bytedance.com/api/v3/auc/bigmodel/query', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Api-App-Key': appKey,
-          'X-Api-Access-Key': accessKey,
+          'x-api-key': apiKey,
           'X-Api-Resource-Id': 'volc.seedasr.auc',
           'X-Api-Request-Id': 'health-check-' + Date.now(),
           'X-Api-Sequence': '-1',
@@ -517,11 +561,12 @@ export class SystemService {
         body: '{}',
       });
       const statusCode = res.headers.get('X-Api-Status-Code') || '';
-      // 20000000 = ok (even if no task found), authentication errors would differ
-      if (statusCode.startsWith('200') || statusCode === '20000000') {
+      const msg = res.headers.get('X-Api-Message') || res.statusText;
+      const isAuthOk = statusCode.startsWith('200') || statusCode === '20000000';
+      const isTaskNotFound = msg.includes('cannot find task');
+      if (isAuthOk || isTaskNotFound) {
         return { success: true, enabled: true, provider, message: '语音服务连接正常' };
       }
-      const msg = res.headers.get('X-Api-Message') || res.statusText;
       return { success: false, enabled: true, message: `语音服务连接异常: ${msg}` };
     } catch (e: any) {
       return { success: false, enabled: true, message: `网络错误: ${e.message}` };
@@ -576,25 +621,27 @@ export class SystemService {
         .getCount(),
     ]);
 
-    const categoryStats = await this.postRepository
+    const catQb = this.postRepository
       .createQueryBuilder('post')
       .select('category.name', 'name')
       .addSelect('COUNT(post.id)', 'count')
-      .leftJoin('post.category', 'category')
+      .leftJoin('post.category', 'category');
+    if (rangeStart && rangeEnd) catQb.where('post.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd });
+    const categoryStats = await catQb
       .groupBy('post.categoryId')
       .addGroupBy('category.name')
       .getRawMany()
       .then((rows) => rows.map((r) => ({ name: r.name || '未分类', count: Number(r.count) })));
 
-    const roleStatsRaw = await this.userRepository
+    const roleQb = this.userRepository
       .createQueryBuilder('user')
       .select('user.role', 'role')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('user.role')
-      .getRawMany();
+      .addSelect('COUNT(*)', 'count');
+    if (rangeStart && rangeEnd) roleQb.where('user.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd });
+    const roleStatsRaw = await roleQb.groupBy('user.role').getRawMany();
 
     const roleLabels: Record<string, string> = {
-      [UserRole.STUDENT]: '学生',    // translated by response interceptor
+      [UserRole.STUDENT]: '学生',
       [UserRole.ENTERPRISE]: '企业',
       [UserRole.ADMIN]: '管理员',
     };
@@ -605,8 +652,10 @@ export class SystemService {
 
     let rangeUsers = 0, rangePosts = 0, rangeComments = 0,
         rangeResumes = 0, rangeApplications = 0, rangeJobs = 0, rangeCompanies = 0;
+    let rangePending = 0, rangeApproved = 0, rangeRejected = 0;
     if (rangeStart && rangeEnd) {
-      [rangeUsers, rangePosts, rangeComments, rangeResumes, rangeApplications, rangeJobs, rangeCompanies] =
+      [rangeUsers, rangePosts, rangeComments, rangeResumes, rangeApplications, rangeJobs, rangeCompanies,
+       rangePending, rangeApproved, rangeRejected] =
         await Promise.all([
           this.userRepository.createQueryBuilder('u').where('u.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd }).getCount(),
           this.postRepository.createQueryBuilder('p').where('p.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd }).getCount(),
@@ -615,8 +664,56 @@ export class SystemService {
           this.applicationRepository.createQueryBuilder('a').where('a.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd }).getCount(),
           this.jobRepository.createQueryBuilder('j').where('j.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd }).getCount(),
           this.companyRepository.createQueryBuilder('co').where('co.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd }).getCount(),
+          this.postRepository.createQueryBuilder('p').where('p.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd }).andWhere('p.status = :st', { st: PostStatus.PENDING }).getCount(),
+          this.postRepository.createQueryBuilder('p').where('p.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd }).andWhere('p.status = :st', { st: PostStatus.APPROVED }).getCount(),
+          this.postRepository.createQueryBuilder('p').where('p.createdAt BETWEEN :s AND :e', { s: rangeStart, e: rangeEnd }).andWhere('p.status = :st', { st: PostStatus.REJECTED }).getCount(),
         ]);
     }
+
+    const trendStart = rangeStart || (() => { const d = new Date(); d.setDate(d.getDate() - 6); d.setHours(0, 0, 0, 0); return d; })();
+    const trendEnd = rangeEnd || new Date();
+
+    const [trendPosts, trendComments, trendUsers] = await Promise.all([
+      this.postRepository
+        .createQueryBuilder('p')
+        .select("DATE_FORMAT(p.createdAt, '%Y-%m-%d')", 'date')
+        .addSelect('COUNT(*)', 'count')
+        .where('p.createdAt BETWEEN :s AND :e', { s: trendStart, e: trendEnd })
+        .groupBy('date').orderBy('date', 'ASC').getRawMany(),
+      this.commentRepository
+        .createQueryBuilder('c')
+        .select("DATE_FORMAT(c.createdAt, '%Y-%m-%d')", 'date')
+        .addSelect('COUNT(*)', 'count')
+        .where('c.createdAt BETWEEN :s AND :e', { s: trendStart, e: trendEnd })
+        .groupBy('date').orderBy('date', 'ASC').getRawMany(),
+      this.userRepository
+        .createQueryBuilder('u')
+        .select("DATE_FORMAT(u.createdAt, '%Y-%m-%d')", 'date')
+        .addSelect('COUNT(*)', 'count')
+        .where('u.createdAt BETWEEN :s AND :e', { s: trendStart, e: trendEnd })
+        .groupBy('date').orderBy('date', 'ASC').getRawMany(),
+    ]);
+
+    const buildTrendArray = (rawData: { date: string; count: string }[], start: Date, end: Date) => {
+      const map = new Map(rawData.map((r) => [r.date, Number(r.count)]));
+      const result: { date: string; count: number }[] = [];
+      const cur = new Date(start);
+      cur.setHours(0, 0, 0, 0);
+      const endDay = new Date(end);
+      endDay.setHours(0, 0, 0, 0);
+      while (cur <= endDay) {
+        const key = cur.toISOString().slice(0, 10);
+        result.push({ date: key, count: map.get(key) || 0 });
+        cur.setDate(cur.getDate() + 1);
+      }
+      return result;
+    };
+
+    const trend = {
+      posts: buildTrendArray(trendPosts, trendStart, trendEnd),
+      comments: buildTrendArray(trendComments, trendStart, trendEnd),
+      users: buildTrendArray(trendUsers, trendStart, trendEnd),
+    };
 
     return {
       totalUsers, activeUsers,
@@ -624,7 +721,8 @@ export class SystemService {
       totalComments, totalResumes, totalApplications, totalJobs, totalCompanies,
       todayPosts, todayComments, todayUsers,
       rangeUsers, rangePosts, rangeComments, rangeResumes, rangeApplications, rangeJobs, rangeCompanies,
-      categoryStats, roleStats,
+      rangePending, rangeApproved, rangeRejected,
+      categoryStats, roleStats, trend,
     };
   }
 }
