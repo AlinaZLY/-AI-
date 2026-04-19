@@ -9,8 +9,12 @@ import { Repository } from 'typeorm';
 import { ChatService } from './chat.service';
 import { User } from '../user/entities/user.entity';
 
+const websocketCorsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+  : ['http://localhost:3100', 'http://localhost:5173', 'http://127.0.0.1:3100', 'http://127.0.0.1:5173'];
+
 @WebSocketGateway({
-  cors: { origin: '*', credentials: true },
+  cors: { origin: websocketCorsOrigins, credentials: true },
   namespace: '/chat',
 })
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -40,6 +44,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!token) { client.disconnect(); return; }
       const payload = this.jwtService.verify(token);
       const userId = payload.sub || payload.id;
+      const user = await this.userRepo.findOne({
+        where: { id: userId },
+        select: ['id', 'isActive'],
+      });
+      if (!user || !user.isActive) { client.disconnect(); return; }
       (client as any).userId = userId;
       if (!this.userSockets.has(userId)) this.userSockets.set(userId, new Set());
       this.userSockets.get(userId)!.add(client.id);

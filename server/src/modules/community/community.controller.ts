@@ -19,6 +19,7 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../user/entities/user.entity';
@@ -139,6 +140,7 @@ export class CommunityController {
   }
 
   /** 帖子列表（支持分页、分类筛选、关键词搜索） */
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('posts')
   getPosts(@Query() query: QueryPostDto, @Request() req) {
     const userId = req.user?.id;
@@ -147,13 +149,15 @@ export class CommunityController {
   }
 
   /** 帖子详情 */
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('posts/:id')
   getPostDetail(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const userId = req.user?.id;
-    return this.communityService.getPostDetail(id, userId);
+    const userRole = req.user?.role;
+    return this.communityService.getPostDetail(id, userId, userRole);
   }
 
-  /** 编辑帖子（仅作者） */
+  /** 编辑帖子（作者或管理员） */
   @UseGuards(JwtAuthGuard)
   @Put('posts/:id')
   updatePost(
@@ -161,7 +165,7 @@ export class CommunityController {
     @Request() req,
     @Body() dto: UpdatePostDto,
   ) {
-    return this.communityService.updatePost(id, req.user.id, dto);
+    return this.communityService.updatePost(id, req.user.id, dto, req.user.role);
   }
 
   /** 删除帖子（作者或管理员） */
@@ -172,7 +176,8 @@ export class CommunityController {
   }
 
   /** 审核帖子（仅管理员） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Put('posts/:id/review')
   reviewPost(
     @Param('id', ParseIntPipe) id: number,
@@ -183,14 +188,16 @@ export class CommunityController {
   }
 
   /** 切换帖子启用/关闭状态（仅管理员） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Put('posts/:id/toggle-enabled')
   togglePostEnabled(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.communityService.togglePostEnabled(id, req.user.role);
   }
 
   /** 切换帖子置顶状态（仅管理员） */
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @Put('posts/:id/toggle-top')
   togglePostTop(@Param('id', ParseIntPipe) id: number, @Request() req) {
     return this.communityService.togglePostTop(id, req.user.role);
@@ -225,10 +232,12 @@ export class CommunityController {
   }
 
   /** 获取帖子评论列表 */
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('posts/:id/comments')
   getComments(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const userId = req.user?.id;
-    return this.communityService.getComments(id, userId);
+    const userRole = req.user?.role;
+    return this.communityService.getComments(id, userId, userRole);
   }
 
   /** 发表评论 */

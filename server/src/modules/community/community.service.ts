@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
+import { escapeLike } from '../../common/utils/query.util';
 import * as bcrypt from 'bcrypt';
 import { Post, PostStatus, PostSource } from './entities/post.entity';
 import { Category } from './entities/category.entity';
@@ -254,7 +255,7 @@ export class CommunityService implements OnModuleInit {
 
     if (keyword) {
       qb.andWhere('(post.title LIKE :kw OR post.content LIKE :kw)', {
-        kw: `%${keyword}%`,
+        kw: `%${escapeLike(keyword)}%`,
       });
     }
 
@@ -301,14 +302,19 @@ export class CommunityService implements OnModuleInit {
     };
   }
 
-  async getPostDetail(postId: number, userId?: number) {
+  async getPostDetail(postId: number, userId?: number, userRole?: string) {
     const post = await this.postRepo.findOne({
       where: { id: postId },
       relations: ['user', 'category'],
     });
     if (!post) throw new NotFoundException('帖子不存在');
 
-    // 增加浏览量
+    if (userRole !== UserRole.ADMIN && (post.status !== PostStatus.APPROVED || !post.enabled)) {
+      if (post.userId !== userId) {
+        throw new NotFoundException('帖子不存在');
+      }
+    }
+
     await this.postRepo.increment({ id: postId }, 'viewCount', 1);
     post.viewCount += 1;
 
@@ -327,10 +333,12 @@ export class CommunityService implements OnModuleInit {
     return { ...post, isLiked, isFavorited };
   }
 
-  async updatePost(postId: number, userId: number, dto: UpdatePostDto) {
+  async updatePost(postId: number, userId: number, dto: UpdatePostDto, userRole?: string) {
     const post = await this.postRepo.findOne({ where: { id: postId } });
     if (!post) throw new NotFoundException('帖子不存在');
-    if (post.userId !== userId) throw new ForbiddenException('只能编辑自己的帖子');
+    if (post.userId !== userId && userRole !== UserRole.ADMIN) {
+      throw new ForbiddenException('只能编辑自己的帖子');
+    }
 
     Object.assign(post, dto);
     return this.postRepo.save(post);
@@ -457,7 +465,7 @@ export class CommunityService implements OnModuleInit {
       .addSelect(['post.id', 'post.title']);
 
     if (keyword) {
-      qb.andWhere('comment.content LIKE :kw', { kw: `%${keyword}%` });
+      qb.andWhere('comment.content LIKE :kw', { kw: `%${escapeLike(keyword)}%` });
     }
 
     qb.orderBy('comment.createdAt', 'DESC')
@@ -510,9 +518,14 @@ export class CommunityService implements OnModuleInit {
     return saved;
   }
 
-  async getComments(postId: number, userId?: number) {
+  async getComments(postId: number, userId?: number, userRole?: string) {
     const post = await this.postRepo.findOne({ where: { id: postId } });
     if (!post) throw new NotFoundException('帖子不存在');
+    if (userRole !== UserRole.ADMIN && (post.status !== PostStatus.APPROVED || !post.enabled)) {
+      if (post.userId !== userId) {
+        throw new NotFoundException('帖子不存在');
+      }
+    }
 
     const comments = await this.commentRepo.find({
       where: { postId },

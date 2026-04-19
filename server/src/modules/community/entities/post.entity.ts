@@ -37,6 +37,9 @@ export class Post {
   @Column({ type: 'json', nullable: true, comment: '帖子图片 URL 列表' })
   images: string[] | null;
 
+  @Column({ type: 'json', nullable: true, comment: '外部引用链接（小红书/抖音等）' })
+  externalLinks: string[] | null;
+
   @Column({ nullable: true, comment: '分类ID' })
   categoryId: number;
 
