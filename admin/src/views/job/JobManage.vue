@@ -1,6 +1,6 @@
 <template>
   <div class="job-manage">
-    <a-page-header title="职位管理" :sub-title="`共 ${pagination.total} 个职位`">
+    <a-page-header :title="$t('职位管理')" :sub-title="$t('共 {count} 个职位', { count: stats.total || pagination.total })">
       <template #extra>
         <a-button type="primary" @click="openCreateModal">
           <PlusOutlined /> 新增职位
@@ -92,7 +92,7 @@
         <template v-if="column.key === 'action'">
           <a-space :size="0">
             <a-button type="link" size="small" @click="openEditModal(record)">编辑</a-button>
-            <a-popconfirm title="确定删除此职位？" @confirm="handleDelete(record.id)">
+            <a-popconfirm :title="$t('确定删除此职位？')" :ok-text="$t('删除')" :cancel-text="$t('取消')" :ok-button-props="{ danger: true }" @confirm="handleDelete(record.id)">
               <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
@@ -138,7 +138,7 @@
               <span class="job-card-time">{{ formatTime(record.createdAt) }}</span>
               <a-space :size="4">
                 <a-button type="link" size="small" class="job-card-action" @click="openEditModal(record)">编辑</a-button>
-                <a-popconfirm title="确定删除此职位？" @confirm="handleDelete(record.id)">
+                <a-popconfirm :title="$t('确定删除此职位？')" :ok-text="$t('删除')" :cancel-text="$t('取消')" :ok-button-props="{ danger: true }" @confirm="handleDelete(record.id)">
                   <a-button type="link" size="small" danger class="job-card-action">删除</a-button>
                 </a-popconfirm>
               </a-space>
@@ -465,9 +465,9 @@ async function handleFormSubmit() {
       companyName: formData.companyName || undefined,
       education: formData.education || undefined,
       benefits: formData.benefits || undefined,
-      status: formData.status,
     }
     if (editingId.value) {
+      payload.status = formData.status
       await updateJobAdminApi(editingId.value, payload)
       message.success('已更新')
     } else {

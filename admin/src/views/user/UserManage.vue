@@ -4,8 +4,8 @@
 
     <div class="toolbar">
       <a-space>
-        <a-button type="primary" @click="openCreateModal"><PlusOutlined /> 新建用户</a-button>
-        <a-input-search v-model:value="keyword" placeholder="搜索用户名/昵称/邮箱" style="width: 260px" allow-clear @search="handleSearch" />
+        <a-button type="primary" @click="openCreateModal"><PlusOutlined /> {{ $t('新建用户') }}</a-button>
+        <a-input-search v-model:value="keyword" :placeholder="$t('搜索用户名/昵称/邮箱')" style="width: 260px" allow-clear @search="handleSearch" />
         <a-select v-model:value="roleFilter" placeholder="角色筛选" style="width: 120px" allow-clear @change="handleSearch">
           <a-select-option value="student">学生</a-select-option>
           <a-select-option value="enterprise">企业</a-select-option>
@@ -47,7 +47,7 @@
         <template v-if="column.key === 'action'">
           <a-space :size="0">
             <a-button type="link" size="small" @click="openEditModal(record)">编辑</a-button>
-            <a-popconfirm title="确定要删除该用户吗？" ok-text="确定" cancel-text="取消" @confirm="handleDelete(record.id)">
+            <a-popconfirm :title="$t('确定要删除该用户吗？')" :ok-text="$t('删除')" :cancel-text="$t('取消')" :ok-button-props="{ danger: true }" @confirm="handleDelete(record.id)">
               <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
@@ -58,9 +58,9 @@
     <!-- 新建/编辑用户弹窗 -->
     <a-modal
       v-model:open="formVisible"
-      :title="editingId ? '编辑用户' : '新建用户'"
-      ok-text="确定"
-      cancel-text="取消"
+      :title="editingId ? $t('编辑用户') : $t('新建用户')"
+      :ok-text="$t('确定')"
+      :cancel-text="$t('取消')"
       :confirm-loading="formLoading"
       @ok="handleFormSubmit"
       width="640px"

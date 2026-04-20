@@ -121,6 +121,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '面试记录', icon: 'FileTextOutlined', roles: ['admin'], parent: 'interview' },
       },
       {
+        path: 'interview/practice',
+        name: 'PracticeRecordManage',
+        component: () => import('@/views/interview/PracticeRecordManage.vue'),
+        meta: { title: '练习记录', icon: 'EditOutlined', roles: ['admin'], parent: 'interview' },
+      },
+      {
         path: 'notifications',
         name: 'Notifications',
         component: () => import('@/views/notification/NotificationView.vue'),
