@@ -28,7 +28,7 @@
           <a-select-option value="approved">已通过</a-select-option>
           <a-select-option value="rejected">已拒绝</a-select-option>
         </a-select>
-        <a-button @click="statusFilter = undefined; keyword = ''; handleSearch()">重置</a-button>
+        <a-button @click="statusFilter = undefined; keyword = ''; handleSearch()">{{ $t('重置') }}</a-button>
       </a-space>
     </div>
 
@@ -114,23 +114,23 @@
             <div v-if="detailRecord.businessLicense" class="cert-preview-item">
               <div class="cert-preview-label">营业执照</div>
               <template v-if="isPdfFile(detailRecord.businessLicense)">
-                <a-button type="link" :href="detailRecord.businessLicense" target="_blank">查看 PDF</a-button>
+                <a-button type="link" :href="withPrivateFileToken(detailRecord.businessLicense)" target="_blank">查看 PDF</a-button>
               </template>
-              <a-image v-else :width="120" :src="detailRecord.businessLicense" alt="营业执照" />
+              <a-image v-else :width="120" :src="withPrivateFileToken(detailRecord.businessLicense)" alt="营业执照" />
             </div>
             <div v-if="detailRecord.idCardFront" class="cert-preview-item">
               <div class="cert-preview-label">身份证正面</div>
               <template v-if="isPdfFile(detailRecord.idCardFront)">
-                <a-button type="link" :href="detailRecord.idCardFront" target="_blank">查看 PDF</a-button>
+                <a-button type="link" :href="withPrivateFileToken(detailRecord.idCardFront)" target="_blank">查看 PDF</a-button>
               </template>
-              <a-image v-else :width="120" :src="detailRecord.idCardFront" alt="身份证正面" />
+              <a-image v-else :width="120" :src="withPrivateFileToken(detailRecord.idCardFront)" alt="身份证正面" />
             </div>
             <div v-if="detailRecord.idCardBack" class="cert-preview-item">
               <div class="cert-preview-label">身份证反面</div>
               <template v-if="isPdfFile(detailRecord.idCardBack)">
-                <a-button type="link" :href="detailRecord.idCardBack" target="_blank">查看 PDF</a-button>
+                <a-button type="link" :href="withPrivateFileToken(detailRecord.idCardBack)" target="_blank">查看 PDF</a-button>
               </template>
-              <a-image v-else :width="120" :src="detailRecord.idCardBack" alt="身份证反面" />
+              <a-image v-else :width="120" :src="withPrivateFileToken(detailRecord.idCardBack)" alt="身份证反面" />
             </div>
           </template>
           <div v-else class="no-cert">未上传材料</div>
@@ -160,6 +160,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import type { TableColumnType } from 'ant-design-vue'
 import { getCompaniesAdminApi, updateCompanyStatusApi, getCompanyStatsApi } from '@/api/company'
+import { withPrivateFileToken } from '@/utils/private-file'
 
 const loading = ref(false)
 const list = ref<any[]>([])

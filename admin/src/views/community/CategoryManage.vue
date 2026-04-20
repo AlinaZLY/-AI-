@@ -42,9 +42,10 @@
           <a-space :size="0">
             <a-button type="link" size="small" @click="openEditModal(record)">编辑</a-button>
             <a-popconfirm
-              :title="`确定要删除分类「${record.name}」吗？`"
-              ok-text="确定"
-              cancel-text="取消"
+              :title="$t('确定要删除分类「{name}」吗？').replace('{name}', record.name)"
+              :ok-text="$t('删除')"
+              :cancel-text="$t('取消')"
+              :ok-button-props="{ danger: true }"
               @confirm="handleDelete(record.id)"
             >
               <a-button type="link" size="small" danger>删除</a-button>

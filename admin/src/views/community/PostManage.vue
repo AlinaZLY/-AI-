@@ -105,7 +105,7 @@
             :checked="record.enabled"
             checked-children="启用"
             un-checked-children="关闭"
-            @change="handleToggleEnabled(record.id)"
+            @change="(checked: boolean) => handleToggleEnabled(record.id, checked)"
           />
         </template>
         <template v-if="column.key === 'createdAt'">
@@ -132,9 +132,10 @@
               {{ record.isTop ? '取消置顶' : '置顶' }}
             </a-button>
             <a-popconfirm
-              title="确定要删除此帖子吗？删除后不可恢复。"
-              ok-text="确定"
-              cancel-text="取消"
+              :title="$t('确定要删除此帖子吗？删除后不可恢复。')"
+              :ok-text="$t('删除')"
+              :cancel-text="$t('取消')"
+              :ok-button-props="{ danger: true }"
               @confirm="handleDelete(record.id)"
             >
               <a-button type="link" size="small" danger>删除</a-button>
@@ -242,9 +243,10 @@
                 <span class="comment-time">{{ formatTime(comment.createdAt) }}</span>
               </a-space>
               <a-popconfirm
-                title="确定要删除此评论吗？"
-                ok-text="确定"
-                cancel-text="取消"
+                :title="$t('确定要删除此评论吗？')"
+                :ok-text="$t('删除')"
+                :cancel-text="$t('取消')"
+                :ok-button-props="{ danger: true }"
                 @confirm="handleDeleteComment(comment.id)"
               >
                 <a-button type="link" size="small" danger><DeleteOutlined /></a-button>
@@ -469,21 +471,39 @@ async function handleDelete(id: number) {
 }
 
 async function handleToggleTop(id: number) {
+  const target = posts.value.find((item) => item.id === id)
+  const previous = target?.isTop
+  if (target) target.isTop = !target.isTop
   try {
-    await togglePostTopApi(id)
+    const res = await togglePostTopApi(id)
+    const updated = res.data
+    if (target && updated) {
+      target.isTop = !!updated.isTop
+      target.updatedAt = updated.updatedAt || target.updatedAt
+    }
     message.success('操作成功')
-    fetchPosts()
+    await fetchPosts()
   } catch {
+    if (target) target.isTop = previous
     message.error('操作失败')
   }
 }
 
-async function handleToggleEnabled(id: number) {
+async function handleToggleEnabled(id: number, checked: boolean) {
+  const target = posts.value.find((item) => item.id === id)
+  const previous = target?.enabled
+  if (target) target.enabled = checked
   try {
-    await togglePostEnabledApi(id)
+    const res = await togglePostEnabledApi(id)
+    const updated = res.data
+    if (target && updated) {
+      target.enabled = !!updated.enabled
+      target.updatedAt = updated.updatedAt || target.updatedAt
+    }
     message.success('操作成功')
-    fetchPosts()
+    await fetchPosts()
   } catch {
+    if (target) target.enabled = previous
     message.error('操作失败')
   }
 }

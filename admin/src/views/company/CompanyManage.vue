@@ -1,6 +1,6 @@
 <template>
   <div class="company-manage">
-    <a-page-header title="企业管理" :sub-title="`共 ${pagination.total} 家企业`" />
+    <a-page-header :title="$t('企业管理')" :sub-title="$t('共 {count} 家企业', { count: statsData.total || pagination.total })" />
 
     <a-row :gutter="12" style="margin-bottom: 16px">
       <a-col :span="6" v-for="stat in statCards" :key="stat.label">
@@ -53,7 +53,7 @@
             <a-button type="link" size="small" @click="showDetail(record)">审核</a-button>
             <a-button v-if="record.status === 'pending'" type="link" size="small" style="color: #52c41a" @click="handleApprove(record.id)">通过</a-button>
             <a-button v-if="record.status === 'pending'" type="link" size="small" danger @click="handleReject(record.id)">拒绝</a-button>
-            <a-popconfirm title="确定删除？" @confirm="handleDelete(record.id)">
+            <a-popconfirm :title="$t('确定删除？')" :ok-text="$t('删除')" :cancel-text="$t('取消')" :ok-button-props="{ danger: true }" @confirm="handleDelete(record.id)">
               <a-button type="link" size="small" danger>删除</a-button>
             </a-popconfirm>
           </a-space>
@@ -94,23 +94,23 @@
                 <div v-if="currentCompany.businessLicense" class="cert-card">
                   <div class="cert-title">营业执照</div>
                   <template v-if="isPdfFile(currentCompany.businessLicense)">
-                    <a-button type="link" :href="currentCompany.businessLicense" target="_blank">查看 PDF</a-button>
+                    <a-button type="link" :href="withPrivateFileToken(currentCompany.businessLicense)" target="_blank">查看 PDF</a-button>
                   </template>
-                  <img v-else :src="currentCompany.businessLicense" class="cert-img" @click="previewImg = currentCompany.businessLicense" />
+                  <img v-else :src="withPrivateFileToken(currentCompany.businessLicense)" class="cert-img" @click="previewImg = withPrivateFileToken(currentCompany.businessLicense)" />
                 </div>
                 <div v-if="currentCompany.idCardFront" class="cert-card">
                   <div class="cert-title">身份证正面</div>
                   <template v-if="isPdfFile(currentCompany.idCardFront)">
-                    <a-button type="link" :href="currentCompany.idCardFront" target="_blank">查看 PDF</a-button>
+                    <a-button type="link" :href="withPrivateFileToken(currentCompany.idCardFront)" target="_blank">查看 PDF</a-button>
                   </template>
-                  <img v-else :src="currentCompany.idCardFront" class="cert-img" @click="previewImg = currentCompany.idCardFront" />
+                  <img v-else :src="withPrivateFileToken(currentCompany.idCardFront)" class="cert-img" @click="previewImg = withPrivateFileToken(currentCompany.idCardFront)" />
                 </div>
                 <div v-if="currentCompany.idCardBack" class="cert-card">
                   <div class="cert-title">身份证反面</div>
                   <template v-if="isPdfFile(currentCompany.idCardBack)">
-                    <a-button type="link" :href="currentCompany.idCardBack" target="_blank">查看 PDF</a-button>
+                    <a-button type="link" :href="withPrivateFileToken(currentCompany.idCardBack)" target="_blank">查看 PDF</a-button>
                   </template>
-                  <img v-else :src="currentCompany.idCardBack" class="cert-img" @click="previewImg = currentCompany.idCardBack" />
+                  <img v-else :src="withPrivateFileToken(currentCompany.idCardBack)" class="cert-img" @click="previewImg = withPrivateFileToken(currentCompany.idCardBack)" />
                 </div>
               </div>
             </div>
@@ -164,6 +164,7 @@ import {
   deleteCompanyAdminApi,
   getCompanyStatsApi,
 } from '@/api/company'
+import { withPrivateFileToken } from '@/utils/private-file'
 
 const loading = ref(false)
 const list = ref<any[]>([])
@@ -199,7 +200,7 @@ const columns = [
 
 const statsData = ref<any>({})
 const statCards = computed(() => [
-  { label: '总申请数', value: statsData.value.total ?? 0, color: '#1677ff' },
+  { label: '企业总数', value: statsData.value.total ?? 0, color: '#1677ff' },
   { label: '已通过', value: statsData.value.approved ?? 0, color: '#52c41a' },
   { label: '待审核', value: statsData.value.pending ?? 0, color: '#faad14' },
   { label: '已拒绝', value: statsData.value.rejected ?? 0, color: '#ff4d4f' },

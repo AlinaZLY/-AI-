@@ -51,9 +51,10 @@
         </template>
         <template v-if="column.key === 'action'">
           <a-popconfirm
-            title="确定要删除此评论吗？"
-            ok-text="确定"
-            cancel-text="取消"
+            :title="$t('确定要删除此评论吗？')"
+            :ok-text="$t('删除')"
+            :cancel-text="$t('取消')"
+            :ok-button-props="{ danger: true }"
             @confirm="handleDelete(record.id)"
           >
             <a-button type="link" size="small" danger>删除</a-button>

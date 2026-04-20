@@ -9,39 +9,39 @@ export function getApplicationsAdminApi(params?: Record<string, any>) {
 }
 
 export function getApplicationDetailApi(id: number) {
-  return request.get(`/applications/${id}`)
+  return request.get(`/applications/admin/${id}`)
 }
 
 export function createApplicationApi(data: Record<string, any>) {
-  return request.post('/applications', data)
+  return request.post('/applications/admin', data)
 }
 
 export function updateApplicationApi(id: number, data: Record<string, any>) {
-  return request.put(`/applications/${id}`, data)
+  return request.put(`/applications/admin/${id}`, data)
 }
 
 export function deleteApplicationApi(id: number) {
-  return request.delete(`/applications/${id}`)
+  return request.delete(`/applications/admin/${id}`)
 }
 
 export function updateApplicationStatusApi(id: number, data: { status: string; note?: string }) {
-  return request.put(`/applications/${id}/status`, data)
+  return request.put(`/applications/admin/${id}/status`, data)
 }
 
 export function getApplicationLogsApi(id: number) {
-  return request.get(`/applications/${id}/logs`)
+  return request.get(`/applications/admin/${id}/logs`)
 }
 
 export function getApplicationNotesApi(id: number) {
-  return request.get(`/applications/${id}/notes`)
+  return request.get(`/applications/admin/${id}/notes`)
 }
 
 export function addApplicationNoteApi(id: number, data: { type?: string; content: string }) {
-  return request.post(`/applications/${id}/notes`, data)
+  return request.post(`/applications/admin/${id}/notes`, data)
 }
 
 export function deleteApplicationNoteApi(noteId: number) {
-  return request.delete(`/applications/notes/${noteId}`)
+  return request.delete(`/applications/admin/notes/${noteId}`)
 }
 
 export function getApplicationCalendarApi(params?: { startDate?: string; endDate?: string }) {
@@ -49,5 +49,5 @@ export function getApplicationCalendarApi(params?: { startDate?: string; endDate
 }
 
 export function getApplicationStatsApi() {
-  return request.get('/applications/stats')
+  return request.get('/applications/admin/stats')
 }

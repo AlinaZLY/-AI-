@@ -106,6 +106,13 @@
       <a-form layout="vertical">
         <a-row :gutter="16">
           <a-col :span="12">
+            <a-form-item label="用户ID" :required="!editingId">
+              <a-input-number v-model:value="formData.userId" :disabled="!!editingId" :min="1" style="width: 100%" placeholder="学生用户ID" />
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
             <a-form-item label="公司名称" required>
               <a-input v-model:value="formData.company" placeholder="如：字节跳动" />
             </a-form-item>
@@ -309,6 +316,7 @@ const formVisible = ref(false)
 const formLoading = ref(false)
 const editingId = ref<number | null>(null)
 const formData = reactive({
+  userId: undefined as number | undefined,
   company: '', position: '', channel: '', salaryRange: '',
   location: '', nextDate: '', remark: '', tag: 'in_progress',
 })
@@ -346,13 +354,14 @@ function handleTableChange(pag: any) { pagination.current = pag.current; paginat
 
 function openCreateModal() {
   editingId.value = null
-  Object.assign(formData, { company: '', position: '', channel: '', salaryRange: '', location: '', nextDate: '', remark: '', tag: 'in_progress' })
+  Object.assign(formData, { userId: undefined, company: '', position: '', channel: '', salaryRange: '', location: '', nextDate: '', remark: '', tag: 'in_progress' })
   formVisible.value = true
 }
 
 function openEditModal(record: any) {
   editingId.value = record.id
   Object.assign(formData, {
+    userId: record.userId,
     company: record.company, position: record.position, channel: record.channel || '',
     salaryRange: record.salaryRange || '', location: record.location || '',
     nextDate: record.nextDate || '', remark: record.remark || '', tag: record.tag,
@@ -362,13 +371,24 @@ function openEditModal(record: any) {
 
 async function handleFormSubmit() {
   if (!formData.company.trim() || !formData.position.trim()) return message.warning('公司和岗位必填')
+  if (!editingId.value && !formData.userId) return message.warning('用户ID必填')
   formLoading.value = true
   try {
-    const payload = { ...formData, nextDate: formData.nextDate || undefined }
+    const payload: Record<string, any> = {
+      company: formData.company,
+      position: formData.position,
+      channel: formData.channel,
+      salaryRange: formData.salaryRange,
+      location: formData.location,
+      nextDate: formData.nextDate || undefined,
+      remark: formData.remark,
+      tag: formData.tag,
+    }
     if (editingId.value) {
       await updateApplicationApi(editingId.value, payload)
       message.success('已更新')
     } else {
+      payload.userId = formData.userId
       await createApplicationApi(payload)
       message.success('已创建')
     }
