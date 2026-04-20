@@ -1,24 +1,12 @@
 <template>
   <div class="min-h-screen h-screen flex flex-col bg-gray-50 -mx-4 sm:-mx-6 lg:-mx-8">
-    <div class="shrink-0 border-b border-gray-200 bg-white/90 backdrop-blur-sm px-4 sm:px-6 lg:px-8 py-4">
-      <div class="page-shell flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div class="flex items-center gap-3">
-          <button
-            type="button"
-            class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-blue-600 transition-colors"
-            @click="goBack"
-          >
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            {{ $t('返回个人中心') }}
-          </button>
-        </div>
+    <div class="shrink-0 border-b border-gray-200 bg-white/90 backdrop-blur-sm px-4 sm:px-6 lg:px-8 py-3">
+      <div class="page-shell flex items-center justify-end gap-2">
         <div class="flex flex-wrap gap-2">
           <button
             type="button"
             class="px-3 py-2 text-sm font-medium rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-            :disabled="previewing"
+            :disabled="previewing || aiWorking"
             @click="onPreview"
           >
             {{ previewing ? $t('预览中…') : $t('预览') }}
@@ -26,7 +14,7 @@
           <button
             type="button"
             class="px-3 py-2 text-sm font-medium rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
-            :disabled="exporting"
+            :disabled="exporting || aiWorking"
             @click="onExportPdf"
           >
             {{ exporting ? $t('导出中…') : $t('导出 PDF') }}
@@ -34,7 +22,7 @@
           <button
             type="button"
             class="px-3 py-2 text-sm font-medium rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
-            :disabled="analyzing"
+            :disabled="analyzing || aiWorking"
             @click="onAnalyze"
           >
             {{ analyzing ? $t('分析中…') : $t('AI 分析') }}
@@ -43,7 +31,7 @@
             v-if="hasResumeContent"
             type="button"
             class="px-3 py-2 text-sm font-medium rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 disabled:opacity-50"
-            :disabled="polishing || saving || generatingAi"
+            :disabled="aiWorking"
             @click="onPolish"
           >
             {{ polishing ? $t('润色中…') : $t('AI 润色') }}
@@ -51,7 +39,7 @@
           <button
             type="button"
             class="px-4 py-2 text-sm font-medium rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-sm disabled:opacity-50"
-            :disabled="saving"
+            :disabled="saving || aiWorking"
             @click="onSave"
           >
             {{ saving ? $t('保存中…') : $t('保存') }}
@@ -60,8 +48,8 @@
       </div>
     </div>
 
-    <div class="page-shell w-full flex flex-1 min-h-0 min-w-0 overflow-hidden">
-      <div class="w-[55%] min-w-0 overflow-y-auto max-h-full border-r border-gray-200 px-4 sm:px-6 lg:px-8 py-6">
+    <div class="w-full flex flex-1 min-h-0 min-w-0 overflow-hidden" style="max-width: 100rem; margin-inline: auto;">
+      <div class="w-[42%] min-w-0 overflow-y-auto max-h-full border-r border-gray-200 px-4 sm:px-6 lg:px-8 py-6">
       <!-- AI 一键生成（可折叠） -->
       <div
         v-if="!loading && !loadError"
@@ -90,13 +78,50 @@
           <p class="text-xs text-gray-500 mt-3 mb-4">
             {{ $t('填写关键信息并一键调用 AI 生成建议（将随请求提交至服务端；实际效果取决于 ARK_API_KEY 配置）。') }}
           </p>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+          <div class="flex items-start gap-4 mb-4">
+            <div class="shrink-0">
+              <p class="text-xs text-gray-500 mb-1">{{ $t('头像') }}</p>
+              <label class="block cursor-pointer group relative" style="width:72px;height:90px">
+                <img
+                  v-if="content.basicInfo.avatar"
+                  :src="content.basicInfo.avatar"
+                  class="w-full h-full object-cover rounded-lg border-2 border-gray-200 group-hover:border-blue-400 transition-colors"
+                />
+                <div
+                  v-else
+                  class="w-full h-full rounded-lg border-2 border-dashed border-gray-300 group-hover:border-blue-400 flex flex-col items-center justify-center text-gray-400 transition-colors"
+                >
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+                  <span class="text-[10px] mt-1">{{ $t('上传') }}</span>
+                </div>
+                <input type="file" accept="image/*" class="hidden" @change="handleAvatarUpload" />
+              </label>
+            </div>
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label class="block text-xs text-gray-500">
               {{ $t('姓名') }}
               <input
                 v-model="content.basicInfo.name"
                 type="text"
                 class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              />
+            </label>
+            <label class="block text-xs text-gray-500">
+              {{ $t('手机') }}
+              <input
+                v-model="content.basicInfo.phone"
+                type="tel"
+                class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                :placeholder="$t('请输入手机号')"
+              />
+            </label>
+            <label class="block text-xs text-gray-500">
+              {{ $t('邮箱') }}
+              <input
+                v-model="content.basicInfo.email"
+                type="email"
+                class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                :placeholder="$t('请输入邮箱')"
               />
             </label>
             <label class="block text-xs text-gray-500">
@@ -121,10 +146,10 @@
                 v-model="content.basicInfo.graduationYear"
                 type="text"
                 class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-                placeholder="如 2026"
+                :placeholder="$t('如 2026')"
               />
             </label>
-            <label class="block text-xs text-gray-500 sm:col-span-2 lg:col-span-2">
+            <label class="block text-xs text-gray-500 sm:col-span-2">
               {{ $t('技能（逗号分隔）') }}
               <input
                 v-model="aiSkillsComma"
@@ -133,6 +158,7 @@
                 placeholder="Vue, TypeScript, Node.js"
               />
             </label>
+            </div>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button
@@ -202,7 +228,7 @@
             v-model="title"
             type="text"
             class="w-full text-xl font-bold text-gray-900 border border-gray-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-            placeholder="例如：校招-前端开发"
+            :placeholder="$t('例如：校招-前端开发')"
           />
         </section>
 
@@ -241,15 +267,15 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="block text-xs text-gray-500">
               {{ $t('目标岗位') }}
-              <input v-model="content.jobIntention.targetPosition" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="如：前端开发工程师" />
+              <input v-model="content.jobIntention.targetPosition" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" :placeholder="$t('如：前端开发工程师')" />
             </label>
             <label class="block text-xs text-gray-500">
               {{ $t('期望薪资') }}
-              <input v-model="content.jobIntention.expectedSalary" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="如：8-12K" />
+              <input v-model="content.jobIntention.expectedSalary" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" :placeholder="$t('如：8-12K')" />
             </label>
             <label class="block text-xs text-gray-500">
               {{ $t('意向城市') }}
-              <input v-model="content.jobIntention.preferredCity" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="如：北京、上海" />
+              <input v-model="content.jobIntention.preferredCity" class="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" :placeholder="$t('如：北京、上海')" />
             </label>
             <label class="block text-xs text-gray-500">
               {{ $t('工作类型') }}
@@ -269,7 +295,7 @@
             v-model="content.selfIntro"
             rows="5"
             class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y min-h-[120px]"
-            placeholder="简要介绍你的优势与求职意向"
+            :placeholder="$t('简要介绍你的优势与求职意向')"
           />
         </section>
 
@@ -282,7 +308,7 @@
           </div>
           <div class="space-y-4">
             <div
-              v-for="(row, idx) in content[section.key]"
+              v-for="(row, idx) in contentRows(section.key)"
               :key="idx"
               class="border border-gray-100 rounded-xl p-4 bg-gray-50/80 space-y-2"
             >
@@ -293,44 +319,44 @@
               </div>
               <template v-if="section.key === 'education'">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input v-model="row.school" placeholder="学校" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.major" placeholder="专业" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.startDate" placeholder="开始时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.endDate" placeholder="结束时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.school" :placeholder="$t('学校')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.major" :placeholder="$t('专业')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.startDate" :placeholder="$t('开始时间')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.endDate" :placeholder="$t('结束时间')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
                 </div>
               </template>
               <template v-else-if="section.key === 'experience'">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input v-model="row.company" placeholder="公司" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.position" placeholder="职位" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.startDate" placeholder="开始时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.endDate" placeholder="结束时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.company" :placeholder="$t('公司')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.position" :placeholder="$t('职位')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.startDate" :placeholder="$t('开始时间')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.endDate" :placeholder="$t('结束时间')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
                 </div>
-                <textarea v-model="row.description" placeholder="工作描述" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <textarea v-model="row.description" :placeholder="$t('工作描述')" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </template>
               <template v-else-if="section.key === 'projects'">
-                <input v-model="row.name" placeholder="项目名称" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <input v-model="row.name" :placeholder="$t('项目名称')" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input v-model="row.startDate" placeholder="开始时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.endDate" placeholder="结束时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.startDate" :placeholder="$t('开始时间')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.endDate" :placeholder="$t('结束时间')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
                 </div>
-                <textarea v-model="row.description" placeholder="项目描述" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <textarea v-model="row.description" :placeholder="$t('项目描述')" rows="3" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </template>
               <template v-else-if="section.key === 'awards'">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input v-model="row.name" placeholder="证书/奖项名称" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.date" placeholder="获得时间（如 2025.06）" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.name" :placeholder="$t('证书/奖项名称')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.date" :placeholder="$t('获得时间（如 2025.06）')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
                 </div>
-                <input v-model="row.description" placeholder="补充说明（选填）" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <input v-model="row.description" :placeholder="$t('补充说明（选填）')" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </template>
               <template v-else-if="section.key === 'activities'">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input v-model="row.organization" placeholder="组织/社团名称" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.role" placeholder="担任职务" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.startDate" placeholder="开始时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-                  <input v-model="row.endDate" placeholder="结束时间" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.organization" :placeholder="$t('组织/社团名称')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.role" :placeholder="$t('担任职务')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.startDate" :placeholder="$t('开始时间')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                  <input v-model="row.endDate" :placeholder="$t('结束时间')" class="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
                 </div>
-                <textarea v-model="row.description" placeholder="活动描述与收获" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+                <textarea v-model="row.description" :placeholder="$t('活动描述与收获')" rows="2" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" />
               </template>
             </div>
           </div>
@@ -346,7 +372,7 @@
               class="inline-flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full bg-blue-50 text-blue-800 text-sm border border-blue-100"
             >
               {{ s }}
-              <button type="button" class="p-0.5 rounded-full hover:bg-blue-100 text-blue-600" aria-label="移除" @click="content.skills.splice(si, 1)">
+              <button type="button" class="p-0.5 rounded-full hover:bg-blue-100 text-blue-600" :aria-label="$t('移除')" @click="content.skills.splice(si, 1)">
                 ×
               </button>
             </span>
@@ -355,14 +381,14 @@
             v-model="skillInput"
             type="text"
             class="w-full max-w-md border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-            placeholder="例如：Vue 3、TypeScript"
+            :placeholder="$t('例如：Vue 3、TypeScript')"
             @keydown.enter.prevent="addSkillTag"
           />
         </section>
       </div>
       </div>
 
-      <div class="w-[45%] min-w-0 flex flex-col bg-gray-100/50 border-l border-gray-200">
+      <div class="w-[58%] min-w-0 flex flex-col bg-gray-100/50 border-l border-gray-200">
         <div class="sticky top-0 z-10 flex flex-col gap-3 p-5 w-full h-[calc(100vh-5.5rem)] min-h-0 self-start">
           <div class="flex items-center justify-between shrink-0">
             <div class="flex items-center gap-2">
@@ -372,17 +398,45 @@
             <div class="flex items-center gap-2">
               <span v-if="templateLoading" class="text-xs text-gray-400">{{ $t('模板加载中…') }}</span>
               <span v-else-if="templateLoadError" class="text-xs text-amber-600 truncate max-w-[60%]">{{ templateLoadError }}</span>
-              <span v-else-if="!resumeTemplateId" class="text-xs text-gray-400">{{ $t('未绑定模板') }}</span>
+              <select
+                v-else-if="!resumeTemplateId"
+                class="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
+                @change="(e) => { const v = Number((e.target as HTMLSelectElement).value); if (v) applyTemplate(v) }"
+              >
+                <option value="">{{ $t('选择模板') }}</option>
+                <option v-for="tpl in availableTemplates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
+              </select>
               <span v-else class="text-xs text-emerald-600">{{ $t('已同步') }}</span>
             </div>
           </div>
-          <div class="flex-1 min-h-0 rounded-2xl bg-white shadow-lg border border-gray-200/60 overflow-hidden">
+          <div class="flex-1 min-h-0 rounded-2xl bg-white shadow-lg border border-gray-200/60 overflow-hidden relative">
             <iframe
               :srcdoc="previewHtml"
               class="w-full h-full border-none"
+              :class="{ 'opacity-30 blur-[2px]': aiWorking }"
               sandbox=""
               :title="$t('简历实时预览')"
             />
+            <div v-if="aiWorking" class="absolute inset-0 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm z-10">
+              <div class="space-y-4 w-3/4 max-w-xs">
+                <div class="flex justify-center">
+                  <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+                <p class="text-sm font-medium text-blue-700 text-center">{{ $t('AI 正在生成简历内容…') }}</p>
+                <div class="space-y-3 animate-pulse">
+                  <div class="h-5 bg-gray-200 rounded-lg w-2/3 mx-auto"></div>
+                  <div class="h-3 bg-gray-100 rounded w-full"></div>
+                  <div class="h-3 bg-gray-100 rounded w-5/6"></div>
+                  <div class="h-3 bg-gray-100 rounded w-4/6"></div>
+                  <div class="h-4 bg-gray-200 rounded-lg w-1/2 mt-4"></div>
+                  <div class="h-3 bg-gray-100 rounded w-full"></div>
+                  <div class="h-3 bg-gray-100 rounded w-3/4"></div>
+                  <div class="h-4 bg-gray-200 rounded-lg w-1/2 mt-4"></div>
+                  <div class="h-3 bg-gray-100 rounded w-full"></div>
+                  <div class="h-3 bg-gray-100 rounded w-5/6"></div>
+                </div>
+              </div>
+            </div>
           </div>
           <p class="text-[11px] text-gray-400 text-center shrink-0">{{ $t('编辑左侧内容，预览实时更新') }}</p>
         </div>
@@ -469,6 +523,7 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   getResumeDetailApi,
   getResumeTemplateApi,
+  getTemplatesApi,
   updateResumeApi,
   analyzeResumeApi,
   optimizeResumeApi,
@@ -484,6 +539,7 @@ interface BasicInfo {
   school: string
   major: string
   graduationYear: string
+  avatar?: string
 }
 
 interface EduRow {
@@ -557,6 +613,7 @@ const previewing = ref(false)
 const exporting = ref(false)
 const analyzing = ref(false)
 const polishing = ref(false)
+const aiWorking = computed(() => generatingAi.value || polishing.value)
 const hasResumeContent = computed(() => {
   const c = content
   return !!(c.basicInfo?.name || c.selfIntro || c.education?.length || c.experience?.length || c.projects?.length || c.skills?.length)
@@ -565,14 +622,60 @@ const generatingAi = ref(false)
 const aiGenerateOpen = ref(true)
 const aiSkillsComma = ref('')
 
+function handleAvatarUpload(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  const img = new Image()
+  img.onload = () => {
+    const MAX_W = 300, MAX_H = 400
+    let w = img.width, h = img.height
+    if (w > MAX_W || h > MAX_H) {
+      const ratio = Math.min(MAX_W / w, MAX_H / h)
+      w = Math.round(w * ratio)
+      h = Math.round(h * ratio)
+    }
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(img, 0, 0, w, h)
+    content.basicInfo.avatar = canvas.toDataURL('image/jpeg', 0.8)
+    URL.revokeObjectURL(img.src)
+  }
+  img.src = URL.createObjectURL(file)
+}
+
 const resumeTemplateId = ref<number | null>(null)
 const loadedTemplate = ref<{ htmlContent: string; cssContent: string } | null>(null)
 const templateLoading = ref(false)
 const templateLoadError = ref('')
+const availableTemplates = ref<{ id: number; name: string }[]>([])
 
-/** 与 ResumeListView 一致，供 {{avatar}} 占位 */
-const DEFAULT_AVATAR_DATA_URI =
-  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzE2NzdmZiIgcng9IjUwIi8+PHRleHQgeD0iNTAiIHk9IjYwIiBmb250LXNpemU9IjQwIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI+5bygPC90ZXh0Pjwvc3ZnPg=='
+async function loadAvailableTemplates() {
+  try {
+    const res: any = await getTemplatesApi({ page: 1, pageSize: 100 })
+    const data = res.data ?? res
+    availableTemplates.value = (data.list ?? []).filter((t: any) => t?.id != null).map((t: any) => ({ id: t.id, name: t.name || `Template ${t.id}` }))
+  } catch { availableTemplates.value = [] }
+}
+
+async function applyTemplate(tid: number) {
+  const id = resumeId.value
+  if (!Number.isFinite(id)) return
+  resumeTemplateId.value = tid
+  try {
+    await updateResumeApi(id, { templateId: tid })
+    await loadTemplate(tid)
+  } catch {
+    toast(t('模板应用失败'), 'error')
+  }
+}
+
+function buildAvatarDataUri(name?: string): string {
+  const ch = (name || '').trim().charAt(0) || '?'
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="125"><rect width="100" height="125" fill="#2563eb" rx="8"/><text x="50" y="72" font-size="40" fill="#fff" text-anchor="middle" font-family="sans-serif">${ch}</text></svg>`
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)))
+}
 
 const title = ref('')
 const skillInput = ref('')
@@ -678,14 +781,19 @@ function injectContentIntoTemplateFragment(html: string, c: ResumeContent): stri
     )
     .join('')
 
+  const job = c.jobIntention
   return html
-    .replace(/\{\{avatar\}\}/g, DEFAULT_AVATAR_DATA_URI)
-    .replace(/\{\{name\}\}/g, esc(basic.name || '姓名'))
+    .replace(/\{\{avatar\}\}/g, basic.avatar || buildAvatarDataUri(basic.name))
+    .replace(/\{\{name\}\}/g, esc(basic.name || t('姓名')))
     .replace(/\{\{phone\}\}/g, esc(basic.phone || ''))
     .replace(/\{\{email\}\}/g, esc(basic.email || ''))
     .replace(/\{\{school\}\}/g, esc(basic.school || ''))
     .replace(/\{\{major\}\}/g, esc(basic.major || ''))
     .replace(/\{\{graduationYear\}\}/g, esc(basic.graduationYear || ''))
+    .replace(/\{\{targetPosition\}\}/g, esc(job.targetPosition || ''))
+    .replace(/\{\{expectedSalary\}\}/g, esc(job.expectedSalary || ''))
+    .replace(/\{\{preferredCity\}\}/g, esc(job.preferredCity || ''))
+    .replace(/\{\{workType\}\}/g, esc(job.workType || ''))
     .replace(/\{\{selfIntro\}\}/g, esc(c.selfIntro || ''))
     .replace(/\{\{skills\}\}/g, skillsHtml)
     .replace(/\{\{education\}\}/g, educationHtml)
@@ -693,6 +801,18 @@ function injectContentIntoTemplateFragment(html: string, c: ResumeContent): stri
     .replace(/\{\{projects\}\}/g, projectsHtml)
     .replace(/\{\{awards\}\}/g, awardsHtml)
     .replace(/\{\{activities\}\}/g, activitiesHtml)
+    .replace(/<h2>About Me<\/h2>/g, `<h2>${t('自我介绍')}</h2>`)
+    .replace(/<h2>Education<\/h2>/g, `<h2>${t('教育经历')}</h2>`)
+    .replace(/<h2>Work Experience<\/h2>/g, `<h2>${t('实习/工作经历')}</h2>`)
+    .replace(/<h2>Projects<\/h2>/g, `<h2>${t('项目经验')}</h2>`)
+    .replace(/<h2>Awards & Certificates<\/h2>/g, `<h2>${t('证书/荣誉奖项')}</h2>`)
+    .replace(/<h2>Activities<\/h2>/g, `<h2>${t('校园活动/社会实践')}</h2>`)
+    .replace(/<h2>Skills<\/h2>/g, `<h2>${t('技能')}</h2>`)
+    .replace(/<h3>Contact<\/h3>/g, `<h3>${t('联系方式')}</h3>`)
+    .replace(/<h3>Education<\/h3>/g, `<h3>${t('教育经历')}</h3>`)
+    .replace(/<h3>Skills<\/h3>/g, `<h3>${t('技能')}</h3>`)
+    .replace(/<h3>Awards & Certificates<\/h3>/g, `<h3>${t('证书/荣誉奖项')}</h3>`)
+    .replace(/<h3>Activities<\/h3>/g, `<h3>${t('校园活动/社会实践')}</h3>`)
 }
 
 function buildPlaceholderPreviewDoc(message: string): string {
@@ -710,6 +830,11 @@ const previewHtml = computed(() => {
   void content.basicInfo.school
   void content.basicInfo.major
   void content.basicInfo.graduationYear
+  void content.basicInfo.avatar
+  void content.jobIntention.targetPosition
+  void content.jobIntention.expectedSalary
+  void content.jobIntention.preferredCity
+  void content.jobIntention.workType
   void content.selfIntro
   void content.skills.length
   content.skills.forEach((s) => {
@@ -808,6 +933,7 @@ function normalizeContent(raw: Record<string, unknown> | undefined | null): Resu
     school: basic.school ?? '',
     major: basic.major ?? '',
     graduationYear: String(basic.graduationYear ?? ''),
+    avatar: basic.avatar || undefined,
   }
   const jobIntention = (raw.jobIntention as Record<string, string>) || {}
   base.jobIntention = {
@@ -886,6 +1012,10 @@ function assignContent(from: ResumeContent) {
 
 type ArraySectionKey = 'education' | 'experience' | 'projects' | 'awards' | 'activities'
 
+function contentRows(key: ArraySectionKey) {
+  return content[key] as any[]
+}
+
 function emptyRow(key: ArraySectionKey): any {
   if (key === 'education') return { school: '', major: '', startDate: '', endDate: '' }
   if (key === 'experience') return { company: '', position: '', startDate: '', endDate: '', description: '' }
@@ -910,14 +1040,18 @@ function addSkillTag() {
 }
 
 function goBack() {
-  router.push({ name: 'UserCenter' })
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/user-center/resumes')
+  }
 }
 
 async function loadTemplate(id: number) {
   templateLoading.value = true
   templateLoadError.value = ''
   try {
-    const res: { data?: Record<string, unknown> } & Record<string, unknown> = await getResumeTemplateApi(id)
+    const res: any = await getResumeTemplateApi(id)
     const raw = (res.data ?? res) as Record<string, unknown>
     loadedTemplate.value = {
       htmlContent: String(raw.htmlContent ?? ''),
@@ -943,7 +1077,7 @@ async function loadResume() {
   loading.value = true
   loadError.value = ''
   try {
-    const res: { data?: Record<string, unknown> } & Record<string, unknown> = await getResumeDetailApi(id)
+    const res: any = await getResumeDetailApi(id)
     const detail = (res.data ?? res) as Record<string, unknown>
     title.value = String(detail.title ?? '')
     assignContent(normalizeContent(detail.content as Record<string, unknown>))
@@ -961,6 +1095,12 @@ async function loadResume() {
       await loadTemplate(resumeTemplateId.value)
     } else {
       loadedTemplate.value = null
+      // Auto-assign first available template for resumes without one
+      await loadAvailableTemplates()
+      if (availableTemplates.value.length > 0) {
+        const firstTid = availableTemplates.value[0].id
+        await applyTemplate(firstTid)
+      }
     }
   } catch {
     loadError.value = t('加载简历失败，请稍后重试')
@@ -988,6 +1128,17 @@ function buildPayload() {
   }
 }
 
+async function autoSave(): Promise<boolean> {
+  const id = resumeId.value
+  if (!Number.isFinite(id) || !title.value.trim()) return false
+  try {
+    await updateResumeApi(id, buildPayload())
+    return true
+  } catch {
+    return false
+  }
+}
+
 async function onSave() {
   const id = resumeId.value
   if (!Number.isFinite(id)) return
@@ -1010,8 +1161,9 @@ async function onPreview() {
   const id = resumeId.value
   if (!Number.isFinite(id)) return
   previewing.value = true
+  await autoSave()
   try {
-    const res: { data?: { html?: string } } & { html?: string } = await renderResumeApi(id)
+    const res: { data?: { html?: string } } & { html?: string } = await renderResumeApi(id, currentLocale.value)
     const payload = res.data ?? res
     const html = typeof payload === 'object' && payload && 'html' in payload ? String(payload.html ?? '') : ''
     if (!html) {
@@ -1038,38 +1190,56 @@ async function onExportPdf() {
   const id = resumeId.value
   if (!Number.isFinite(id)) return
   exporting.value = true
+  await autoSave()
+  let container: HTMLDivElement | null = null
   try {
-    const res: { data?: { html?: string } } & { html?: string } = await renderResumeApi(id)
+    const res: { data?: { html?: string } } & { html?: string } = await renderResumeApi(id, currentLocale.value)
     const payload = res.data ?? res
     const html = typeof payload === 'object' && payload && 'html' in payload ? String(payload.html ?? '') : ''
     if (!html) {
       toast(t('暂无可导出的内容'), 'warning')
       return
     }
-    const printHtml = html.replace('</head>', `<style>
-      @media print {
-        body { margin: 0; padding: 0; }
-        @page { margin: 10mm; size: A4; }
-      }
-    </style>
-    <script>
-      window.onload = function() {
-        setTimeout(function() { window.print(); }, 300);
-      };
-    <\/script>
-    </head>`)
-    const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const w = window.open(url, '_blank')
-    if (!w) {
-      toast(t('请允许弹出窗口以导出 PDF'), 'warning')
-      URL.revokeObjectURL(url)
-      return
+
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)
+    const bodyContent = bodyMatch ? bodyMatch[1] : html.replace(/^<!DOCTYPE[^>]*>/i, '').replace(/<\/?html[^>]*>/gi, '').replace(/<\/?head[^>]*>/gi, '').replace(/<\/?body[^>]*>/gi, '')
+
+    const scopeId = `__pdf_${Date.now()}`
+    container = document.createElement('div')
+    container.id = scopeId
+    container.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:800px;background:#fff;z-index:-9999;pointer-events:none'
+
+    const styleMatches = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)]
+    for (const sm of styleMatches) {
+      const styleEl = document.createElement('style')
+      let css = sm[1]
+      css = css.replace(/(^|[};,\s])\*\s*\{/gm, `$1#${scopeId} *{`)
+      css = css.replace(/(^|[};,\s])body\s*\{/gm, `$1#${scopeId} {`)
+      styleEl.textContent = css
+      container.appendChild(styleEl)
     }
-    setTimeout(() => URL.revokeObjectURL(url), 120_000)
+
+    const contentDiv = document.createElement('div')
+    contentDiv.innerHTML = bodyContent
+    container.appendChild(contentDiv)
+    document.body.appendChild(container)
+
+    await new Promise(r => setTimeout(r, 300))
+
+    const { default: html2pdf } = await import('html2pdf.js')
+    const fileName = `${title.value.trim() || 'resume'}.pdf`
+    await html2pdf().set({
+      margin: [10, 10, 10, 10],
+      filename: fileName,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: 800 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }).from(contentDiv).save()
+    toast(t('PDF 已导出'), 'success')
   } catch {
     // interceptor
   } finally {
+    if (container?.parentNode) container.remove()
     exporting.value = false
   }
 }
@@ -1079,7 +1249,7 @@ async function onAnalyze() {
   if (!Number.isFinite(id)) return
   analyzing.value = true
   try {
-    const res: { data?: Record<string, unknown> } & Record<string, unknown> = await analyzeResumeApi(id)
+    const res: any = await analyzeResumeApi(id)
     const data = (res.data ?? res) as Record<string, unknown>
     analysisDialog.data = {
       completeness: Number(data.completeness ?? 0),
@@ -1107,7 +1277,7 @@ async function onPolish() {
   if (!Number.isFinite(id)) return
   polishing.value = true
   try {
-    await optimizeResumeApi(id)
+    await optimizeResumeApi(id, { locale: currentLocale.value })
     toast(t('润色请求已完成'), 'success')
     await loadResume()
   } catch {
@@ -1141,7 +1311,7 @@ async function onAiGenerate() {
       skills: content.skills.map((s) => s.trim()).filter(Boolean),
       targetPosition: content.jobIntention.targetPosition || '',
     }
-    const res: { data?: Record<string, unknown> } & Record<string, unknown> = await optimizeResumeApi(id, payload)
+    const res: any = await optimizeResumeApi(id, payload)
     const data = (res.data ?? res) as Record<string, unknown>
 
     // 如果后端返回了全量生成内容，填充到表单中
@@ -1174,6 +1344,7 @@ watch(
 )
 
 onMounted(() => {
+  void loadAvailableTemplates()
   void loadResume()
 })
 </script>

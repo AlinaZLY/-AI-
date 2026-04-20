@@ -32,14 +32,28 @@ export function analyzeResumeApi(id: number) {
   return request.post(`/resumes/item/${id}/analyze`, null, { timeout: 120000 })
 }
 
-export function renderResumeApi(id: number) {
-  return request.get(`/resumes/item/${id}/render`)
+export function renderResumeApi(id: number, locale?: string) {
+  return request.get(`/resumes/item/${id}/render`, { params: locale ? { locale } : undefined })
 }
 
-export function uploadResumeFileApi(id: number, file: File) {
+export function uploadResumeFileApi(
+  id: number,
+  file: File,
+  locale?: string,
+  onUploadProgress?: (percent: number) => void,
+) {
   const fd = new FormData()
   fd.append('file', file)
-  return request.post(`/resumes/item/${id}/upload`, fd)
+  return request.post(`/resumes/item/${id}/upload`, fd, {
+    timeout: 120000,
+    onUploadProgress: (event) => {
+      const total = event.total || file.size || 0
+      if (total <= 0) return
+      const percent = Math.min(100, Math.round((event.loaded / total) * 100))
+      onUploadProgress?.(percent)
+    },
+    params: locale ? { locale } : undefined,
+  })
 }
 
 export function optimizeResumeApi(id: number, data?: Record<string, unknown>) {

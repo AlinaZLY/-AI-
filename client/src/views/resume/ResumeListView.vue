@@ -1,5 +1,5 @@
 <template>
-  <div class="page-shell min-h-screen bg-gray-50">
+  <div class="page-shell min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-6" style="max-width: 1200px; margin-inline: auto;">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-900">{{ $t('校园简历模板') }}</h1>
       <div class="flex gap-3">
@@ -28,7 +28,7 @@
         :class="selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'"
         class="px-4 py-1.5 rounded-full text-sm border border-gray-200 transition-colors"
       >
-        {{ cat }}
+        {{ $t(cat) }}
       </button>
     </div>
 
@@ -36,32 +36,33 @@
       <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="tpl in templates"
         :key="tpl.id"
-        class="bg-white rounded-xl border border-gray-100 hover:shadow-lg transition-all cursor-pointer group overflow-hidden"
+        class="bg-white rounded-xl border border-gray-100 hover:shadow-lg hover:border-blue-200 transition-all cursor-pointer group overflow-hidden"
         @click="openDetail(tpl)"
       >
-        <div v-if="tpl.htmlContent" class="h-52 bg-gray-50 overflow-hidden relative">
+        <div v-if="tpl.htmlContent" class="h-64 bg-gray-50 overflow-hidden relative flex justify-center">
           <iframe
             :srcdoc="buildPreviewHtml(tpl)"
-            class="absolute top-0 left-0 w-[700px] h-[900px] border-none pointer-events-none"
+            class="absolute top-0 w-[700px] h-[900px] border-none pointer-events-none"
+            style="left: 50%; transform: translateX(-50%)"
             sandbox=""
             scrolling="no"
           />
         </div>
-        <div v-else class="h-52 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+        <div v-else class="h-64 bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
           <svg class="w-12 h-12 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
         <div class="p-4">
           <div class="flex justify-between items-start mb-2">
-            <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{{ tpl.name }}</h3>
-            <span v-if="tpl.category" class="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">{{ tpl.category }}</span>
+            <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{{ $t(tpl.name) }}</h3>
+            <span v-if="tpl.category" class="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">{{ $t(tpl.category) }}</span>
           </div>
-          <p class="text-sm text-gray-500 line-clamp-2">{{ tpl.description || $t('暂无描述') }}</p>
+          <p class="text-sm text-gray-500 line-clamp-2">{{ $t(tpl.description || '暂无描述') }}</p>
         </div>
       </div>
     </div>
@@ -92,7 +93,7 @@
     <div v-if="currentTemplate" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="currentTemplate = null">
       <div class="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl">
         <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center z-10">
-          <h2 class="text-lg font-bold text-gray-900">{{ currentTemplate.name }}</h2>
+          <h2 class="text-lg font-bold text-gray-900">{{ $t(currentTemplate.name) }}</h2>
           <button @click="currentTemplate = null" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
         <div class="p-6 space-y-4">
@@ -101,10 +102,10 @@
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-500">{{ $t('分类') }}</span>
-            <span>{{ currentTemplate.category || $t('通用') }}</span>
+            <span>{{ $t(currentTemplate.category || '通用') }}</span>
           </div>
           <div v-if="currentTemplate.description" class="text-sm text-gray-600">
-            {{ currentTemplate.description }}
+            {{ $t(currentTemplate.description) }}
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-500">{{ $t('更新时间') }}</span>
@@ -112,7 +113,7 @@
           </div>
         </div>
         <div class="sticky bottom-0 bg-white border-t border-gray-100 px-6 py-4 flex justify-end gap-2">
-          <button @click="previewTemplate(currentTemplate)" class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
+          <button @click="openPreviewModal(currentTemplate)" class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
             {{ $t('预览模板') }}
           </button>
           <button
@@ -133,17 +134,30 @@
         </div>
       </div>
     </div>
+
+    <!-- 全屏预览弹窗 -->
+    <div v-if="previewHtml" class="fixed inset-0 z-[60] flex flex-col bg-black/60" @click.self="previewHtml = ''">
+      <div class="flex items-center justify-between px-6 py-3 bg-white/95 backdrop-blur border-b border-gray-200">
+        <h3 class="text-base font-semibold text-gray-800">{{ $t('模板预览') }}</h3>
+        <button @click="previewHtml = ''" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="flex-1 overflow-auto flex justify-center p-6 bg-gray-100">
+        <div class="bg-white shadow-xl rounded-lg overflow-hidden" style="width:800px;min-height:1000px">
+          <iframe :srcdoc="previewHtml" class="w-full border-none" style="height:1200px" sandbox="" />
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, type Ref } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
 import toast from '@/utils/toast'
 import { useI18n } from '@/i18n'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const router = useRouter()
 
@@ -158,28 +172,85 @@ interface Template {
   updatedAt: string
 }
 
-const sampleData: Record<string, string> = {
-  '{{avatar}}': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzE2NzdmZiIgcng9IjUwIi8+PHRleHQgeD0iNTAiIHk9IjYwIiBmb250LXNpemU9IjQwIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI+5bygPC90ZXh0Pjwvc3ZnPg==',
-  '{{name}}': '张三',
-  '{{phone}}': '138-0000-0000',
-  '{{email}}': 'zhangsan@example.com',
-  '{{school}}': '清华大学',
-  '{{major}}': '计算机科学与技术',
-  '{{graduationYear}}': '2026',
-  '{{selfIntro}}': '热爱技术，具有扎实的编程基础和良好的团队协作能力。',
-  '{{skills}}': '<span class="skill-tag">JavaScript</span> <span class="skill-tag">Vue.js</span> <span class="skill-tag">React</span> <span class="skill-tag">Node.js</span>',
-  '{{education}}': '<div class="item"><strong>清华大学</strong> - 计算机科学与技术 <span class="time">2022.09 ~ 2026.06</span></div>',
-  '{{experience}}': '<div class="item"><strong>字节跳动</strong> - 前端开发实习生 <span class="time">2025.06 ~ 2025.09</span><p>负责电商后台管理系统的前端开发</p></div>',
-  '{{projects}}': '<div class="item"><strong>校园招聘平台</strong> <span class="time">2025.03 ~ 2025.06</span><p>基于 Vue3 + NestJS 的全栈项目</p></div>',
+function buildSampleAvatarUri(ch: string): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="120"><rect width="100" height="120" fill="#2563eb" rx="8"/><text x="50" y="70" font-size="38" fill="#fff" text-anchor="middle" font-family="sans-serif">${ch}</text></svg>`
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)))
+}
+
+const isEn = computed(() => (locale as Ref<string>).value !== 'zh-CN')
+
+const sampleData = computed<Record<string, string>>(() => {
+  if (isEn.value) {
+    return {
+      '{{avatar}}': buildSampleAvatarUri('J'),
+      '{{name}}': 'John Smith',
+      '{{phone}}': '+1 (555) 123-4567',
+      '{{email}}': 'john.smith@example.com',
+      '{{school}}': 'Peking University',
+      '{{major}}': 'Computer Science',
+      '{{graduationYear}}': '2026',
+      '{{targetPosition}}': 'Frontend Developer',
+      '{{expectedSalary}}': '15-25K',
+      '{{preferredCity}}': 'Beijing',
+      '{{workType}}': 'Full-time',
+      '{{selfIntro}}': 'Passionate about technology with a solid programming foundation and excellent teamwork skills. Experienced in multiple full-stack projects during college.',
+      '{{skills}}': '<span class="skill-tag">JavaScript</span><span class="skill-tag">TypeScript</span><span class="skill-tag">Vue.js</span><span class="skill-tag">React</span><span class="skill-tag">Node.js</span><span class="skill-tag">Python</span>',
+      '{{education}}': '<div class="item"><strong>Peking University</strong> — Computer Science <span class="time">2022.09 ~ 2026.06</span></div>',
+      '{{experience}}': '<div class="item"><strong>ByteDance</strong> — Frontend Intern <span class="time">2025.06 ~ 2025.09</span><p>Developed and optimized the e-commerce admin dashboard</p></div>',
+      '{{projects}}': '<div class="item"><strong>Campus Recruitment Platform</strong> <span class="time">2025.03 ~ 2025.06</span><p>Full-stack project built with Vue 3 + NestJS, featuring resume management and AI interviews</p></div>',
+      '{{awards}}': '<div class="item"><strong>National Scholarship</strong> <span class="time">2024</span></div>',
+      '{{activities}}': '<div class="item"><strong>Tech Club</strong> — President <span class="time">2023 ~ 2025</span><p>Organized tech talks and hackathon events on campus</p></div>',
+    }
+  }
+  return {
+    '{{avatar}}': buildSampleAvatarUri('张'),
+    '{{name}}': '张三',
+    '{{phone}}': '138-0000-0000',
+    '{{email}}': 'zhangsan@example.com',
+    '{{school}}': '清华大学',
+    '{{major}}': '计算机科学与技术',
+    '{{graduationYear}}': '2026',
+    '{{targetPosition}}': '前端开发工程师',
+    '{{expectedSalary}}': '15-25K',
+    '{{preferredCity}}': '北京',
+    '{{workType}}': '全职',
+    '{{selfIntro}}': '热爱技术，具有扎实的编程基础和良好的团队协作能力。在校期间参与多个实战项目，熟练掌握前后端开发技能。',
+    '{{skills}}': '<span class="skill-tag">JavaScript</span><span class="skill-tag">TypeScript</span><span class="skill-tag">Vue.js</span><span class="skill-tag">React</span><span class="skill-tag">Node.js</span><span class="skill-tag">Python</span>',
+    '{{education}}': '<div class="item"><strong>清华大学</strong> — 计算机科学与技术 <span class="time">2022.09 ~ 2026.06</span></div>',
+    '{{experience}}': '<div class="item"><strong>字节跳动</strong> — 前端开发实习生 <span class="time">2025.06 ~ 2025.09</span><p>负责电商后台管理系统的前端开发与性能优化</p></div>',
+    '{{projects}}': '<div class="item"><strong>校园招聘平台</strong> <span class="time">2025.03 ~ 2025.06</span><p>基于 Vue 3 + NestJS 的全栈项目，实现简历管理与智能面试功能</p></div>',
+    '{{awards}}': '<div class="item"><strong>国家奖学金</strong> <span class="time">2024</span></div>',
+    '{{activities}}': '<div class="item"><strong>技术社团</strong> — 社长 <span class="time">2023 ~ 2025</span><p>组织校内技术分享与黑客马拉松活动</p></div>',
+  }
+})
+
+function translateSectionHeadings(html: string): string {
+  const map: Record<string, string> = {
+    'About Me': t('自我介绍'),
+    'Education': t('教育经历'),
+    'Work Experience': t('实习/工作经历'),
+    'Projects': t('项目经验'),
+    'Awards & Certificates': t('证书/荣誉奖项'),
+    'Activities': t('校园活动/社会实践'),
+    'Skills': t('技能'),
+    'Contact': t('联系方式'),
+  }
+  let result = html
+  for (const [en, label] of Object.entries(map)) {
+    result = result.replace(new RegExp(`<h2>${en}</h2>`, 'g'), `<h2>${label}</h2>`)
+      .replace(new RegExp(`<h3>${en}</h3>`, 'g'), `<h3>${label}</h3>`)
+  }
+  return result
 }
 
 function buildPreviewHtml(tpl: Template): string {
   let html = tpl.htmlContent || ''
   const css = (tpl.cssContent || '').replace(/<\/?script[^>]*>/gi, '')
-  for (const [placeholder, value] of Object.entries(sampleData)) {
+  for (const [placeholder, value] of Object.entries(sampleData.value)) {
     html = html.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value)
   }
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0;overflow:hidden;pointer-events:none;transform-origin:top left;transform:scale(0.28);width:700px;min-height:900px}${css}</style></head><body>${html}</body></html>`
+  html = translateSectionHeadings(html)
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:0;overflow:hidden;pointer-events:none;transform-origin:top center;transform:scale(0.32);width:700px;min-height:900px}${css}</style></head><body>${html}</body></html>`
 }
 
 const templates = ref<Template[]>([])
@@ -192,6 +263,7 @@ const page = ref(1)
 const pageSize = 20
 const total = ref(0)
 const currentTemplate = ref<Template | null>(null)
+const previewHtml = ref('')
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
 function formatTime(ts: string) {
@@ -232,33 +304,21 @@ function openDetail(tpl: Template) {
   currentTemplate.value = tpl
 }
 
-async function previewTemplate(tpl: Template) {
-  try {
-    const res: any = await request.get(`/resumes/templates/${tpl.id}`)
-    const data = res.data || res
-    const html = data.htmlContent || ''
-    const css = (data.cssContent || '').replace(/<\/?script[^>]*>/gi, '')
-    const win = window.open('', '_blank')
-    if (win) {
-      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>${css}</style></head><body></body></html>`)
-      win.document.close()
-      const container = win.document.createElement('div')
-      container.innerHTML = html
-      container.querySelectorAll('script').forEach(s => s.remove())
-      win.document.body.appendChild(container)
-    } else {
-      toast(t('请允许弹窗以预览模板'), 'warning')
-    }
-  } catch {
-    toast(t('预览失败'), 'error')
+function openPreviewModal(tpl: Template) {
+  let html = tpl.htmlContent || ''
+  const css = (tpl.cssContent || '').replace(/<\/?script[^>]*>/gi, '')
+  for (const [placeholder, value] of Object.entries(sampleData.value)) {
+    html = html.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value)
   }
+  html = translateSectionHeadings(html)
+  previewHtml.value = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:40px;background:#fff}${css}</style></head><body>${html}</body></html>`
 }
 
 async function useTemplate(tpl: Template) {
   creating.value = true
   try {
     const res: any = await request.post('/resumes', {
-      title: `${tpl.name} - 我的简历`,
+      title: `${tpl.name} - My Resume`,
       templateId: tpl.id,
       content: {
         basicInfo: { name: '', phone: '', email: '', school: '', major: '', graduationYear: '' },
