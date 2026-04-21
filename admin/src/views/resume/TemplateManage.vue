@@ -79,7 +79,7 @@
                 </template>
               </a-dropdown>
               <a-tooltip :title="$t('删除')">
-                <a-popconfirm :title="tpl.isSystem ? $t('这是系统模板，确定要删除吗？') : $t('确定删除？')" @confirm="handleDelete(tpl.id)">
+                <a-popconfirm :title="tpl.isSystem ? $t('这是系统模板，确定要删除吗？') : $t('确定删除？')" :ok-text="$t('删除')" :cancel-text="$t('取消')" :ok-button-props="{ danger: true }" @confirm="handleDelete(tpl.id)">
                   <DeleteOutlined @click.stop />
                 </a-popconfirm>
               </a-tooltip>
@@ -291,6 +291,22 @@
         </p>
       </a-upload-dragger>
     </a-modal>
+
+    <!-- 全屏预览弹窗 -->
+    <a-modal
+      v-model:open="previewModalVisible"
+      :title="$t('模板预览')"
+      :footer="null"
+      width="900px"
+      centered
+      :body-style="{ padding: '16px', background: '#f5f5f5', maxHeight: '80vh', overflow: 'auto' }"
+    >
+      <div style="display: flex; justify-content: center;">
+        <div style="background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; width: 800px;">
+          <iframe :srcdoc="previewModalHtml" style="width: 100%; height: 1100px; border: none;" sandbox="" />
+        </div>
+      </div>
+    </a-modal>
   </div>
 </template>
 
@@ -313,7 +329,7 @@ const categories = ref<string[]>([])
 const categoryFilter = ref('')
 const keyword = ref('')
 const pagination = reactive({ current: 1, pageSize: 12, total: 0 })
-const DEFAULT_CATEGORY = '通用'
+const DEFAULT_CATEGORY = 'General'
 const pageSubtitle = computed(() => t('共 {count} 个模板', { count: pagination.total }))
 const showTotal = (total: number) => t('共 {count} 个', { count: total })
 
@@ -470,19 +486,45 @@ function translateCategory(category?: string) {
   return raw ? t(raw) : t('未分类')
 }
 
+function buildSampleAvatar(): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#2563eb" rx="50"/><text x="50" y="62" font-size="38" fill="#fff" text-anchor="middle" font-family="sans-serif">张</text></svg>`
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)))
+}
+
 const SAMPLE_DATA: Record<string, string> = {
-  '{{avatar}}': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iIzE2NzdmZiIgcng9IjUwIi8+PHRleHQgeD0iNTAiIHk9IjYwIiBmb250LXNpemU9IjQwIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiI+5bygPC90ZXh0Pjwvc3ZnPg==',
+  '{{avatar}}': buildSampleAvatar(),
   '{{name}}': '张三',
   '{{phone}}': '138-0000-0000',
   '{{email}}': 'zhangsan@example.com',
   '{{school}}': '清华大学',
   '{{major}}': '计算机科学与技术',
   '{{graduationYear}}': '2026',
+  '{{targetPosition}}': '前端开发工程师',
+  '{{expectedSalary}}': '15-25K',
+  '{{preferredCity}}': '北京',
+  '{{workType}}': '全职',
   '{{selfIntro}}': '热爱技术，具有扎实的编程基础和良好的团队协作能力。在校期间积极参与项目实践，拥有丰富的前端开发经验。',
-  '{{skills}}': '<span class="skill-tag">JavaScript</span> <span class="skill-tag">TypeScript</span> <span class="skill-tag">Vue.js</span> <span class="skill-tag">React</span> <span class="skill-tag">Node.js</span>',
-  '{{education}}': '<div class="item"><strong>清华大学</strong> - 计算机科学与技术 <span class="time">2022.09 ~ 2026.06</span></div>',
-  '{{experience}}': '<div class="item"><strong>字节跳动</strong> - 前端开发实习生 <span class="time">2025.06 ~ 2025.09</span><p>负责抖音电商后台管理系统的前端开发与优化</p></div>',
-  '{{projects}}': '<div class="item"><strong>校园招聘平台</strong> <span class="time">2025.03 ~ 2025.06</span><p>基于 Vue3 + NestJS 的全栈项目，支持简历管理、AI 面试等功能</p></div>',
+  '{{skills}}': '<span class="skill-tag">JavaScript</span><span class="skill-tag">TypeScript</span><span class="skill-tag">Vue.js</span><span class="skill-tag">React</span><span class="skill-tag">Node.js</span><span class="skill-tag">Python</span>',
+  '{{education}}': '<div class="item"><strong>清华大学</strong> — 计算机科学与技术 <span class="time">2022.09 ~ 2026.06</span></div>',
+  '{{experience}}': '<div class="item"><strong>字节跳动</strong> — 前端开发实习生 <span class="time">2025.06 ~ 2025.09</span><p>负责抖音电商后台管理系统的前端开发与优化</p></div>',
+  '{{projects}}': '<div class="item"><strong>校园招聘平台</strong> <span class="time">2025.03 ~ 2025.06</span><p>基于 Vue 3 + NestJS 的全栈项目，支持简历管理、AI 面试等功能</p></div>',
+  '{{awards}}': '<div class="item"><strong>国家奖学金</strong> <span class="time">2024</span></div>',
+  '{{activities}}': '<div class="item"><strong>技术社团</strong> — 社长 <span class="time">2023 ~ 2025</span><p>组织校内技术分享与黑客马拉松活动</p></div>',
+}
+
+function translateHeadings(html: string): string {
+  const map: Record<string, string> = {
+    'About Me': t('自我介绍'), 'Education': t('教育经历'),
+    'Work Experience': t('实习/工作经历'), 'Projects': t('项目经验'),
+    'Awards & Certificates': t('证书/荣誉奖项'),
+    'Activities': t('校园活动/社会实践'), 'Skills': t('技能'), 'Contact': t('联系方式'),
+  }
+  let r = html
+  for (const [en, label] of Object.entries(map)) {
+    r = r.replace(new RegExp(`<h2>${en}</h2>`, 'g'), `<h2>${label}</h2>`)
+      .replace(new RegExp(`<h3>${en}</h3>`, 'g'), `<h3>${label}</h3>`)
+  }
+  return r
 }
 
 function buildPreviewHtml(tpl: any, fullScale = false) {
@@ -492,6 +534,7 @@ function buildPreviewHtml(tpl: any, fullScale = false) {
   for (const [placeholder, value] of Object.entries(SAMPLE_DATA)) {
     html = html.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value)
   }
+  html = translateHeadings(html)
 
   const bodyStyle = fullScale
     ? 'margin:0;padding:40px;'
@@ -576,13 +619,14 @@ async function handleDelete(id: number) {
   catch { message.error(t('删除失败')) }
 }
 
+const previewModalHtml = ref('')
+const previewModalVisible = computed({
+  get: () => !!previewModalHtml.value,
+  set: (v: boolean) => { if (!v) previewModalHtml.value = '' },
+})
+
 function handlePreview(record: any) {
-  const w = window.open('', '_blank')
-  if (w) {
-    const html = buildPreviewHtml(record, true)
-    w.document.write(html)
-    w.document.close()
-  }
+  previewModalHtml.value = buildPreviewHtml(record, true)
 }
 
 async function handleUploadDocxWithModal(file: File) {
