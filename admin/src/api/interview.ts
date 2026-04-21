@@ -63,3 +63,15 @@ export function getPendingQuestionsApi(params?: Record<string, any>) {
 export function reviewQuestionApi(id: number, data: { status: string; rejectReason?: string }) {
   return request.put(`/interview/questions/${id}/review`, data)
 }
+
+export function getPracticeRecordsAdminApi(params?: Record<string, any>) {
+  return request.get('/interview/practice/admin', { params })
+}
+
+export function getPracticeStatsAdminApi() {
+  return request.get('/interview/practice/admin/stats')
+}
+
+export function deletePracticeRecordApi(id: number) {
+  return request.delete(`/interview/practice/admin/${id}`)
+}
