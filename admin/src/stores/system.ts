@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { getPublicSettingsApi } from '@/api/system'
 
 export const useSystemStore = defineStore('system', () => {
-  const siteName = ref('校园招聘服务平台')
+  const siteName = ref('AI Campus Recruitment')
   const siteLogo = ref('')
 
   async function fetchSettings() {

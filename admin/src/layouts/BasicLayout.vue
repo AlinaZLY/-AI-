@@ -102,6 +102,10 @@
             <FileTextOutlined />
             <span>{{ $t('面试记录') }}</span>
           </a-menu-item>
+          <a-menu-item key="interview/practice">
+            <EditOutlined />
+            <span>{{ $t('练习记录') }}</span>
+          </a-menu-item>
         </a-sub-menu>
         <a-menu-item key="notifications">
           <BellOutlined />
@@ -310,6 +314,7 @@ import {
   SoundOutlined,
   NotificationOutlined,
   GlobalOutlined,
+  EditOutlined,
 } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'

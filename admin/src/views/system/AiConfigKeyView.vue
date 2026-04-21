@@ -86,12 +86,9 @@
                 <a-select-option value="disabled">未启用</a-select-option>
               </a-select>
             </a-form-item>
-            <a-form-item label="App ID（豆包语音控制台）">
-              <a-input v-model:value="voiceConfig.appId" placeholder="火山引擎豆包语音控制台创建的 App ID" />
-              <div style="font-size: 12px; color: #999; margin-top: 4px">前往 <a href="https://console.volcengine.com/speech/new/welcome?projectName=default" target="_blank">豆包语音控制台</a> 创建应用获取</div>
-            </a-form-item>
-            <a-form-item label="Access Token（豆包语音）">
-              <a-input-password v-model:value="voiceConfig.apiKey" placeholder="火山引擎豆包语音 Access Token" />
+            <a-form-item label="API Key（豆包语音）">
+              <a-input-password v-model:value="voiceConfig.apiKey" placeholder="豆包语音控制台 → API Key 管理中获取" />
+              <div style="font-size: 12px; color: #999; margin-top: 4px">前往 <a href="https://console.volcengine.com/speech/new/welcome?projectName=default" target="_blank">豆包语音控制台</a> → API Key 管理获取</div>
             </a-form-item>
             <a-form-item>
               <a-space>
@@ -325,12 +322,12 @@ const testingVoice = ref(false)
 const voiceTestResult = ref('')
 
 async function handleTestVoice() {
-  if (!voiceConfig.appId || !voiceConfig.apiKey) { message.warning('请先保存语音配置'); return }
+  if (!voiceConfig.apiKey) { message.warning('请先填写并保存 API Key'); return }
   testingVoice.value = true; voiceTestResult.value = ''
   try {
-    const res: any = await request.post('/system/speech/recognize', { audioUrl: 'test://connectivity-check', format: 'mp3' })
-    voiceTestResult.value = (res.data?.success === false && res.data?.message) ? 'failed' : 'success'
-    voiceTestResult.value === 'success' ? message.success('语音服务连接正常') : message.warning('语音服务响应异常')
+    const res: any = await request.post('/system/speech/health-check')
+    voiceTestResult.value = res.data?.success ? 'success' : 'failed'
+    voiceTestResult.value === 'success' ? message.success('语音服务连接正常') : message.warning(res.data?.message || '语音服务响应异常')
   } catch {
     voiceTestResult.value = 'failed'; message.error('语音服务连接失败')
   } finally { testingVoice.value = false }

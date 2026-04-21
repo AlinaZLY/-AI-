@@ -14,23 +14,23 @@
             </svg>
           </div>
           <h1 class="banner-title">{{ systemStore.siteName }}</h1>
-          <p class="banner-desc">基于 AI 的智能化校园招聘管理系统</p>
+          <p class="banner-desc">{{ $t('基于 AI 的智能化校园招聘管理系统') }}</p>
           <div class="banner-features">
             <div class="feature-item">
               <CheckCircleOutlined />
-              <span>智能简历分析与优化</span>
+              <span>{{ $t('智能简历分析与优化') }}</span>
             </div>
             <div class="feature-item">
               <CheckCircleOutlined />
-              <span>AI 模拟面试与评估</span>
+              <span>{{ $t('AI 模拟面试与评估') }}</span>
             </div>
             <div class="feature-item">
               <CheckCircleOutlined />
-              <span>投递流程全程追踪</span>
+              <span>{{ $t('投递流程全程追踪') }}</span>
             </div>
             <div class="feature-item">
               <CheckCircleOutlined />
-              <span>校园求职社区交流</span>
+              <span>{{ $t('校园求职社区交流') }}</span>
             </div>
           </div>
         </div>
@@ -38,10 +38,15 @@
 
       <!-- 右侧登录表单 -->
       <div class="login-form-section">
+        <div class="locale-switcher">
+          <a-select :value="currentLocale" @change="switchLocale" size="small" style="width: 120px">
+            <a-select-option v-for="opt in localeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</a-select-option>
+          </a-select>
+        </div>
         <div class="form-inner">
           <div class="form-header">
-            <h2 class="form-title">管理后台登录</h2>
-            <p class="form-desc">请使用管理员账号登录系统</p>
+            <h2 class="form-title">{{ $t('管理后台登录') }}</h2>
+            <p class="form-desc">{{ $t('请使用管理员账号登录系统') }}</p>
           </div>
 
           <a-form
@@ -52,10 +57,10 @@
             class="login-form"
             autocomplete="off"
           >
-            <a-form-item name="username" label="用户名">
+            <a-form-item name="username" :label="$t('用户名')">
               <a-input
                 v-model:value="formState.username"
-                placeholder="请输入用户名"
+                :placeholder="$t('请输入用户名')"
                 size="large"
                 autocomplete="new-password"
               >
@@ -65,10 +70,10 @@
               </a-input>
             </a-form-item>
 
-            <a-form-item name="password" label="密码">
+            <a-form-item name="password" :label="$t('密码')">
               <a-input-password
                 v-model:value="formState.password"
-                placeholder="请输入密码"
+                :placeholder="$t('请输入密码')"
                 size="large"
                 autocomplete="new-password"
               >
@@ -78,11 +83,11 @@
               </a-input-password>
             </a-form-item>
 
-            <a-form-item name="captcha" label="验证码">
+            <a-form-item name="captcha" :label="$t('验证码')">
               <div class="captcha-row">
                 <a-input
                   v-model:value="formState.captcha"
-                  placeholder="请输入验证码"
+                  :placeholder="$t('请输入验证码')"
                   size="large"
                   class="captcha-input"
                   autocomplete="off"
@@ -91,7 +96,7 @@
                     <SafetyCertificateOutlined style="color: #bfbfbf" />
                   </template>
                 </a-input>
-                <div class="captcha-image" @click="refreshCaptcha" title="点击刷新验证码">
+                <div class="captcha-image" @click="refreshCaptcha" :title="$t('点击刷新验证码')">
                   <div v-html="captchaSvg" class="captcha-svg"></div>
                 </div>
               </div>
@@ -106,7 +111,7 @@
                 :loading="loading"
                 class="login-btn"
               >
-                登录
+                {{ $t('登录') }}
               </a-button>
             </a-form-item>
           </a-form>
@@ -114,13 +119,13 @@
           <!-- 测试账号提示 -->
           <div class="test-accounts">
             <a-divider>
-              <span class="divider-text">测试账号</span>
+              <span class="divider-text">{{ $t('测试账号') }}</span>
             </a-divider>
             <div class="account-list">
               <div class="account-item" @click="fillAccount('admin', 'admin123')">
                 <TeamOutlined class="account-icon" />
                 <div class="account-info">
-                  <span class="account-label">平台管理员</span>
+                  <span class="account-label">{{ $t('平台管理员') }}</span>
                   <span class="account-detail">admin / admin123</span>
                 </div>
               </div>
@@ -133,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, computed } from 'vue'
 import {
   UserOutlined,
   LockOutlined,
@@ -146,7 +151,10 @@ import { useUserStore } from '@/stores/user'
 import { useSystemStore } from '@/stores/system'
 import { getCaptchaApi } from '@/api/auth'
 import { useRouter } from 'vue-router'
+import { useI18n } from '@/i18n'
 
+const { t, locale: currentLocale, localeOptions, setLocale } = useI18n()
+function switchLocale(val: string) { setLocale(val) }
 const userStore = useUserStore()
 const systemStore = useSystemStore()
 const router = useRouter()
@@ -160,11 +168,11 @@ const formState = reactive({
   captcha: '',
 })
 
-const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-  captcha: [{ required: true, message: '请输入验证码', trigger: 'blur' }],
-}
+const rules = computed(() => ({
+  username: [{ required: true, message: t('请输入用户名'), trigger: 'blur' }],
+  password: [{ required: true, message: t('请输入密码'), trigger: 'blur' }],
+  captcha: [{ required: true, message: t('请输入验证码'), trigger: 'blur' }],
+}))
 
 /* 点击测试账号自动填充 */
 function fillAccount(username: string, password: string) {
@@ -179,7 +187,7 @@ async function refreshCaptcha() {
     captchaSvg.value = res.data.captchaSvg
     captchaKey.value = res.data.captchaKey
   } catch {
-    message.error('获取验证码失败')
+    message.error(t('获取验证码失败'))
   }
 }
 
@@ -192,7 +200,7 @@ async function handleLogin() {
       captcha: formState.captcha,
       captchaKey: captchaKey.value,
     })
-    message.success('登录成功')
+    message.success(t('登录成功'))
     router.push('/')
   } catch {
     refreshCaptcha()
@@ -220,11 +228,22 @@ onMounted(() => {
 .login-wrapper {
   display: flex;
   width: 900px;
+  max-width: 100%;
   min-height: 560px;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .login-wrapper {
+    flex-direction: column;
+    width: 100%;
+    min-height: auto;
+    border-radius: 0;
+    box-shadow: none;
+  }
 }
 
 /* 左侧品牌区域 */
@@ -235,6 +254,11 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 48px;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 32px 24px;
+  }
 
   .banner-content {
     color: #ffffff;
@@ -279,6 +303,13 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 40px;
+  position: relative;
+}
+
+.locale-switcher {
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 
 .form-inner {

@@ -21,7 +21,7 @@
                     <template #description>{{ item.code }} · {{ item.items?.length || 0 }}项</template>
                   </a-list-item-meta>
                   <template #actions>
-                    <a-popconfirm title="删除此字典类型及所有项？" @confirm="handleDeleteType(item.id)">
+                    <a-popconfirm :title="$t('删除此字典类型及所有项？')" :ok-text="$t('删除')" :cancel-text="$t('取消')" :ok-button-props="{ danger: true }" @confirm="handleDeleteType(item.id)">
                       <a-button type="link" size="small" danger><DeleteOutlined /></a-button>
                     </a-popconfirm>
                   </template>
@@ -53,7 +53,7 @@
                 <a-switch :checked="record.isEnabled" size="small" @change="(v: boolean) => handleToggleItem(record.id, v)" />
               </template>
               <template v-if="column.key === 'action'">
-                <a-popconfirm title="删除？" @confirm="handleDeleteItem(record.id)">
+                <a-popconfirm :title="$t('删除？')" :ok-text="$t('删除')" :cancel-text="$t('取消')" :ok-button-props="{ danger: true }" @confirm="handleDeleteItem(record.id)">
                   <a-button type="link" size="small" danger>删除</a-button>
                 </a-popconfirm>
               </template>
