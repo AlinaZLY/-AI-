@@ -2,7 +2,7 @@
   <div class="bg-gray-50 -mt-6 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
     <!-- Hero -->
     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl page-shell mt-6 px-6 py-8 text-center">
-      <h1 class="text-2xl font-bold text-white mb-1.5">基于 AI 的校园招聘服务平台</h1>
+      <h1 class="text-2xl font-bold text-white mb-1.5">{{ $t('基于 AI 的校园招聘服务平台') }}</h1>
       <p class="text-blue-100 text-sm">{{ $t('融合人工智能技术，为校园求职者打造一站式智能招聘服务') }}</p>
     </div>
 

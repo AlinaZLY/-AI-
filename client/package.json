@@ -18,10 +18,13 @@
     "@tailwindcss/vite": "^4.2.1",
     "axios": "^1.13.6",
     "dompurify": "^3.3.3",
+    "echarts": "^6.0.0",
+    "html2pdf.js": "^0.14.0",
     "pinia": "^3.0.4",
     "socket.io-client": "^4.8.3",
     "tailwindcss": "^4.2.1",
     "vue": "^3.5.30",
+    "vue-echarts": "^8.0.1",
     "vue-router": "^4.6.4"
   }
 }
