@@ -197,12 +197,19 @@
             <button @click="viewMode = 'calendar'; fetchCalendar()" :class="viewMode === 'calendar' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'" class="px-3 py-1.5 text-sm font-medium rounded-md transition-all">{{ $t('日历') }}</button>
           </div>
         </div>
-        <button
-          @click="openCreateModal"
-          class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
-        >
-          {{ $t('+ 新增投递') }}
-        </button>
+        <div class="flex items-center gap-2">
+          <router-link to="/dashboard"
+            class="inline-flex items-center gap-1.5 px-3 py-2 text-sm border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            {{ $t('数据看板') }}
+          </router-link>
+          <button
+            @click="openCreateModal"
+            class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            {{ $t('+ 新增投递') }}
+          </button>
+        </div>
       </div>
 
       <!-- Calendar View -->
@@ -216,7 +223,7 @@
           <div v-for="d in weekDayLabels" :key="d" class="bg-slate-50 py-2 text-center text-xs font-medium text-slate-500">{{ d }}</div>
           <div v-for="(day, i) in calendarDays" :key="i" class="bg-white min-h-[80px] p-1.5" :class="day.isCurrentMonth ? '' : 'opacity-30'">
             <div class="text-xs font-medium mb-1" :class="day.isToday ? 'text-indigo-600 font-bold' : 'text-slate-600'">{{ day.date }}</div>
-            <div v-for="evt in day.events" :key="evt.id" class="text-[11px] px-1.5 py-0.5 mb-0.5 rounded bg-indigo-50 text-indigo-700 truncate cursor-pointer hover:bg-indigo-100" :title="`${evt.company} - ${evt.position}`">
+            <div v-for="evt in day.events" :key="evt.id" class="text-[11px] px-1.5 py-0.5 mb-0.5 rounded bg-indigo-50 text-indigo-700 truncate cursor-pointer hover:bg-indigo-100" :title="`${evt.company} - ${evt.position}`" @click="onCalendarEventClick(evt)">
               {{ evt.company }}
             </div>
           </div>
@@ -809,7 +816,7 @@
             </div>
 
             <div v-if="selectedCompanyResumeApp?.resume?.filePath" class="flex justify-end">
-              <a :href="selectedCompanyResumeApp.resume.filePath" target="_blank" rel="noreferrer" class="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">
+              <a :href="withPrivateFileToken(selectedCompanyResumeApp.resume.filePath)" target="_blank" rel="noreferrer" class="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">
                 {{ $t('打开附件简历') }}
               </a>
             </div>
@@ -821,15 +828,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import request from '@/utils/request'
 import toast from '@/utils/toast'
+import { withPrivateFileToken } from '@/utils/private-file'
 import { getApplicationCalendarApi } from '@/api/application'
 import { getMyCompanyApi } from '@/api/company'
 import { useUserStore } from '@/stores/user'
 import { useI18n } from '@/i18n'
 
 const { t } = useI18n()
+const route = useRoute()
 
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 const userStore = useUserStore()
@@ -906,6 +916,15 @@ function changeMonth(delta: number) {
   if (calendarMonth.value > 12) { calendarMonth.value = 1; calendarYear.value++ }
   if (calendarMonth.value < 1) { calendarMonth.value = 12; calendarYear.value-- }
   fetchCalendar()
+}
+
+function onCalendarEventClick(evt: { id: number }) {
+  viewMode.value = 'list'
+  nextTick(() => {
+    expandedId.value = evt.id
+    fetchLogs(evt.id)
+    fetchNotes(evt.id)
+  })
 }
 
 async function fetchCalendar() {
@@ -1069,7 +1088,7 @@ const companyResumeEducation = computed<any[]>(() => Array.isArray(companyResume
 const companyResumeExperience = computed<any[]>(() => Array.isArray(companyResumeContent.value?.experience) ? companyResumeContent.value.experience : [])
 const companyResumeProjects = computed<any[]>(() => Array.isArray(companyResumeContent.value?.projects) ? companyResumeContent.value.projects : [])
 function isInterviewStage(status?: string) {
-  return ['first_interview', 'second_interview', 'hr_interview'].includes(status || '')
+  return ['written_test', 'first_interview', 'second_interview', 'hr_interview'].includes(status || '')
 }
 function isPlatformManaged(app: Application) {
   return !!app.jobId
@@ -1116,6 +1135,10 @@ function canCompanySendResult(app: any) {
 function companyResultOptions(app?: any) {
   const currentStatus = app?.status
   const map: Record<string, { value: string; label: string }[]> = {
+    written_test: [
+      { value: 'first_interview', label: t('进入一面') },
+      { value: 'rejected', label: t('未通过') },
+    ],
     first_interview: [
       { value: 'second_interview', label: t('进入二面') },
       { value: 'hr_interview', label: t('进入 HR 面') },
@@ -1313,10 +1336,37 @@ async function fetchList() {
     total.value = d.total ?? 0
     page.value = d.page ?? page.value
     pageSize.value = d.pageSize ?? pageSize.value
+    await focusApplicationFromRoute()
   } catch {
   } finally {
     loading.value = false
   }
+}
+
+function getFocusedApplicationId() {
+  const raw = route.query.appId
+  const value = Array.isArray(raw) ? raw[0] : raw
+  const id = Number(value)
+  return Number.isFinite(id) && id > 0 ? id : null
+}
+
+async function focusApplicationFromRoute() {
+  const id = getFocusedApplicationId()
+  if (!id || isEnterprise.value) return
+  if (!applications.value.some((app) => app.id === id)) {
+    try {
+      const res: any = await request.get(`/applications/${id}`)
+      const app = res?.data ?? res
+      if (app?.id) {
+        applications.value = [app, ...applications.value.filter((item) => item.id !== app.id)]
+      }
+    } catch {
+      return
+    }
+  }
+  expandedId.value = id
+  fetchLogs(id)
+  fetchNotes(id)
 }
 
 function toggleExpand(id: number) {
@@ -1359,8 +1409,11 @@ async function changeStatus(app: Application, newStatus: string) {
   const oldStatus = app.status
   if (oldStatus === newStatus) return
   try {
-    await request.put(`/applications/${app.id}/status`, { status: newStatus })
-    app.status = newStatus
+    const res: any = await request.put(`/applications/${app.id}/status`, { status: newStatus })
+    const updated = res?.data ?? res
+    app.status = updated?.status ?? newStatus
+    app.tag = updated?.tag ?? app.tag
+    app.nextDate = updated?.nextDate ?? app.nextDate
     toast(t('状态已更新'), 'success')
     fetchStats()
     if (expandedId.value === app.id) fetchLogs(app.id)
@@ -1519,6 +1572,10 @@ async function handleDelete() {
 
 watch([() => filters.status, () => filters.tag, () => filters.keyword], () => {
   page.value = 1
+})
+
+watch(() => route.query.appId, () => {
+  focusApplicationFromRoute()
 })
 
 onMounted(() => {

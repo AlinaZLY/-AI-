@@ -11,7 +11,7 @@
       <div class="flex items-center gap-2 mb-2">
         <span class="text-lg">{{ company.status === 'approved' ? '✅' : company.status === 'rejected' ? '❌' : '⏳' }}</span>
         <span class="font-semibold" :class="company.status === 'approved' ? 'text-green-700' : company.status === 'rejected' ? 'text-red-700' : 'text-yellow-700'">
-          {{ { pending: $t('审核中'), approved: $t('已通过'), rejected: $t('审核未通过') }[company.status] || company.status }}
+          {{ companyStatusLabel(company.status) }}
         </span>
       </div>
       <p class="text-sm text-gray-600">{{ $t('企业名称：') }}{{ company.name }}</p>
@@ -113,10 +113,10 @@
             <label class="block text-sm text-gray-600 mb-2">{{ $t('营业执照') }} <span class="text-red-500">*</span></label>
             <div class="upload-area" @click="triggerUpload('businessLicense')" :class="{ 'has-file': form.businessLicense }">
               <template v-if="form.businessLicense">
-                <img v-if="!isPdfFile(form.businessLicense)" :src="form.businessLicense" class="upload-preview" />
+                <img v-if="!isPdfFile(form.businessLicense)" :src="withPrivateFileToken(form.businessLicense)" class="upload-preview" />
                 <div v-else class="upload-file-card">
                   <div class="upload-file-ext">PDF</div>
-                  <a :href="form.businessLicense" target="_blank" rel="noreferrer" class="upload-file-link">{{ $t('打开文件') }}</a>
+                  <a :href="withPrivateFileToken(form.businessLicense)" target="_blank" rel="noreferrer" class="upload-file-link">{{ $t('打开文件') }}</a>
                 </div>
               </template>
               <template v-else>
@@ -131,10 +131,10 @@
             <label class="block text-sm text-gray-600 mb-2">{{ $t('身份证正面') }} <span class="text-red-500">*</span></label>
             <div class="upload-area" @click="triggerUpload('idCardFront')" :class="{ 'has-file': form.idCardFront }">
               <template v-if="form.idCardFront">
-                <img v-if="!isPdfFile(form.idCardFront)" :src="form.idCardFront" class="upload-preview" />
+                <img v-if="!isPdfFile(form.idCardFront)" :src="withPrivateFileToken(form.idCardFront)" class="upload-preview" />
                 <div v-else class="upload-file-card">
                   <div class="upload-file-ext">PDF</div>
-                  <a :href="form.idCardFront" target="_blank" rel="noreferrer" class="upload-file-link">{{ $t('打开文件') }}</a>
+                  <a :href="withPrivateFileToken(form.idCardFront)" target="_blank" rel="noreferrer" class="upload-file-link">{{ $t('打开文件') }}</a>
                 </div>
               </template>
               <template v-else>
@@ -149,10 +149,10 @@
             <label class="block text-sm text-gray-600 mb-2">{{ $t('身份证反面') }} <span class="text-red-500">*</span></label>
             <div class="upload-area" @click="triggerUpload('idCardBack')" :class="{ 'has-file': form.idCardBack }">
               <template v-if="form.idCardBack">
-                <img v-if="!isPdfFile(form.idCardBack)" :src="form.idCardBack" class="upload-preview" />
+                <img v-if="!isPdfFile(form.idCardBack)" :src="withPrivateFileToken(form.idCardBack)" class="upload-preview" />
                 <div v-else class="upload-file-card">
                   <div class="upload-file-ext">PDF</div>
-                  <a :href="form.idCardBack" target="_blank" rel="noreferrer" class="upload-file-link">{{ $t('打开文件') }}</a>
+                  <a :href="withPrivateFileToken(form.idCardBack)" target="_blank" rel="noreferrer" class="upload-file-link">{{ $t('打开文件') }}</a>
                 </div>
               </template>
               <template v-else>
@@ -183,6 +183,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import request from '@/utils/request'
 import { toast } from '@/utils/toast'
+import { withPrivateFileToken } from '@/utils/private-file'
 import LoginPrompt from '@/components/LoginPrompt.vue'
 import { useI18n } from '@/i18n'
 
@@ -216,6 +217,15 @@ const form = reactive({
 
 function isPdfFile(value?: string) {
   return /\.pdf($|\?)/i.test(value || '')
+}
+
+function companyStatusLabel(status?: string) {
+  const labels: Record<string, string> = {
+    pending: t('审核中'),
+    approved: t('已通过'),
+    rejected: t('审核未通过'),
+  }
+  return labels[status || ''] || status || ''
 }
 
 onMounted(async () => {

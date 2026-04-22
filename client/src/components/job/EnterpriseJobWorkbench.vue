@@ -250,6 +250,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import request from '@/utils/request'
 import toast from '@/utils/toast'
+import { confirmDialog } from '@/utils/confirm'
 import { getMyCompanyApi } from '@/api/company'
 import { useI18n } from '@/i18n'
 
@@ -492,7 +493,7 @@ async function toggleJobStatus(job: EnterpriseJob) {
 }
 
 async function removeJob(job: EnterpriseJob) {
-  const ok = window.confirm(t('确定删除职位「{title}」吗？').replace('{title}', job.title))
+  const ok = await confirmDialog(t('确定删除职位「{title}」吗？').replace('{title}', job.title), { title: t('删除职位'), kind: 'danger', confirmText: t('删除') })
   if (!ok) return
 
   try {
