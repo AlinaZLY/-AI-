@@ -116,6 +116,22 @@
             <button type="button" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-800 text-white text-xs leading-5 opacity-90 hover:opacity-100" @click.stop="removeImageCreate(idx)" aria-label="移除">×</button>
           </div>
         </div>
+        <!-- 外部链接引用 -->
+        <div class="mb-3 rounded-lg border border-gray-200 bg-gray-50/50 p-3">
+          <p class="text-xs font-medium text-gray-600 mb-2">引用外部经验帖（小红书 / 抖音 / 知乎等）</p>
+          <div class="flex gap-2">
+            <input v-model="externalLinkDraft" type="url" placeholder="粘贴链接，如 https://www.xiaohongshu.com/..." class="flex-1 min-w-0 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 outline-none bg-white" @keyup.enter="addExternalLink" />
+            <button type="button" @click="addExternalLink" class="shrink-0 px-3 py-2 text-xs border border-gray-200 rounded-lg hover:bg-white">添加</button>
+          </div>
+          <div v-if="newPost.externalLinks?.length" class="mt-2 space-y-1.5">
+            <div v-for="(link, idx) in newPost.externalLinks" :key="idx" class="flex items-center gap-2 rounded-md bg-white border border-gray-100 px-3 py-2">
+              <span class="shrink-0 w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold" :class="platformBadge(link).class">{{ platformBadge(link).icon }}</span>
+              <a :href="link" target="_blank" rel="noopener noreferrer" class="flex-1 min-w-0 text-xs text-blue-600 hover:underline truncate">{{ link }}</a>
+              <button type="button" @click="newPost.externalLinks.splice(idx, 1)" class="shrink-0 text-gray-400 hover:text-red-500 text-xs">×</button>
+            </div>
+          </div>
+        </div>
+
         <div class="flex justify-between items-center">
           <span class="text-xs text-gray-400">{{ newPost.content.length }} 字</span>
           <div class="flex gap-2">
@@ -185,8 +201,10 @@ import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
 import { toast } from '@/utils/toast'
 import { confirmDialog } from '@/utils/confirm'
+import { useI18n } from '@/i18n'
 import { getMyPostsApi, getMyFavoritesApi, updatePostApi, deletePostApi, uploadCommunityImageApi } from '@/api/community'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 const loading = ref(false)
 const posts = ref<any[]>([])
@@ -199,7 +217,27 @@ const total = ref(0)
 const showCreateModal = ref(false)
 const postSubmitting = ref(false)
 const MAX_POST_IMAGES = 9
-const newPost = reactive({ title: '', content: '', categoryId: undefined as number | undefined, images: [] as string[] })
+const newPost = reactive({ title: '', content: '', categoryId: undefined as number | undefined, images: [] as string[], externalLinks: [] as string[] })
+const externalLinkDraft = ref('')
+
+function addExternalLink() {
+  const url = externalLinkDraft.value.trim()
+  if (!url) return
+  try { new URL(url) } catch { return }
+  if (!newPost.externalLinks.includes(url)) {
+    newPost.externalLinks.push(url)
+  }
+  externalLinkDraft.value = ''
+}
+
+function platformBadge(url: string) {
+  if (url.includes('xiaohongshu.com') || url.includes('xhslink.com')) return { icon: '书', class: 'bg-red-100 text-red-600' }
+  if (url.includes('douyin.com') || url.includes('tiktok.com')) return { icon: '抖', class: 'bg-gray-900 text-white' }
+  if (url.includes('zhihu.com')) return { icon: '知', class: 'bg-blue-100 text-blue-600' }
+  if (url.includes('bilibili.com')) return { icon: 'B', class: 'bg-pink-100 text-pink-600' }
+  if (url.includes('nowcoder.com') || url.includes('niuke.com')) return { icon: '牛', class: 'bg-green-100 text-green-700' }
+  return { icon: '链', class: 'bg-gray-100 text-gray-600' }
+}
 const activeTab = ref<'all' | 'mine' | 'favorites'>('all')
 const showEditModal = ref(false)
 const editSubmitting = ref(false)
@@ -386,6 +424,7 @@ async function handleCreatePost() {
       content: newPost.content.trim(),
       categoryId: newPost.categoryId || undefined,
       images: newPost.images.length ? [...newPost.images] : undefined,
+      externalLinks: newPost.externalLinks.length ? [...newPost.externalLinks] : undefined,
     })
     toast('帖子发布成功，等待审核', 'success')
     showCreateModal.value = false
@@ -393,7 +432,9 @@ async function handleCreatePost() {
     newPost.content = ''
     newPost.categoryId = undefined
     newPost.images = []
+    newPost.externalLinks = []
     imageUrlDraftCreate.value = ''
+    externalLinkDraft.value = ''
     await refreshList()
   } catch {
   } finally {
@@ -431,7 +472,7 @@ async function handleUpdatePost() {
 }
 
 async function handleDeletePost(post: any) {
-  const ok = await confirmDialog(`确定删除「${post.title}」？此操作不可恢复。`, '删除帖子')
+  const ok = await confirmDialog(t('确定删除帖子「{title}」？此操作不可恢复。').replace('{title}', post.title), { title: t('删除帖子'), kind: 'danger', confirmText: t('删除'), description: t('删除后帖子及其评论均将永久丢失。') })
   if (!ok) return
   try {
     await deletePostApi(post.id)

@@ -1,14 +1,18 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-    <div class="fixed top-5 right-5 z-10">
-      <LocaleSwitch />
-    </div>
     <div class="w-full max-w-sm">
+      <div class="flex items-center justify-between mb-6">
+        <router-link to="/home" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          {{ $t('返回首页') }}
+        </router-link>
+        <LocaleSwitch />
+      </div>
       <div class="text-center mb-8">
         <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-600/20">
           <svg class="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
         </div>
-        <h1 class="text-2xl font-bold text-gray-900">AI 校园招聘平台</h1>
+        <h1 class="text-2xl font-bold text-gray-900">{{ $t('AI 校园招聘平台') }}</h1>
         <p class="text-gray-400 mt-1 text-sm">{{ $t('大学生 / 企业用户登录') }}</p>
       </div>
 
@@ -48,14 +52,30 @@
           </button>
         </form>
 
-        <div class="mt-4 py-2 flex justify-center gap-4">
-          <button type="button" class="text-xs text-gray-400 hover:text-blue-600 transition-colors" @click="fillTestAccount('student')">
-            {{ $t('应聘者测试') }}: <code class="text-gray-500">student / student123</code>
-          </button>
-          <span class="text-gray-200">|</span>
-          <button type="button" class="text-xs text-gray-400 hover:text-blue-600 transition-colors" @click="fillTestAccount('enterprise')">
-            {{ $t('企业测试') }}: <code class="text-gray-500">enterprise / enterprise123</code>
-          </button>
+        <div class="mt-5 pt-4 border-t border-gray-100">
+          <p class="text-center text-[11px] text-gray-400 mb-3">{{ $t('快捷体验登录') }}</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" @click="quickLogin('student')" :disabled="loading"
+              class="flex items-center gap-2.5 rounded-xl border border-gray-200 px-3.5 py-2.5 hover:border-blue-300 hover:bg-blue-50/50 transition-all group disabled:opacity-50">
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+              </div>
+              <div class="text-left">
+                <div class="text-xs font-medium text-gray-700 group-hover:text-blue-700">{{ $t('应聘者') }}</div>
+                <div class="text-[10px] text-gray-400">student</div>
+              </div>
+            </button>
+            <button type="button" @click="quickLogin('enterprise')" :disabled="loading"
+              class="flex items-center gap-2.5 rounded-xl border border-gray-200 px-3.5 py-2.5 hover:border-emerald-300 hover:bg-emerald-50/50 transition-all group disabled:opacity-50">
+              <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+              </div>
+              <div class="text-left">
+                <div class="text-xs font-medium text-gray-700 group-hover:text-emerald-700">{{ $t('企业用户') }}</div>
+                <div class="text-[10px] text-gray-400">enterprise</div>
+              </div>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -86,15 +106,11 @@ const captchaSvg = ref('')
 const captchaKey = ref('')
 const form = reactive({ username: '', password: '', captcha: '' })
 
-function fillTestAccount(type: 'student' | 'enterprise') {
-  if (type === 'student') {
-    form.username = 'student'
-    form.password = 'student123'
-  } else {
-    form.username = 'enterprise'
-    form.password = 'enterprise123'
-  }
-  toast(t('已填入测试账号'), 'info')
+async function quickLogin(type: 'student' | 'enterprise') {
+  form.username = type === 'student' ? 'student' : 'enterprise'
+  form.password = type === 'student' ? 'student123' : 'enterprise123'
+  form.captcha = '__quick_demo__'
+  await handleLogin()
 }
 
 async function refreshCaptcha() {

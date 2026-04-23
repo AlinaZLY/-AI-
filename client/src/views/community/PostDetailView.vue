@@ -23,6 +23,25 @@
           <img :src="src" alt="" class="max-h-72 max-w-full object-contain" loading="lazy" />
         </a>
       </div>
+      <!-- 外部引用链接 -->
+      <div v-if="post.externalLinks?.length" class="mt-5 rounded-lg border border-gray-100 bg-gray-50/60 p-4">
+        <p class="text-xs font-semibold text-gray-600 mb-2">{{ $t('相关经验链接') }}</p>
+        <div class="space-y-1.5">
+          <a
+            v-for="(link, i) in post.externalLinks"
+            :key="i"
+            :href="link"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2 rounded-md bg-white border border-gray-100 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            <span class="shrink-0 w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold" :class="extPlatformBadge(link).cls">{{ extPlatformBadge(link).icon }}</span>
+            <span class="truncate">{{ link }}</span>
+            <svg class="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+          </a>
+        </div>
+      </div>
+
       <div class="flex gap-6 mt-6 pt-4 border-t text-sm text-gray-400">
         <button @click="toggleLike" class="flex items-center gap-1 hover:text-red-500 transition-colors" :class="post.isLiked ? 'text-red-500' : ''">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
@@ -112,6 +131,15 @@ const displayImages = computed(() => {
 })
 
 function sanitize(html: string) { return DOMPurify.sanitize(html) }
+
+function extPlatformBadge(url: string) {
+  if (url.includes('xiaohongshu.com') || url.includes('xhslink.com')) return { icon: '书', cls: 'bg-red-100 text-red-600' }
+  if (url.includes('douyin.com') || url.includes('tiktok.com')) return { icon: '抖', cls: 'bg-gray-900 text-white' }
+  if (url.includes('zhihu.com')) return { icon: '知', cls: 'bg-blue-100 text-blue-600' }
+  if (url.includes('bilibili.com')) return { icon: 'B', cls: 'bg-pink-100 text-pink-600' }
+  if (url.includes('nowcoder.com')) return { icon: '牛', cls: 'bg-green-100 text-green-700' }
+  return { icon: '链', cls: 'bg-gray-100 text-gray-600' }
+}
 function formatTime(ts: string) { return new Date(ts).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }
 
 async function fetchComments() {

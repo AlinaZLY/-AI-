@@ -1,9 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-50 flex items-center justify-center p-4 py-8">
-    <div class="fixed top-5 right-5 z-10">
-      <LocaleSwitch />
-    </div>
     <div class="w-full transition-all duration-300" :class="form.role === 'enterprise' ? 'max-w-3xl' : 'max-w-sm'">
+      <div class="flex items-center justify-between mb-6">
+        <router-link to="/home" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm transition">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          {{ $t('返回首页') }}
+        </router-link>
+        <LocaleSwitch />
+      </div>
       <div class="text-center mb-8">
         <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
           <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
@@ -113,7 +117,7 @@
                   <div class="aspect-[4/3] bg-gray-50 border-2 border-dashed rounded-xl flex flex-col items-center justify-center overflow-hidden transition"
                     :class="enterpriseForm.businessLicense ? 'border-blue-300' : 'border-gray-200 group-hover:border-blue-300'">
                     <template v-if="enterpriseForm.businessLicense">
-                      <img v-if="!isPdfFile(enterpriseForm.businessLicense)" :src="enterpriseForm.businessLicense" class="w-full h-full object-cover" />
+                      <img v-if="!isPdfFile(enterpriseForm.businessLicense)" :src="withPrivateFileToken(enterpriseForm.businessLicense)" class="w-full h-full object-cover" />
                       <div v-else class="flex h-full w-full flex-col items-center justify-center bg-blue-50 text-blue-700">
                         <span class="text-2xl font-semibold">PDF</span>
                         <span class="mt-1 text-[11px]">营业执照已上传</span>
@@ -130,7 +134,7 @@
                   <div class="aspect-[4/3] bg-gray-50 border-2 border-dashed rounded-xl flex flex-col items-center justify-center overflow-hidden transition"
                     :class="enterpriseForm.idCardFront ? 'border-blue-300' : 'border-gray-200 group-hover:border-blue-300'">
                     <template v-if="enterpriseForm.idCardFront">
-                      <img v-if="!isPdfFile(enterpriseForm.idCardFront)" :src="enterpriseForm.idCardFront" class="w-full h-full object-cover" />
+                      <img v-if="!isPdfFile(enterpriseForm.idCardFront)" :src="withPrivateFileToken(enterpriseForm.idCardFront)" class="w-full h-full object-cover" />
                       <div v-else class="flex h-full w-full flex-col items-center justify-center bg-blue-50 text-blue-700">
                         <span class="text-2xl font-semibold">PDF</span>
                         <span class="mt-1 text-[11px]">身份证正面已上传</span>
@@ -147,7 +151,7 @@
                   <div class="aspect-[4/3] bg-gray-50 border-2 border-dashed rounded-xl flex flex-col items-center justify-center overflow-hidden transition"
                     :class="enterpriseForm.idCardBack ? 'border-blue-300' : 'border-gray-200 group-hover:border-blue-300'">
                     <template v-if="enterpriseForm.idCardBack">
-                      <img v-if="!isPdfFile(enterpriseForm.idCardBack)" :src="enterpriseForm.idCardBack" class="w-full h-full object-cover" />
+                      <img v-if="!isPdfFile(enterpriseForm.idCardBack)" :src="withPrivateFileToken(enterpriseForm.idCardBack)" class="w-full h-full object-cover" />
                       <div v-else class="flex h-full w-full flex-col items-center justify-center bg-blue-50 text-blue-700">
                         <span class="text-2xl font-semibold">PDF</span>
                         <span class="mt-1 text-[11px]">身份证反面已上传</span>
@@ -186,6 +190,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { toast } from '@/utils/toast'
 import request from '@/utils/request'
+import { withPrivateFileToken } from '@/utils/private-file'
 import LocaleSwitch from '@/components/LocaleSwitch.vue'
 import { useI18n } from '@/i18n'
 
