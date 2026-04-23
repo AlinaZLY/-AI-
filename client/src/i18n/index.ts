@@ -36,8 +36,8 @@ const PATTERN_TRANSLATORS = [
   { regex: /^共\s*(\d+)\s*个分类$/, key: '共 {count} 个分类' },
 ]
 
-const locale = ref<LocaleCode>('zh-CN')
-const enabledLocales = ref<LocaleCode[]>(['zh-CN', 'en-US'])
+const locale = ref<LocaleCode>('en-US')
+const enabledLocales = ref<LocaleCode[]>(['en-US', 'zh-CN'])
 const localeCatalog = ref<LocaleCatalogItem[]>(DEFAULT_LOCALE_CATALOG)
 const runtimeMessages = ref<LocaleMessageCatalog>({})
 let knownMessages = new Set(Object.keys(defaultEnUSMessages))
@@ -48,7 +48,7 @@ let rafId = 0
 
 function normalizeLocale(value?: string | null): LocaleCode {
   const raw = String(value || '').trim()
-  if (!raw) return 'zh-CN'
+  if (!raw) return 'en-US'
   const matched = localeCatalog.value.find((item) => item.code.toLowerCase() === raw.toLowerCase())
   if (matched) return matched.code
   return raw
@@ -59,7 +59,7 @@ function uniqueLocales(list: LocaleCode[]) {
 }
 
 function parseEnabledLocales(value?: string | null): LocaleCode[] {
-  if (!value) return ['zh-CN', 'en-US']
+  if (!value) return ['en-US', 'zh-CN']
   const parsed = uniqueLocales(
     value
       .split(',')
@@ -182,7 +182,7 @@ function updateDocumentLanguage() {
 
 export function setLocale(next: LocaleCode | string) {
   const target = normalizeLocale(next)
-  const fallback = enabledLocales.value[0] || 'zh-CN'
+  const fallback = enabledLocales.value[0] || 'en-US'
   const finalLocale = enabledLocales.value.includes(target) ? target : fallback
   locale.value = finalLocale
   if (typeof window !== 'undefined') {
@@ -201,7 +201,7 @@ function resolveLocale(defaultLocale?: string | null) {
     const normalized = normalizeLocale(candidate)
     if (enabledLocales.value.includes(normalized)) return normalized
   }
-  return enabledLocales.value[0] || 'zh-CN'
+  return enabledLocales.value[0] || 'en-US'
 }
 
 export async function bootstrapI18n() {

@@ -2,15 +2,16 @@
   <div class="min-h-screen">
     <nav class="sticky top-0 z-50 border-b border-white/40 shadow-sm" style="background: rgba(255,255,255,0.65); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%)">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center gap-8">
-            <router-link to="/home" class="flex items-center gap-2 text-xl font-bold text-blue-600">
+        <div class="flex justify-between items-center h-16">
+          <div class="flex items-center gap-2 lg:gap-4 min-w-0">
+            <router-link to="/home" class="flex items-center gap-2 text-base lg:text-xl font-bold text-blue-600 whitespace-nowrap shrink-0">
               <img v-if="siteLogo" :src="siteLogo" alt="LOGO" class="w-8 h-8 rounded-md object-contain" />
-              <span>{{ siteTitle }}</span>
+              <span class="hidden sm:inline">{{ displayTitle }}</span>
+              <span class="sm:hidden">{{ siteShort }}</span>
             </router-link>
-            <div class="hidden md:flex gap-1">
+            <div class="hidden md:flex gap-1 shrink-0">
               <router-link v-for="item in navItems" :key="item.path" :to="item.path"
-                class="px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+                class="px-2 lg:px-3 py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors whitespace-nowrap"
                 :class="$route.path.startsWith(item.path) ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100'">
                 {{ item.name }}
               </router-link>
@@ -23,7 +24,7 @@
               </svg>
             </button>
           </div>
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 sm:gap-3 shrink-0">
             <LocaleSwitch />
             <template v-if="userStore.token">
               <router-link
@@ -63,7 +64,7 @@
                 </div>
                 <span class="hidden sm:inline">{{ userStore.userInfo?.nickname || userStore.userInfo?.username }}</span>
               </router-link>
-              <button @click="userStore.logout()" class="text-sm text-gray-500 hover:text-red-500">{{ $t('退出') }}</button>
+              <button @click="userStore.logout()" class="hidden sm:inline text-sm text-gray-500 hover:text-red-500">{{ $t('退出') }}</button>
             </template>
             <template v-else>
               <router-link to="/login" class="text-sm text-gray-600 hover:text-blue-600">{{ $t('登录') }}</router-link>
@@ -94,7 +95,8 @@
               <div v-else class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
               </div>
-              <span class="text-white font-bold">{{ siteTitle }}</span>
+              <span class="text-white font-bold hidden sm:inline">{{ displayTitle }}</span>
+              <span class="text-white font-bold sm:hidden">{{ siteShort }}</span>
             </div>
             <p class="text-gray-400 text-sm leading-relaxed">{{ $t('基于人工智能的校园招聘服务平台，助力大学生高效求职。') }}</p>
           </div>
@@ -103,6 +105,7 @@
             <div class="space-y-2">
               <router-link to="/jobs" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('职位浏览') }}</router-link>
               <router-link to="/resumes" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('简历模板') }}</router-link>
+              <router-link to="/question-bank" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('面试题库') }}</router-link>
               <router-link to="/interview" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('AI 模拟面试') }}</router-link>
               <router-link to="/community" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('求职社区') }}</router-link>
             </div>
@@ -156,7 +159,15 @@ const unreadNotificationCount = ref(0)
 const unreadChatCount = ref(0)
 const userRole = computed(() => userStore.userInfo?.role || '')
 const siteLogo = ref('')
-const siteTitle = ref('校园招聘平台')
+const siteTitle = ref('')
+const displayTitle = computed(() => siteTitle.value || t('AI 校招'))
+const siteShort = computed(() => {
+  const full = displayTitle.value
+  if (full.length <= 6) return full
+  const words = full.split(/\s+/)
+  if (words.length >= 2) return words.map(w => w[0]).join('').toUpperCase()
+  return full.slice(0, 4)
+})
 
 function unwrapPayload<T = unknown>(res: any): T {
   if (res && typeof res === 'object' && 'data' in res) {
@@ -187,7 +198,6 @@ const navItems = computed(() => {
   const base = [
     { name: t('首页'), path: '/home' },
     { name: t('职位'), path: '/jobs' },
-    { name: t('企业'), path: '/companies' },
     { name: t('社区'), path: '/community' },
     { name: t('简历'), path: '/resumes' },
   ]
@@ -195,15 +205,23 @@ const navItems = computed(() => {
     return [
       { name: t('首页'), path: '/home' },
       { name: t('职位'), path: '/jobs' },
-      { name: t('企业'), path: '/companies' },
       { name: t('社区'), path: '/community' },
       { name: t('申请记录'), path: '/applications' },
       { name: t('企业认证'), path: '/enterprise-cert' },
     ]
   }
+  if (userStore.token) {
+    return [
+      ...base,
+      { name: t('投递'), path: '/applications' },
+      { name: t('面试'), path: '/interview' },
+      { name: t('题库'), path: '/question-bank' },
+    ]
+  }
   return [
     ...base,
-    { name: t('模拟面试'), path: '/interview' },
+    { name: t('面试'), path: '/interview' },
+    { name: t('题库'), path: '/question-bank' },
   ]
 })
 
