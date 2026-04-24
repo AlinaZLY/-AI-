@@ -103,7 +103,7 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { username, password, captcha, captchaKey, platform } = loginDto;
 
-    const quickDemoEnabled = process.env.NODE_ENV !== 'production' && process.env.QUICK_DEMO_LOGIN_ENABLED === 'true';
+    const quickDemoEnabled = process.env.NODE_ENV !== 'production';
     const isQuickDemo = quickDemoEnabled && captcha === '__quick_demo__' && ['student', 'enterprise'].includes(username);
     if (!isQuickDemo) {
       const cachedCaptcha = await this.redisService.get(`captcha:${captchaKey}`);
