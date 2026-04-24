@@ -208,6 +208,16 @@ export class ResumeController {
     return this.resumeService.optimize(id, req.user.id, body);
   }
 
+  @Post('item/:id/polish')
+  @UseGuards(JwtAuthGuard)
+  polish(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req,
+    @Body() body: { section: string; text: string; targetPosition?: string },
+  ) {
+    return this.resumeService.polishSection(id, req.user.id, body);
+  }
+
   @Get('item/:id/render')
   @UseGuards(JwtAuthGuard)
   render(@Param('id', ParseIntPipe) id: number, @Request() req, @Query('locale') locale?: string) {

@@ -391,6 +391,14 @@ export class ResumeService implements OnModuleInit {
       ? Math.round(completeness * 0.4 + jobMatchScore * 0.6)
       : completeness;
 
+    let competitivenessLevel = '';
+    if (jobDescription) {
+      if (score >= 80) competitivenessLevel = '竞争力强';
+      else if (score >= 60) competitivenessLevel = '竞争力中等';
+      else if (score >= 40) competitivenessLevel = '竞争力偏弱';
+      else competitivenessLevel = '竞争力不足';
+    }
+
     const analysis = {
       completeness,
       keywords,
@@ -400,6 +408,13 @@ export class ResumeService implements OnModuleInit {
       jobMatchScore: jobDescription ? jobMatchScore : null,
       missingSkills: jobDescription ? missingSkills : [],
       jobTitle: jobTitle || null,
+      competitiveness: jobDescription ? {
+        level: competitivenessLevel,
+        score,
+        matchedCount: matchedKeywords.length,
+        missingCount: missingSkills.length,
+        summary: `简历与岗位匹配度 ${jobMatchScore}%，${competitivenessLevel}。匹配关键词 ${matchedKeywords.length} 个，缺失技能 ${missingSkills.length} 个。`,
+      } : null,
     };
 
     resume.analysisResult = JSON.stringify(analysis);
@@ -577,6 +592,51 @@ export class ResumeService implements OnModuleInit {
         suggestions: this.generateSuggestions(resume.content || {}),
       };
     }
+  }
+
+  async polishSection(id: number, userId: number, body: { section: string; text: string; targetPosition?: string }) {
+    const resume = await this.resumeRepo.findOne({ where: { id, userId } });
+    if (!resume) throw new NotFoundException('简历不存在');
+
+    const { section, text, targetPosition } = body;
+    if (!text?.trim()) return { original: text, polished: text, suggestions: [] };
+
+    if (await this.aiRuntimeService.isConfigured()) {
+      try {
+        const result = await this.aiRuntimeService.chatJson<{
+          polished?: string;
+          suggestions?: string[];
+          highlights?: string[];
+        }>({
+          scene: 'resume_optimize',
+          maxTokens: 1200,
+          temperature: 0.3,
+          systemPrompt: [
+            '你是一名资深校招简历润色专家。请对用户提供的简历段落进行润色改写。',
+            '输出 JSON：{"polished":"润色后的文本","suggestions":["改进建议1"],"highlights":["亮点关键词1"]}',
+            '要求：1. 保持原意，提升表达专业度 2. 添加量化数据（如百分比、数量）3. 使用 STAR 法则组织内容 4. 突出技术关键词',
+          ].join('\n'),
+          userPrompt: JSON.stringify({ section, text, targetPosition: targetPosition || resume.targetPosition || '' }),
+        });
+        return {
+          original: text,
+          polished: result.polished || text,
+          suggestions: result.suggestions || [],
+          highlights: result.highlights || [],
+        };
+      } catch { /* fallback */ }
+    }
+
+    return {
+      original: text,
+      polished: text,
+      suggestions: [
+        '建议添加量化数据来增强说服力',
+        '可以使用 STAR 法则（情境-任务-行动-结果）来组织描述',
+        '适当加入技术关键词以提升ATS通过率',
+      ],
+      highlights: [],
+    };
   }
 
   private getDefaultContent(): Record<string, any> {
