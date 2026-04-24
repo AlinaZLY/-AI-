@@ -230,6 +230,51 @@ export class InterviewService implements OnModuleInit {
     return this.qbRepo.save(q);
   }
 
+  // ==================== JD 结构化解析 ====================
+
+  async parseJobDescription(jdText: string) {
+    if (!jdText?.trim()) {
+      return { coreSkills: [], experienceRequirements: [], educationRequirements: '', keyResponsibilities: [], raw: '' };
+    }
+
+    if (await this.aiRuntimeService.isConfigured()) {
+      try {
+        const result = await this.aiRuntimeService.chatJson<{
+          coreSkills?: string[];
+          experienceRequirements?: string[];
+          educationRequirements?: string;
+          keyResponsibilities?: string[];
+          preferredQualifications?: string[];
+        }>({
+          scene: 'jd_parse',
+          maxTokens: 1200,
+          temperature: 0.2,
+          systemPrompt: [
+            '你是一名专业的岗位 JD 解析专家。请从岗位描述中提取结构化信息，输出严格 JSON。',
+            'JSON 格式：{"coreSkills":["技能1","技能2"],"experienceRequirements":["要求1"],"educationRequirements":"学历要求","keyResponsibilities":["职责1"],"preferredQualifications":["加分项1"]}',
+          ].join('\n'),
+          userPrompt: jdText.slice(0, 3000),
+        });
+        return { ...result, raw: jdText };
+      } catch { /* fallback */ }
+    }
+
+    const skills: string[] = [];
+    const techKeywords = jdText.match(/(?:熟[悉练]|掌握|了解|精通)\s*([^\n,，。.;；]+)/g) || [];
+    for (const m of techKeywords) {
+      skills.push(...m.replace(/^(熟[悉练]|掌握|了解|精通)\s*/, '').split(/[,，、/]/));
+    }
+
+    return {
+      coreSkills: [...new Set(skills.map(s => s.trim()).filter(Boolean))].slice(0, 15),
+      experienceRequirements: [],
+      educationRequirements: jdText.match(/(本科|硕士|博士|大专|学士|研究生)/)?.[0] || '',
+      keyResponsibilities: [],
+      preferredQualifications: [],
+      raw: jdText,
+    };
+  }
+
   // ==================== 模拟面试 ====================
 
   /** 题量边界，避免前端传入异常值。 */

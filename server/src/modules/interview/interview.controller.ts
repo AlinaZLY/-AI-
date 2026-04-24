@@ -239,6 +239,14 @@ export class InterviewController {
     return this.interviewService.deleteInterviewAdmin(id);
   }
 
+  // ==================== JD 结构化解析 ====================
+
+  @Post('parse-jd')
+  @UseGuards(JwtAuthGuard)
+  parseJobDescription(@Body() body: { jobDescription: string }) {
+    return this.interviewService.parseJobDescription(body.jobDescription);
+  }
+
   // ==================== 模拟面试 ====================
 
   @Post('start')
