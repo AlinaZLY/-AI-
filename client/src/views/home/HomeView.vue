@@ -51,7 +51,8 @@
                 to="/jobs"
                 class="px-5 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:border-blue-300 hover:bg-blue-50/80 transition-colors"
               >{{ $t('职位列表') }}</router-link>
-              <router-link
+            <router-link
+                v-if="!isEnterpriseRole"
                 to="/interview"
                 class="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20"
               >{{ $t('AI 模拟面试') }}</router-link>
@@ -87,7 +88,7 @@
         <h2 class="sr-only">核心能力入口</h2>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
           <router-link
-            v-for="f in features"
+            v-for="f in visibleFeatures"
             :key="f.title"
             :to="f.link"
             class="group flex items-start gap-2.5 rounded-lg bg-white border border-gray-200 p-3 hover:border-blue-200 transition-colors"
@@ -223,18 +224,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
 import { getApplicationsApi } from '@/api/application'
 import { toast } from '@/utils/toast'
+import { useUserStore } from '@/stores/user'
 import { useI18n } from '@/i18n'
 
 const router = useRouter()
 const { t } = useI18n()
+const userStore = useUserStore()
 const appliedJobIds = ref(new Set<number>())
 const heroSearch = ref('')
 const hotTags = ['Frontend', 'Backend', 'Product Manager', 'AI/Algorithm', 'Data Analysis', 'Internship']
+const isEnterpriseRole = computed(() => userStore.userInfo?.role === 'enterprise')
 
 const heroHighlights = [
   { title: '职位直达招聘方', sub: '发起聊天时自动带上职位与公司上下文' },
@@ -256,6 +260,7 @@ const features = [
   { title: '投递追踪', desc: '状态流转，日历与数据统计', color: '#059669', bg: '#ecfdf5', link: '/applications', path: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
   { title: '求职社区', desc: '面经分享，评论互动交流', color: '#dc2626', bg: '#fef2f2', link: '/community', path: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z' },
 ]
+const visibleFeatures = computed(() => isEnterpriseRole.value ? features.filter((f) => f.link !== '/interview') : features)
 
 const platformStats = ref([
   { value: '—', label: '在招职位' },

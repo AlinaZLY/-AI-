@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 import { LOCALE_CHANGED_EVENT, translate } from '@/i18n'
 
 const routes: RouteRecordRaw[] = [
@@ -32,9 +33,9 @@ const routes: RouteRecordRaw[] = [
       { path: 'jobs', name: 'Jobs', component: () => import('@/views/job/JobListView.vue'), meta: { title: '校招职位' } },
       { path: 'jobs/:id', name: 'JobDetail', component: () => import('@/views/job/JobDetailView.vue'), meta: { title: '职位详情' } },
       { path: 'applications', name: 'Applications', component: () => import('@/views/application/ApplicationListView.vue'), meta: { title: '校招投递追踪', requireAuth: true } },
-      { path: 'interview', name: 'Interview', component: () => import('@/views/interview/InterviewView.vue'), meta: { title: 'AI 校招模拟面试', requireAuth: true } },
+      { path: 'interview', name: 'Interview', component: () => import('@/views/interview/InterviewView.vue'), meta: { title: 'AI 校招模拟面试', requireAuth: true, forbiddenRoles: ['enterprise'] } },
       { path: 'question-bank', name: 'QuestionBank', component: () => import('@/views/interview/QuestionBankView.vue'), meta: { title: '面试题库' } },
-      { path: 'interview/:id', name: 'InterviewChat', component: () => import('@/views/interview/InterviewChatView.vue'), meta: { title: 'AI 面试对话', requireAuth: true } },
+      { path: 'interview/:id', name: 'InterviewChat', component: () => import('@/views/interview/InterviewChatView.vue'), meta: { title: 'AI 面试对话', requireAuth: true, forbiddenRoles: ['enterprise'] } },
       { path: 'user-center/:tab?', name: 'UserCenter', component: () => import('@/views/profile/UserCenterView.vue'), meta: { title: '个人中心', requireAuth: true } },
       { path: 'profile', name: 'Profile', component: () => import('@/views/profile/ProfileView.vue'), meta: { title: '个人资料', requireAuth: true } },
       { path: 'chat', name: 'Chat', component: () => import('@/views/chat/ChatView.vue'), meta: { title: '消息沟通', requireAuth: true } },
@@ -49,10 +50,28 @@ const router = createRouter({ history: createWebHistory(), routes })
 
 router.beforeEach(async (to, _from, next) => {
   const token = localStorage.getItem('token')
+  const userStore = useUserStore()
+  const forbiddenRoles = (to.meta as { forbiddenRoles?: string[] }).forbiddenRoles || []
+
   if (to.meta.guest && token) {
     next({ name: 'Home' })
   } else if (to.meta.requireAuth && !token) {
     next({ path: '/login', query: { redirect: to.fullPath } })
+  } else if (forbiddenRoles.length && token) {
+    if (!userStore.userInfo) {
+      try {
+        await userStore.fetchUserInfo()
+      } catch {
+        localStorage.removeItem('token')
+        next({ path: '/login', query: { redirect: to.fullPath } })
+        return
+      }
+    }
+    if (userStore.userInfo && forbiddenRoles.includes(userStore.userInfo.role)) {
+      next({ path: '/home' })
+      return
+    }
+    next()
   } else {
     next()
   }

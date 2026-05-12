@@ -5,7 +5,7 @@
         <h1 class="text-xl font-bold text-gray-900">{{ $t('面试题库') }}</h1>
         <p class="text-sm text-gray-400 mt-0.5">{{ $t('浏览、搜索、投稿面试真题') }}</p>
       </div>
-      <router-link to="/interview"
+      <router-link v-if="!isEnterpriseRole" to="/interview"
         class="inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
         {{ $t('开始模拟面试') }}
@@ -300,6 +300,10 @@ import request from '@/utils/request'
 import { toast } from '@/utils/toast'
 import { getCategoriesApi, getQuestionsApi, submitPracticeApi, getPracticeHistoryApi, getPracticeStatsApi, submitQuestionApi, getMySubmissionsApi } from '@/api/interview'
 import { useI18n } from '@/i18n'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isEnterpriseRole = computed(() => userStore.userInfo?.role === 'enterprise')
 
 type CategoryNode = { id: number; name: string; children?: CategoryNode[] }
 

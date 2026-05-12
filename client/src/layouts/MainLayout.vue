@@ -106,7 +106,7 @@
               <router-link to="/jobs" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('职位浏览') }}</router-link>
               <router-link to="/resumes" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('简历模板') }}</router-link>
               <router-link to="/question-bank" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('面试题库') }}</router-link>
-              <router-link to="/interview" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('AI 模拟面试') }}</router-link>
+              <router-link v-if="!isEnterpriseRole" to="/interview" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('AI 模拟面试') }}</router-link>
               <router-link to="/community" class="block text-gray-400 text-sm hover:text-blue-400 transition-colors">{{ $t('求职社区') }}</router-link>
             </div>
           </div>
@@ -158,6 +158,7 @@ const mobileMenuOpen = ref(false)
 const unreadNotificationCount = ref(0)
 const unreadChatCount = ref(0)
 const userRole = computed(() => userStore.userInfo?.role || '')
+const isEnterpriseRole = computed(() => userRole.value === 'enterprise')
 const siteLogo = ref('')
 const siteTitle = ref('')
 const displayTitle = computed(() => siteTitle.value || t('AI 校招'))
