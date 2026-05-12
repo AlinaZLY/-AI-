@@ -404,7 +404,7 @@
                 @change="(e) => { const v = Number((e.target as HTMLSelectElement).value); if (v) applyTemplate(v) }"
               >
                 <option value="">{{ $t('选择模板') }}</option>
-                <option v-for="tpl in availableTemplates" :key="tpl.id" :value="tpl.id">{{ tpl.name }}</option>
+                <option v-for="tpl in availableTemplates" :key="tpl.id" :value="tpl.id">{{ t(resumeTemplateNameKey(tpl.name)) }}</option>
               </select>
               <span v-else class="text-xs text-emerald-600">{{ $t('已同步') }}</span>
             </div>
@@ -531,6 +531,7 @@ import {
 } from '@/api/resume'
 import { toast } from '@/utils/toast'
 import { useI18n } from '@/i18n'
+import { resumeTemplateNameKey } from '@/utils/resumeTemplateLocale'
 
 interface BasicInfo {
   name: string

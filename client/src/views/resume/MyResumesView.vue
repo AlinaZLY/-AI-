@@ -98,7 +98,7 @@
               <button type="button" class="text-xs text-blue-600 hover:text-blue-700 font-medium" @click="doRename(r)">{{ $t('确认') }}</button>
               <button type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="renaming = null">{{ $t('取消') }}</button>
             </div>
-            <h2 v-else class="font-semibold text-gray-900 text-lg leading-snug line-clamp-2">{{ r.title }}</h2>
+            <h2 v-else class="font-semibold text-gray-900 text-lg leading-snug line-clamp-2">{{ displayResumeTitle(r.title) }}</h2>
             <span
               v-if="r.isDraft"
               class="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-gray-100 text-gray-500 border border-gray-200"
@@ -456,6 +456,7 @@ import {
   setDefaultResumeApi,
   uploadResumeFileApi,
 } from '@/api/resume'
+import { resumeTemplateNameKey, resumeTitleSegments } from '@/utils/resumeTemplateLocale'
 
 const { t, locale: currentLocale } = useI18n()
 
@@ -658,7 +659,12 @@ function formatDate(t: string) {
 
 function templateLabel(templateId?: number | null) {
   if (templateId == null) return t('未选择')
-  return templateMap.value.get(templateId) || `${t('模板')} #${templateId}`
+  const labelKey = templateMap.value.get(templateId)
+  return labelKey ? t(labelKey) : `${t('模板')} #${templateId}`
+}
+
+function displayResumeTitle(title?: string) {
+  return resumeTitleSegments(title).map((segment) => t(segment)).join(' - ')
 }
 
 function editModalRows(key: ArraySectionKey) {
@@ -686,7 +692,7 @@ async function loadTemplates() {
     const list = data.list ?? []
     const m = new Map<number, string>()
     for (const t of list) {
-      if (t?.id != null) m.set(t.id, t.name || `Template ${t.id}`)
+      if (t?.id != null) m.set(t.id, resumeTemplateNameKey(t.name) || `Template ${t.id}`)
     }
     templateMap.value = m
   } catch {

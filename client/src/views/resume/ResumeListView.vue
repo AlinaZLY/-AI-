@@ -65,7 +65,7 @@
         :class="selectedCategory === cat ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'"
         class="px-4 py-1.5 rounded-full text-sm border border-gray-200 transition-colors"
       >
-        {{ $t(cat) }}
+        {{ $t(resumeTemplateCategoryKey(cat)) }}
       </button>
     </div>
 
@@ -96,10 +96,10 @@
         </div>
         <div class="p-4">
           <div class="flex justify-between items-start mb-2">
-            <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{{ $t(tpl.name) }}</h3>
-            <span v-if="tpl.category" class="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">{{ $t(tpl.category) }}</span>
+            <h3 class="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">{{ $t(resumeTemplateNameKey(tpl.name)) }}</h3>
+            <span v-if="tpl.category" class="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-full">{{ $t(resumeTemplateCategoryKey(tpl.category)) }}</span>
           </div>
-          <p class="text-sm text-gray-500 line-clamp-2">{{ $t(tpl.description || '暂无描述') }}</p>
+          <p class="text-sm text-gray-500 line-clamp-2">{{ $t(resumeTemplateDescriptionKey(tpl.description)) }}</p>
         </div>
       </div>
     </div>
@@ -130,7 +130,7 @@
     <div v-if="currentTemplate" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @click.self="currentTemplate = null">
       <div class="bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl">
         <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center z-10">
-          <h2 class="text-lg font-bold text-gray-900">{{ $t(currentTemplate.name) }}</h2>
+          <h2 class="text-lg font-bold text-gray-900">{{ $t(resumeTemplateNameKey(currentTemplate.name)) }}</h2>
           <button @click="currentTemplate = null" class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
         <div class="p-6 space-y-4">
@@ -139,10 +139,10 @@
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-500">{{ $t('分类') }}</span>
-            <span>{{ $t(currentTemplate.category || '通用') }}</span>
+            <span>{{ $t(resumeTemplateCategoryKey(currentTemplate.category)) }}</span>
           </div>
           <div v-if="currentTemplate.description" class="text-sm text-gray-600">
-            {{ $t(currentTemplate.description) }}
+            {{ $t(resumeTemplateDescriptionKey(currentTemplate.description)) }}
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-500">{{ $t('更新时间') }}</span>
@@ -193,6 +193,11 @@ import { useRouter } from 'vue-router'
 import request from '@/utils/request'
 import toast from '@/utils/toast'
 import { useI18n } from '@/i18n'
+import {
+  resumeTemplateCategoryKey,
+  resumeTemplateDescriptionKey,
+  resumeTemplateNameKey,
+} from '@/utils/resumeTemplateLocale'
 
 const { t, locale } = useI18n()
 
@@ -336,7 +341,7 @@ async function onFileSelected(e: Event) {
     const title = file.name.replace(/\.(pdf|docx?)/i, '')
     const defaultTemplateId = templates.value.length > 0 ? templates.value[0].id : undefined
     const createRes: any = await request.post('/resumes', {
-      title: title || 'Uploaded Resume',
+      title: title || t('上传简历'),
       ...(defaultTemplateId ? { templateId: defaultTemplateId } : {}),
     })
     const resumeId = createRes.data?.id || createRes.id
@@ -428,7 +433,7 @@ async function useTemplate(tpl: Template) {
   creating.value = true
   try {
     const res: any = await request.post('/resumes', {
-      title: `${tpl.name} - My Resume`,
+      title: `${t(resumeTemplateNameKey(tpl.name))} - ${t('简历')}`,
       templateId: tpl.id,
       content: {
         basicInfo: { name: '', phone: '', email: '', school: '', major: '', graduationYear: '' },
