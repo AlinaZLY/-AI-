@@ -633,6 +633,7 @@ const editModal = reactive({
   id: 0,
   title: '',
   content: defaultContent(),
+  originalContent: null as Record<string, unknown> | null,
 })
 
 const analysisDialog = reactive({
@@ -711,12 +712,15 @@ async function openEdit(r: ResumeCard) {
   editModal.loading = true
   editModal.id = r.id
   editModal.title = r.title
+  editModal.originalContent = null
   try {
     const res: any = await getResumeDetailApi(r.id)
     const detail = res.data ?? res
     editModal.title = detail.title || r.title
+    editModal.originalContent = (detail.content as Record<string, unknown>) || null
     editModal.content = normalizeContent(detail.content as Record<string, unknown>)
   } catch {
+    editModal.originalContent = (r.content as Record<string, unknown>) || null
     editModal.content = normalizeContent(r.content as Record<string, unknown>)
     toast(t('加载详情失败，已使用列表缓存数据'), 'warning')
   } finally {
@@ -735,9 +739,12 @@ async function saveEdit() {
   }
   editModal.saving = true
   const skills = editModal.content.skills.map((s) => s.trim()).filter(Boolean)
+  // Preserve fields from original content that are not editable in this modal
+  const preserved = editModal.originalContent || {}
   const payload = {
     title: editModal.title.trim(),
     content: {
+      ...preserved,
       basicInfo: { ...editModal.content.basicInfo },
       education: editModal.content.education.filter((e) => e.school || e.major),
       experience: editModal.content.experience.filter((e) => e.company || e.position),

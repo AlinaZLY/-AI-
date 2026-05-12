@@ -140,13 +140,31 @@ export class ResumeService implements OnModuleInit {
         const ext = diskPath.split('.').pop()?.toLowerCase();
         if (ext === 'pdf') {
           const buf = fs.readFileSync(diskPath);
-          const parser = new PDFParse({ data: buf, verbosity: 0 });
+          const parser = new PDFParse({ data: buf });
           await parser.load();
           const result = await parser.getText();
           text = result.text || '';
-        } else if (ext === 'docx') {
-          const result = await mammoth.extractRawText({ path: diskPath });
-          text = result.value || '';
+        } else if (ext === 'docx' || ext === 'doc') {
+          try {
+            const result = await mammoth.extractRawText({ path: diskPath });
+            text = result.value || '';
+          } catch {
+            // .doc binary format: extract visible text by reading raw bytes
+            try {
+              const buf = fs.readFileSync(diskPath);
+              const raw = buf.toString('utf8', 0, buf.length);
+              // Extract sequences of printable CJK + ASCII characters from binary .doc
+              const matches = raw.match(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffefa-zA-Z0-9@.\-_+()（）：:，。、；;！!？?\s]{4,}/g);
+              if (matches) {
+                text = matches.join('\n').replace(/\s{3,}/g, '\n').trim();
+              }
+            } catch {
+              // ignore
+            }
+            if (!text) {
+              console.warn('Cannot extract text from .doc file, skipping');
+            }
+          }
         }
         if (text.trim()) {
           const parsed = await this.aiParseResumeText(text, locale);
@@ -334,7 +352,7 @@ export class ResumeService implements OnModuleInit {
     const resume = await this.resumeRepo.findOne({ where: { id, userId } });
     if (!resume) throw new NotFoundException('简历不存在');
 
-    const content = resume.content || {};
+    const content = resume.content && typeof resume.content === 'object' ? resume.content : {};
     const completeness = this.calculateCompleteness(content);
     const keywords = this.extractKeywords(content);
     const suggestions = this.generateSuggestions(content);
@@ -707,11 +725,11 @@ export class ResumeService implements OnModuleInit {
     const keywords: string[] = [];
 
     if (Array.isArray(content.skills)) {
-      keywords.push(...content.skills);
+      keywords.push(...content.skills.filter((s: any) => typeof s === 'string' && s.trim()).map((s: any) => String(s).trim()));
     }
 
     const basic = content.basicInfo || {};
-    if (basic.major) keywords.push(basic.major);
+    if (basic.major) keywords.push(String(basic.major));
 
     return keywords.slice(0, 20);
   }
@@ -753,6 +771,21 @@ export class ResumeService implements OnModuleInit {
 
   async renderResume(id: number, userId: number, locale?: string) {
     const resume = await this.resumeRepo.findOne({ where: { id, userId } });
+    if (!resume) throw new NotFoundException('简历不存在');
+
+    const templateId = resume.templateId || 1;
+    const template = await this.templateRepo.findOne({ where: { id: templateId } });
+
+    const content = resume.content || this.getDefaultContent();
+    const htmlTemplate = template?.htmlContent || '<div class="resume"><h1>{{name}}</h1></div>';
+    const css = template?.cssContent || '';
+
+    const renderedHtml = this.injectContentIntoTemplate(htmlTemplate, content, css, locale);
+    return { html: renderedHtml };
+  }
+
+  async renderResumeAdmin(id: number, locale?: string) {
+    const resume = await this.resumeRepo.findOne({ where: { id } });
     if (!resume) throw new NotFoundException('简历不存在');
 
     const templateId = resume.templateId || 1;

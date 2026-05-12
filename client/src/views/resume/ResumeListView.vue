@@ -3,6 +3,23 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-900">{{ $t('校园简历模板') }}</h1>
       <div class="flex gap-3">
+        <button
+          v-if="isLoggedIn"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+          :disabled="uploading"
+          @click="triggerUpload()"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          {{ uploading ? $t('上传中…') : $t('上传简历') }}
+        </button>
+        <input
+          ref="fileInputRef"
+          type="file"
+          accept=".pdf,.doc,.docx"
+          class="hidden"
+          @change="onFileSelected"
+        />
         <input
           v-model="keyword"
           type="text"
@@ -10,6 +27,26 @@
           class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
           @keyup.enter="fetchTemplates"
         />
+      </div>
+    </div>
+
+    <!-- Upload progress overlay -->
+    <div v-if="uploading" class="flex flex-col items-center justify-center py-20 gap-4">
+      <div class="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      <p class="text-sm text-gray-700 font-semibold">
+        {{ uploadPhase === 'uploading' ? $t('正在上传文件…') : $t('正在解析简历内容…') }}
+      </p>
+      <div class="w-full max-w-md">
+        <div class="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+          <div
+            class="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 transition-all duration-500"
+            :style="{ width: `${uploadProgress}%` }"
+          />
+        </div>
+        <div class="mt-2 text-xs text-gray-500 flex items-center justify-between">
+          <span>{{ $t('预计需要 10-60 秒，请勿关闭页面') }}</span>
+          <span>{{ uploadProgress }}%</span>
+        </div>
       </div>
     </div>
 
@@ -257,6 +294,11 @@ const templates = ref<Template[]>([])
 const categories = ref<string[]>([])
 const loading = ref(false)
 const creating = ref(false)
+const uploading = ref(false)
+const uploadPhase = ref<'uploading' | 'parsing'>('uploading')
+const uploadProgress = ref(0)
+let uploadProgressTimer: ReturnType<typeof setInterval> | null = null
+const fileInputRef = ref<HTMLInputElement | null>(null)
 const keyword = ref('')
 const selectedCategory = ref('')
 const page = ref(1)
@@ -265,6 +307,74 @@ const total = ref(0)
 const currentTemplate = ref<Template | null>(null)
 const previewHtml = ref('')
 const isLoggedIn = computed(() => !!localStorage.getItem('token'))
+
+function triggerUpload() {
+  fileInputRef.value?.click()
+}
+
+async function onFileSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  if (!['pdf', 'doc', 'docx'].includes(ext || '')) {
+    toast(t('仅支持 PDF / DOC / DOCX 格式'), 'warning')
+    return
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    toast(t('文件大小不能超过 10MB'), 'warning')
+    return
+  }
+
+  uploading.value = true
+  uploadPhase.value = 'uploading'
+  uploadProgress.value = 5
+  try {
+    // Create a new resume record with the first available template
+    const title = file.name.replace(/\.(pdf|docx?)/i, '')
+    const defaultTemplateId = templates.value.length > 0 ? templates.value[0].id : undefined
+    const createRes: any = await request.post('/resumes', {
+      title: title || 'Uploaded Resume',
+      ...(defaultTemplateId ? { templateId: defaultTemplateId } : {}),
+    })
+    const resumeId = createRes.data?.id || createRes.id
+    if (!resumeId) {
+      toast(t('创建简历记录失败'), 'error')
+      return
+    }
+    uploadProgress.value = 20
+    // Upload file to the resume
+    const fd = new FormData()
+    fd.append('file', file)
+    fd.append('locale', locale.value || 'zh-CN')
+    // Start parsing phase progress
+    uploadPhase.value = 'parsing'
+    uploadProgress.value = 40
+    uploadProgressTimer = setInterval(() => {
+      if (uploadProgress.value < 90) uploadProgress.value += 2
+    }, 500)
+    await request.post(`/resumes/item/${resumeId}/upload`, fd, {
+      timeout: 120000,
+      onUploadProgress: (event: any) => {
+        const total = event.total || file.size || 1
+        const pct = Math.min(35, Math.round((event.loaded / total) * 35))
+        if (uploadPhase.value === 'uploading') uploadProgress.value = 5 + pct
+      },
+    })
+    if (uploadProgressTimer) { clearInterval(uploadProgressTimer); uploadProgressTimer = null }
+    uploadProgress.value = 100
+    toast(t('上传成功，已创建简历'), 'success')
+    router.push(`/resume-edit/${resumeId}`)
+  } catch {
+    toast(t('上传失败，请重试'), 'error')
+  } finally {
+    if (uploadProgressTimer) { clearInterval(uploadProgressTimer); uploadProgressTimer = null }
+    uploading.value = false
+    uploadProgress.value = 0
+  }
+}
 
 function formatTime(ts: string) {
   return new Date(ts).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
