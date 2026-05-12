@@ -214,8 +214,12 @@ function handleTableChange(pag: any) {
 
 async function handlePreview(id: number) {
   try {
-    const res = await renderResumeApi(id)
-    const html = res.data?.html || ''
+    const res: any = await renderResumeApi(id)
+    const html = res.data?.html || res.html || ''
+    if (!html) {
+      message.warning('暂无预览内容')
+      return
+    }
     const w = window.open('', '_blank')
     if (w) {
       const safeHtml = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\bon\w+\s*=/gi, 'data-disabled-')

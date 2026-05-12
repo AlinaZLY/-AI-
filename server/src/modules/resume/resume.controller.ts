@@ -224,6 +224,13 @@ export class ResumeController {
     return this.resumeService.renderResume(id, req.user.id, locale);
   }
 
+  @Get('admin/render/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  renderAdminByExplicitPath(@Param('id', ParseIntPipe) id: number, @Query('locale') locale?: string) {
+    return this.resumeService.renderResumeAdmin(id, locale);
+  }
+
   @Get('admin/:id/render')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

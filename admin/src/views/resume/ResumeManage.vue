@@ -287,8 +287,12 @@ async function handleAnalyze(id: number) {
 async function handlePreview(id: number) {
   try {
     message.loading({ content: '正在生成预览...', key: 'preview' })
-    const res = await renderResumeApi(id)
-    const html = res.data?.html || ''
+    const res: any = await renderResumeApi(id)
+    const html = res.data?.html || res.html || ''
+    if (!html) {
+      message.warning({ content: '暂无预览内容', key: 'preview' })
+      return
+    }
     const previewWindow = window.open('', '_blank')
     if (previewWindow) {
       const safeHtml = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\bon\w+\s*=/gi, 'data-disabled-')

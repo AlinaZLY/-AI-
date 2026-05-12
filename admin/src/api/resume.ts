@@ -71,5 +71,5 @@ export function uploadTemplateDocxApi(formData: FormData) {
 }
 
 export function renderResumeApi(id: number) {
-  return request.get(`/resumes/admin/${id}/render`)
+  return request.get(`/resumes/admin/render/${id}`)
 }
