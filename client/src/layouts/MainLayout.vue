@@ -131,7 +131,7 @@
         <div class="border-t border-gray-800 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
           <div>
             <p class="text-gray-500 text-sm">&copy; 2026 {{ $t('基于 AI 的校园招聘服务平台 · 毕业设计作品') }}</p>
-            <p class="text-gray-500 text-xs mt-1">{{ $t('团队成员：张灵宇 · 张俊逸 · 王思远 · 田杰') }}</p>
+            <p class="text-gray-500 text-xs mt-1">{{ $t('团队成员：张力尹 · 张峻屹 · 王思远 · 王俊翔') }}</p>
           </div>
           <p class="text-gray-600 text-xs">Vue 3 · NestJS · MySQL · Redis · Tailwind CSS</p>
         </div>
@@ -213,8 +213,8 @@ const navItems = computed(() => {
   if (userStore.token) {
     return [
       ...base,
-      { name: t('投递'), path: '/applications' },
       { name: t('面试'), path: '/interview' },
+      { name: t('投递'), path: '/applications' },
       { name: t('题库'), path: '/question-bank' },
     ]
   }

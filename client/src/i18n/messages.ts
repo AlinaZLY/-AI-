@@ -100,7 +100,7 @@ export const enUS: Record<string, string> = {
   'AI：火山方舟大模型': 'AI: Volcano Ark Large Model',
   '基于 AI 的校园招聘服务平台': 'AI-Powered Campus Recruitment Platform',
   '基于 AI 的校园招聘服务平台 · 毕业设计作品': 'AI-Powered Campus Recruitment Platform · Graduation Project',
-  '团队成员：张灵宇 · 张俊逸 · 王思远 · 田杰': 'Team Members: Zhang Lingyu · Zhang Junyi · Wang Siyuan · Tian Jie',
+  '团队成员：张力尹 · 张峻屹 · 王思远 · 王俊翔': 'Team Members: Zhang Liyin · Zhang Junyi · Wang Siyuan · Wang Junxiang',
   '操作成功': 'Success',
   '请求失败': 'Request failed',
   '请登录后使用此功能': 'Please sign in to use this feature',
