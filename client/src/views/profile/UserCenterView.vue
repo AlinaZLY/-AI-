@@ -156,7 +156,7 @@
           <div
             v-for="r in filteredResumes" :key="r.id"
             class="flex justify-between items-center p-3 rounded-lg border border-gray-100 hover:border-blue-200 hover:shadow-sm transition-all cursor-pointer"
-            @click="renamingId !== r.id && $router.push(`/resume-edit/${r.id}`)"
+            @click="renamingId !== r.id && goEditResume(r)"
           >
             <div class="min-w-0 flex-1">
               <div v-if="renamingId === r.id" class="flex items-center gap-2" @click.stop>
@@ -170,7 +170,7 @@
                 <button @click="doRename(r)" class="text-xs text-blue-600 hover:text-blue-700 font-medium">{{ $t('确认') }}</button>
                 <button @click="renamingId = null" class="text-xs text-gray-400 hover:text-gray-600">{{ $t('取消') }}</button>
               </div>
-              <div v-else class="text-sm font-medium text-gray-800">{{ r.title }}</div>
+              <div v-else class="text-sm font-medium text-gray-800">{{ displayResumeTitle(r.title) }}</div>
               <div class="text-xs text-gray-400 mt-0.5">
                 {{ r.targetPosition ? r.targetPosition + ' · ' : '' }}{{ $t('更新于') }} {{ formatDate(r.updatedAt) }}
               </div>
@@ -178,7 +178,7 @@
             <div class="flex items-center gap-2 shrink-0 ml-3">
               <span v-if="r.isDefault && !r.isDraft" class="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{{ $t('默认') }}</span>
               <button @click.stop="startRename(r)" class="text-xs text-gray-500 hover:text-blue-600">{{ $t('重命名') }}</button>
-              <button @click.stop="$router.push(`/resume-edit/${r.id}`)" class="text-xs text-blue-600 hover:text-blue-700 font-medium">{{ $t('编辑') }}</button>
+              <button @click.stop="goEditResume(r)" class="text-xs text-blue-600 hover:text-blue-700 font-medium">{{ $t('编辑') }}</button>
               <button @click.stop="handleDeleteResume(r)" class="text-xs text-gray-400 hover:text-red-500">{{ $t('删除') }}</button>
             </div>
           </div>
@@ -200,8 +200,8 @@
             </div>
             <div class="flex justify-between items-center">
               <div>
-                <h3 class="font-semibold text-gray-900">{{ selectedTemplate.name }}</h3>
-                <span class="text-xs text-gray-400">{{ selectedTemplate.category || $t('通用') }}</span>
+                <h3 class="font-semibold text-gray-900">{{ t(resumeTemplateNameKey(selectedTemplate.name)) }}</h3>
+                <span class="text-xs text-gray-400">{{ t(resumeTemplateCategoryKey(selectedTemplate.category)) }}</span>
               </div>
               <div class="flex gap-2">
                 <button @click="selectedTemplate = null" class="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600">{{ $t('返回') }}</button>
@@ -241,8 +241,8 @@
                   <svg v-else class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 </div>
                 <div class="p-3">
-                  <div class="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">{{ tpl.name }}</div>
-                  <div class="text-xs text-gray-400 mt-0.5">{{ tpl.category || $t('通用') }}</div>
+                  <div class="text-sm font-medium text-gray-800 truncate group-hover:text-blue-600 transition-colors">{{ t(resumeTemplateNameKey(tpl.name)) }}</div>
+                  <div class="text-xs text-gray-400 mt-0.5">{{ t(resumeTemplateCategoryKey(tpl.category)) }}</div>
                 </div>
               </div>
             </div>
@@ -411,20 +411,38 @@ import { confirmDialog } from '@/utils/confirm'
 import { useI18n } from '@/i18n'
 import { getMyCompanyApi } from '@/api/company'
 import { updateResumeApi } from '@/api/resume'
+import { resumeTemplateCategoryKey, resumeTemplateNameKey, resumeTitleSegments } from '@/utils/resumeTemplateLocale'
 
 const router = useRouter()
 const route = useRoute()
 const { t, locale: currentLocale } = useI18n()
 const userStore = useUserStore()
 
-const VALID_TABS = ['profile', 'resumes', 'applications', 'favorites', 'interviews', 'notifications', 'enterprise']
+const VALID_TABS = computed<string[]>(() => (
+  isEnterprise.value
+    ? ['profile', 'enterprise', 'notifications']
+    : ['profile', 'resumes', 'applications', 'favorites', 'interviews', 'notifications', 'enterprise']
+))
 const activeTab = computed(() => {
   const tab = route.params.tab as string
-  return VALID_TABS.includes(tab) ? tab : 'profile'
+  return VALID_TABS.value.includes(tab) ? tab : 'profile'
 })
 
 function switchTab(key: string) {
   router.push(`/user-center/${key}`)
+}
+
+function displayResumeTitle(title?: string) {
+  return resumeTitleSegments(title).map((segment) => t(segment)).join(' - ')
+}
+
+function goEditResume(resume: any) {
+  const id = Number(resume?.id)
+  if (!Number.isFinite(id) || id <= 0) {
+    toast(t('无效的简历 ID'), 'warning')
+    return
+  }
+  router.push({ name: 'ResumeEdit', params: { id } })
 }
 
 const roleLabel = computed(() => {
@@ -635,7 +653,7 @@ async function createFromTemplate(tpl: any) {
   creatingResume.value = true
   try {
     const res: any = await request.post('/resumes', {
-      title: `${tpl.name} - 我的简历`,
+      title: `${t(resumeTemplateNameKey(tpl.name))} - ${t('简历')}`,
       templateId: tpl.id,
       content: { basicInfo: {}, education: [], experience: [], projects: [], skills: [], selfIntro: '' },
     })
@@ -733,6 +751,16 @@ async function fetchData() {
 
 watch(activeTab, (tab) => {
   if (tab === 'favorites' && favoriteJobs.value.length === 0) fetchFavorites()
+})
+
+watch([() => route.params.tab, () => isEnterprise.value, () => userStore.userInfo], () => {
+  if (!userStore.userInfo || !route.params.tab) return
+  const tab = route.params.tab as string
+  const valid = VALID_TABS.value.includes(tab)
+  if (!valid) {
+    const fallback = isEnterprise.value ? 'enterprise' : 'profile'
+    router.replace(`/user-center/${fallback}`)
+  }
 })
 
 onMounted(async () => {
