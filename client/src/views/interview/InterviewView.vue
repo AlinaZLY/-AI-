@@ -330,6 +330,32 @@
 
     <!-- Stats cards 已合并到 Hero 数据芯片中 -->
     <template v-if="isLoggedIn">
+      <!-- Calendar events -->
+      <section v-if="calendarEvents.length" class="rounded-2xl border border-amber-100 bg-amber-50/30 p-5">
+        <div class="mb-3 flex items-center gap-2">
+          <svg class="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+          <h2 class="text-sm font-semibold text-amber-900">{{ $t('面试日历 & 提醒') }}</h2>
+        </div>
+        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div v-for="evt in calendarEvents" :key="evt.id"
+            class="flex items-center gap-3 rounded-xl border bg-white px-3.5 py-2.5"
+            :class="isUrgent(evt.nextDate) ? 'border-red-200' : 'border-amber-100'">
+            <div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg text-white text-sm leading-tight"
+              :class="isUrgent(evt.nextDate) ? 'bg-red-500' : 'bg-amber-500'">
+              <span class="font-bold">{{ new Date(evt.nextDate).getDate() }}</span>
+              <span class="text-[9px]">{{ (new Date(evt.nextDate).getMonth() + 1) + $t('月') }}</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-gray-900 truncate">{{ evt.company }} · {{ evt.position }}</p>
+              <div class="flex items-center gap-2 text-[11px] mt-0.5">
+                <span class="text-amber-600 font-medium">{{ calendarStatusLabel(evt.status) }}</span>
+                <span class="text-gray-400">{{ calendarRelative(evt.nextDate) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Interview records -->
       <section class="rounded-2xl bg-white border border-gray-100 overflow-hidden">
         <div class="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
@@ -371,32 +397,6 @@
           </div>
           <p class="text-sm text-gray-400">{{ $t('暂无面试记录') }}</p>
           <p class="text-xs text-gray-300 mt-1">{{ $t('点击右上角开始你的第一场模拟面试') }}</p>
-        </div>
-      </section>
-
-      <!-- Calendar events -->
-      <section v-if="calendarEvents.length" class="rounded-2xl border border-amber-100 bg-amber-50/30 p-5">
-        <div class="mb-3 flex items-center gap-2">
-          <svg class="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-          <h2 class="text-sm font-semibold text-amber-900">{{ $t('面试日历 & 提醒') }}</h2>
-        </div>
-        <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <div v-for="evt in calendarEvents" :key="evt.id"
-            class="flex items-center gap-3 rounded-xl border bg-white px-3.5 py-2.5"
-            :class="isUrgent(evt.nextDate) ? 'border-red-200' : 'border-amber-100'">
-            <div class="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-lg text-white text-sm leading-tight"
-              :class="isUrgent(evt.nextDate) ? 'bg-red-500' : 'bg-amber-500'">
-              <span class="font-bold">{{ new Date(evt.nextDate).getDate() }}</span>
-              <span class="text-[9px]">{{ (new Date(evt.nextDate).getMonth() + 1) + $t('月') }}</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-gray-900 truncate">{{ evt.company }} · {{ evt.position }}</p>
-              <div class="flex items-center gap-2 text-[11px] mt-0.5">
-                <span class="text-amber-600 font-medium">{{ calendarStatusLabel(evt.status) }}</span>
-                <span class="text-gray-400">{{ calendarRelative(evt.nextDate) }}</span>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
