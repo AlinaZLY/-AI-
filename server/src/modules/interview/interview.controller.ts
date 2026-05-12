@@ -199,9 +199,10 @@ export class InterviewController {
   @Roles(UserRole.ADMIN)
   reviewQuestion(
     @Param('id', ParseIntPipe) id: number,
+    @Request() req,
     @Body() body: { status: string; rejectReason?: string },
   ) {
-    return this.interviewService.reviewQuestion(id, body.status, body.rejectReason);
+    return this.interviewService.reviewQuestion(id, body.status, body.rejectReason, req.user.id);
   }
 
   // ==================== 管理员面试记录管理 ====================

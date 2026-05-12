@@ -1,10 +1,12 @@
-import { Injectable, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, OnModuleInit, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { escapeLike } from '../../common/utils/query.util';
 import { Interview, InterviewStatus } from './entities/interview.entity';
 import { InterviewQuestion } from './entities/interview-question.entity';
 import { QuestionBank, QuestionDifficulty, QuestionSource, QuestionReviewStatus } from './entities/question-bank.entity';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/entities/notification.entity';
 import { QuestionCategory } from './entities/question-category.entity';
 import { PracticeRecord } from './entities/practice-record.entity';
 import { Resume } from '../resume/entities/resume.entity';
@@ -23,6 +25,7 @@ export class InterviewService implements OnModuleInit {
     @InjectRepository(QuestionCategory) private qcRepo: Repository<QuestionCategory>,
     @InjectRepository(PracticeRecord) private practiceRepo: Repository<PracticeRecord>,
     @InjectRepository(Resume) private resumeRepo: Repository<Resume>,
+    private readonly notificationService: NotificationService,
     private readonly aiRuntimeService: AiRuntimeService,
   ) {}
 
@@ -220,14 +223,51 @@ export class InterviewService implements OnModuleInit {
     return { list, total, page, pageSize };
   }
 
-  async reviewQuestion(id: number, status: string, rejectReason?: string) {
+  async reviewQuestion(id: number, status: string, rejectReason?: string, reviewerId?: number) {
     const q = await this.qbRepo.findOne({ where: { id } });
     if (!q) throw new NotFoundException('题目不存在');
-    q.reviewStatus = status as QuestionReviewStatus;
-    if (status === QuestionReviewStatus.REJECTED && rejectReason) {
+    if (!Object.values(QuestionReviewStatus).includes(status as QuestionReviewStatus)) {
+      throw new BadRequestException('无效的审核状态');
+    }
+
+    const finalStatus = status as QuestionReviewStatus;
+    q.reviewStatus = finalStatus;
+    if (finalStatus === QuestionReviewStatus.APPROVED) q.rejectReason = null as any;
+    else if (finalStatus === QuestionReviewStatus.REJECTED && rejectReason) {
       q.rejectReason = rejectReason;
     }
-    return this.qbRepo.save(q);
+    const saved = await this.qbRepo.save(q);
+
+    await this.notifyQuestionReviewResult(saved, finalStatus, rejectReason, reviewerId);
+    return saved;
+  }
+
+  private async notifyQuestionReviewResult(
+    question: QuestionBank,
+    status: QuestionReviewStatus,
+    rejectReason?: string,
+    reviewerId?: number,
+  ) {
+    if (!question.userId) return;
+
+    const title = question.question?.trim() || '匿名题目';
+    const questionText = `${title.slice(0, 50)}${title.length > 50 ? '...' : ''}`;
+    const base = `你的投稿题目「${questionText}」`;
+
+    const content = status === QuestionReviewStatus.APPROVED
+      ? `${base}已通过审核，已加入题库，感谢你的投稿。`
+      : `${base}未通过审核。${rejectReason ? `驳回原因：${rejectReason}` : ''}`.trim();
+
+    await this.notificationService.create({
+      type: NotificationType.SYSTEM,
+      userId: question.userId,
+      fromUserId: reviewerId,
+      content: content.length > 500 ? content.slice(0, 500) : content,
+      meta: {
+        path: '/question-bank',
+        questionId: question.id,
+      },
+    });
   }
 
   // ==================== JD 结构化解析 ====================

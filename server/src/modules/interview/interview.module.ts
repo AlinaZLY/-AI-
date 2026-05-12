@@ -9,11 +9,13 @@ import { QuestionCategory } from './entities/question-category.entity';
 import { PracticeRecord } from './entities/practice-record.entity';
 import { Resume } from '../resume/entities/resume.entity';
 import { SystemModule } from '../system/system.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Interview, InterviewQuestion, QuestionBank, QuestionCategory, PracticeRecord, Resume]),
     SystemModule,
+    NotificationModule,
   ],
   controllers: [InterviewController],
   providers: [InterviewService],
