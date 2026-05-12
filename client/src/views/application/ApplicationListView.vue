@@ -363,7 +363,7 @@
                   {{ tagLabel(app.tag) }}
                 </span>
                 <select
-                  v-if="!isPlatformManaged(app)"
+                  v-if="false"
                   :value="app.status"
                   class="text-xs border border-slate-200 rounded px-2 py-1 bg-white"
                   @change="(e) => changeStatus(app, (e.target as HTMLSelectElement).value)"
