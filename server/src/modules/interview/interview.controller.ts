@@ -250,7 +250,8 @@ export class InterviewController {
   // ==================== 模拟面试 ====================
 
   @Post('start')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STUDENT, UserRole.ADMIN)
   startInterview(
     @Request() req,
     @Body() dto: StartInterviewDto,
@@ -262,13 +263,15 @@ export class InterviewController {
   }
 
   @Get('list')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STUDENT, UserRole.ADMIN)
   getInterviews(@Request() req, @Query('page') page?: number, @Query('pageSize') pageSize?: number) {
     return this.interviewService.getInterviews(req.user.id, page || 1, pageSize || 10);
   }
 
   @Get('overview')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.STUDENT, UserRole.ADMIN)
   getUserOverview(@Request() req) {
     return this.interviewService.getUserInterviewOverview(req.user.id);
   }
