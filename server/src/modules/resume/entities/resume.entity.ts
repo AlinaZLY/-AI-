@@ -41,7 +41,7 @@ export class Resume {
   @Column({ default: true, comment: '是否为草稿' })
   isDraft: boolean;
 
-  @Column({ nullable: true, comment: 'AI 分析结果(JSON)' })
+  @Column({ type: 'text', nullable: true, comment: 'AI 分析结果(JSON)' })
   analysisResult: string;
 
   @CreateDateColumn({ comment: '创建时间' })

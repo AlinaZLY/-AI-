@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getMetadataArgsStorage } from 'typeorm';
 import { ResumeService } from './resume.service';
 import { Resume } from './entities/resume.entity';
 import { ResumeTemplate } from './entities/resume-template.entity';
@@ -86,6 +87,16 @@ describe('ResumeService', () => {
     }).compile();
 
     service = module.get<ResumeService>(ResumeService);
+  });
+
+  describe('schema metadata', () => {
+    it('stores AI analysis JSON in a text column', () => {
+      const analysisColumn = getMetadataArgsStorage().columns.find(
+        (column) => column.target === Resume && column.propertyName === 'analysisResult',
+      );
+
+      expect(analysisColumn?.options.type).toBe('text');
+    });
   });
 
   // ====================================================================

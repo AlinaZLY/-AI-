@@ -721,7 +721,7 @@ CREATE TABLE `resumes` (
   `content` json DEFAULT NULL COMMENT '简历内容(JSON结构化数据)',
   `filePath` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '上传的简历文件路径',
   `isDefault` tinyint NOT NULL DEFAULT '0' COMMENT '是否为默认简历',
-  `analysisResult` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'AI 分析结果(JSON)',
+  `analysisResult` text COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'AI 分析结果(JSON)',
   `createdAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
   `updatedAt` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
   PRIMARY KEY (`id`),
