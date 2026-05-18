@@ -89,9 +89,9 @@ describe('ApplicationService', () => {
   });
 
   // ====================================================================
-  // Issue #1: 投递记录追踪不能自行修改状态
+  // Issue #1: 平台投递由企业维护，手动投递允许学生自主管理进程
   // ====================================================================
-  describe('Issue #1: Student cannot modify status of any application', () => {
+  describe('Issue #1: Student application status ownership', () => {
     it('should throw ForbiddenException when student tries to update status of platform application (has jobId)', async () => {
       const platformApp = {
         id: 1,
@@ -109,10 +109,10 @@ describe('ApplicationService', () => {
 
       await expect(
         service.updateStatus(1, 10, { status: ApplicationStatus.FIRST_INTERVIEW }),
-      ).rejects.toThrow('投递状态由企业或管理员维护，学生不能自行修改');
+      ).rejects.toThrow('平台职位投递状态由企业维护，请使用签到或结果询问功能');
     });
 
-    it('should throw ForbiddenException when student tries to update status of manual application (no jobId)', async () => {
+    it('should allow student to update status of manual application (no jobId)', async () => {
       const manualApp = {
         id: 2,
         userId: 10,
@@ -123,14 +123,24 @@ describe('ApplicationService', () => {
         position: 'Designer',
       };
       mockAppRepo.findOne.mockResolvedValue(manualApp);
+      mockAppRepo.save.mockImplementation(async (data) => data);
 
-      await expect(
-        service.updateStatus(2, 10, { status: ApplicationStatus.FIRST_INTERVIEW }),
-      ).rejects.toThrow(ForbiddenException);
+      const result = await service.updateStatus(2, 10, {
+        status: ApplicationStatus.FIRST_INTERVIEW,
+      });
 
-      await expect(
-        service.updateStatus(2, 10, { status: ApplicationStatus.FIRST_INTERVIEW }),
-      ).rejects.toThrow('投递状态由企业或管理员维护，学生不能自行修改');
+      expect(result.status).toBe(ApplicationStatus.FIRST_INTERVIEW);
+      expect(result.tag).toBe(ApplicationTag.IN_PROGRESS);
+      expect(mockAppRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: ApplicationStatus.FIRST_INTERVIEW }),
+      );
+      expect(mockLogRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          applicationId: 2,
+          fromStatus: ApplicationStatus.PENDING,
+          toStatus: ApplicationStatus.FIRST_INTERVIEW,
+        }),
+      );
     });
 
     it('should throw ForbiddenException when student tries to edit platform application', async () => {

@@ -355,8 +355,33 @@ export class ApplicationService {
     if (app.jobId) {
       throw new ForbiddenException('平台职位投递记录不能手动编辑，请使用备注功能');
     }
+    const fromStatus = app.status;
     Object.assign(app, dto);
-    return this.appRepo.save(app);
+    if (dto.nextDate !== undefined) {
+      app.nextDate = dto.nextDate ? new Date(dto.nextDate) : null as any;
+    }
+    if (dto.status) {
+      if (dto.status === ApplicationStatus.OFFER) {
+        app.tag = ApplicationTag.PASSED;
+      } else if (dto.status === ApplicationStatus.REJECTED) {
+        app.tag = ApplicationTag.FAILED;
+      } else {
+        app.tag = ApplicationTag.IN_PROGRESS;
+      }
+    }
+
+    const saved = await this.appRepo.save(app);
+    if (dto.status && fromStatus !== dto.status) {
+      await this.logRepo.save(
+        this.logRepo.create({
+          applicationId: id,
+          fromStatus,
+          toStatus: dto.status,
+          note: '学生手动更新投递进度',
+        }),
+      );
+    }
+    return saved;
   }
 
   async remove(id: number, userId: number) {
@@ -371,7 +396,38 @@ export class ApplicationService {
   async updateStatus(id: number, userId: number, dto: UpdateStatusDto) {
     const app = await this.appRepo.findOne({ where: { id, userId } });
     if (!app) throw new NotFoundException('投递记录不存在');
-    throw new ForbiddenException('投递状态由企业或管理员维护，学生不能自行修改');
+    if (app.jobId) {
+      throw new ForbiddenException('平台职位投递状态由企业维护，请使用签到或结果询问功能');
+    }
+
+    const fromStatus = app.status;
+    app.status = dto.status;
+    if (dto.nextDate !== undefined) {
+      app.nextDate = dto.nextDate ? new Date(dto.nextDate) : null as any;
+    }
+
+    if (dto.status === ApplicationStatus.OFFER) {
+      app.tag = ApplicationTag.PASSED;
+    } else if (dto.status === ApplicationStatus.REJECTED) {
+      app.tag = ApplicationTag.FAILED;
+    } else {
+      app.tag = ApplicationTag.IN_PROGRESS;
+    }
+
+    await this.appRepo.save(app);
+
+    if (fromStatus !== dto.status || dto.note) {
+      await this.logRepo.save(
+        this.logRepo.create({
+          applicationId: id,
+          fromStatus,
+          toStatus: dto.status,
+          note: dto.note || '学生手动更新投递进度',
+        }),
+      );
+    }
+
+    return app;
   }
 
   async findAllForCompany(userId: number, page = 1, pageSize = 10, keyword?: string, status?: string, tag?: string) {
