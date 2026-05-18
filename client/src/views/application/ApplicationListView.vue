@@ -153,6 +153,7 @@
                   {{ tagLabel(app.tag) }}
                 </span>
                 <select
+                  v-if="!isPlatformManaged(app)"
                   :value="app.status"
                   class="text-xs border border-slate-200 rounded px-2 py-1 bg-white"
                   @change="(e) => changeStatus(app, (e.target as HTMLSelectElement).value)"
@@ -161,6 +162,7 @@
                   <option v-for="s in statusOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
                 </select>
                 <button
+                  v-if="!isPlatformManaged(app)"
                   @click.stop="openEditModal(app)"
                   class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded"
                   title="编辑"
@@ -168,6 +170,7 @@
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 </button>
                 <button
+                  v-if="!isPlatformManaged(app)"
                   @click.stop="confirmDelete(app)"
                   class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded"
                   title="删除"
@@ -175,6 +178,9 @@
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
               </div>
+            </div>
+            <div v-if="isPlatformManaged(app)" class="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+              <span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-600">企业维护流程</span>
             </div>
           </div>
 
@@ -358,9 +364,17 @@
             <label class="block text-sm font-medium text-slate-700 mb-1">工作地点</label>
             <input v-model="editForm.location" placeholder="如：北京" class="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
           </div>
-          <div>
-            <label class="block text-sm font-medium text-slate-700 mb-1">下次日期</label>
-            <input v-model="editForm.nextDate" type="date" class="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">状态</label>
+              <select v-model="editForm.status" class="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                <option v-for="s in statusOptions" :key="`edit-${s.value}`" :value="s.value">{{ s.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">下次日期</label>
+              <input v-model="editForm.nextDate" type="date" class="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+            </div>
           </div>
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">备注</label>
@@ -495,6 +509,7 @@ interface Application {
   nextDate?: string
   remark?: string
   updatedAt: string
+  jobId?: number
 }
 
 interface StatusLog {
@@ -556,6 +571,7 @@ const editForm = reactive({
   channel: '',
   salaryRange: '',
   location: '',
+  status: 'pending',
   nextDate: '',
   remark: '',
 })
@@ -592,6 +608,9 @@ function tagBadgeClass(t: string) {
     abandoned: 'bg-slate-100 text-slate-500',
   }
   return map[t] ?? 'bg-slate-100 text-slate-600'
+}
+function isPlatformManaged(app: Application) {
+  return !!app.jobId
 }
 function formatTime(t: string) {
   return new Date(t).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -760,6 +779,7 @@ function openEditModal(app: Application) {
   editForm.channel = app.channel ?? ''
   editForm.salaryRange = app.salaryRange ?? ''
   editForm.location = app.location ?? ''
+  editForm.status = app.status || 'pending'
   editForm.nextDate = app.nextDate ? app.nextDate.split('T')[0] : ''
   editForm.remark = app.remark ?? ''
   showEdit.value = true
@@ -775,6 +795,7 @@ async function handleEdit() {
       channel: editForm.channel.trim() || undefined,
       salaryRange: editForm.salaryRange.trim() || undefined,
       location: editForm.location.trim() || undefined,
+      status: editForm.status,
       nextDate: editForm.nextDate || undefined,
       remark: editForm.remark.trim() || undefined,
     })

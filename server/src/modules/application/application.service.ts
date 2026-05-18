@@ -124,19 +124,53 @@ export class ApplicationService {
   async update(id: number, userId: number, dto: UpdateApplicationDto) {
     const app = await this.appRepo.findOne({ where: { id, userId } });
     if (!app) throw new NotFoundException('投递记录不存在');
+    if (app.jobId) {
+      throw new ForbiddenException('平台职位投递记录不能手动编辑，请使用备注功能');
+    }
+    const fromStatus = app.status;
     Object.assign(app, dto);
-    return this.appRepo.save(app);
+    if (dto.nextDate !== undefined) {
+      app.nextDate = dto.nextDate ? new Date(dto.nextDate) : null as any;
+    }
+    if (dto.status) {
+      if (dto.status === ApplicationStatus.OFFER) {
+        app.tag = ApplicationTag.PASSED;
+      } else if (dto.status === ApplicationStatus.REJECTED) {
+        app.tag = ApplicationTag.FAILED;
+      } else {
+        app.tag = ApplicationTag.IN_PROGRESS;
+      }
+    }
+
+    const saved = await this.appRepo.save(app);
+    if (dto.status && fromStatus !== dto.status) {
+      await this.logRepo.save(
+        this.logRepo.create({
+          applicationId: id,
+          fromStatus,
+          toStatus: dto.status,
+          note: '学生手动更新投递进度',
+        }),
+      );
+    }
+    return saved;
   }
 
   async remove(id: number, userId: number) {
     const app = await this.appRepo.findOne({ where: { id, userId } });
     if (!app) throw new NotFoundException('投递记录不存在');
+    if (app.jobId) {
+      throw new ForbiddenException('平台职位投递记录不能删除');
+    }
     await this.appRepo.remove(app);
   }
 
   async updateStatus(id: number, userId: number, dto: UpdateStatusDto) {
     const app = await this.appRepo.findOne({ where: { id, userId } });
     if (!app) throw new NotFoundException('投递记录不存在');
+    if (app.jobId) {
+      throw new ForbiddenException('平台职位投递状态由企业维护，请使用签到或结果询问功能');
+    }
 
     const fromStatus = app.status;
     app.status = dto.status;
@@ -145,18 +179,22 @@ export class ApplicationService {
       app.tag = ApplicationTag.PASSED;
     } else if (dto.status === ApplicationStatus.REJECTED) {
       app.tag = ApplicationTag.FAILED;
+    } else {
+      app.tag = ApplicationTag.IN_PROGRESS;
     }
 
     await this.appRepo.save(app);
 
-    await this.logRepo.save(
-      this.logRepo.create({
-        applicationId: id,
-        fromStatus,
-        toStatus: dto.status,
-        note: dto.note,
-      }),
-    );
+    if (fromStatus !== dto.status || dto.note) {
+      await this.logRepo.save(
+        this.logRepo.create({
+          applicationId: id,
+          fromStatus,
+          toStatus: dto.status,
+          note: dto.note || '学生手动更新投递进度',
+        }),
+      );
+    }
 
     return app;
   }
